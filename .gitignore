@@ -1,24 +1,29 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# dependencies
+/node_modules
 
-node_modules
-dist
-dist-ssr
-*.local
+# build outputs
+/dist
+/build
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# misc
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+*.log
+
+# local env files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE settings
+.idea/
+.vscode/
+
+# optional caches
+.cache
+.parcel-cache
+
+# yarn / npm / pnpm lockfiles (선택적으로 무시 가능)
+/yarn-error.log
+.pnpm-debug.log
+npm-debug.log*
