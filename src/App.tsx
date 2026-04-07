@@ -35,6 +35,8 @@ import Notice from "./components/Notice";
 import Events from "./components/Events";
 import AlertModal from "./components/AlertModal";
 import { Menu } from "./components/icons";
+import KakaoCallback from "./components/KakaoCallback";
+import SignUp from "./components/SignUp";
 
 export type Prize = {
   id: string;
@@ -137,7 +139,9 @@ type ScreenType =
   | "adminInquiryManagement"
   | "adminMainBannerManagement"
   | "adminUserManagement"
-  | "adminStatistics";
+  | "adminStatistics"
+  | "kakaoCallback"
+  | "signup";
 
 export type Banner = {
   id: string;
@@ -239,6 +243,29 @@ export default function App() {
       isNew: true,
     },
   ]);
+
+  // Handle Token-based Auth and URL Path for Kakao Callback
+  useEffect(() => {
+    // 1. Check for stored token on load
+    const token = localStorage.getItem("token");
+    if (token && !user) {
+      // In a real app, you'd verify this token with the backend
+      // Here we'll mock a logged-in user if a token exists
+      // You can later update this to fetch user profile from /api/user/me
+      setUser({
+        name: "카카오 사용자",
+        email: "user@kakao.com",
+        type: "social",
+        points: 0,
+      });
+    }
+
+    // 2. Check for redirect path
+    const path = window.location.pathname;
+    if (path === "/auth/kakao/callback") {
+      setScreen("kakaoCallback");
+    }
+  }, []);
 
   const animeCollections: AnimeCollection[] = [
     {
@@ -1203,6 +1230,7 @@ export default function App() {
         <Login
           onLogin={handleLogin}
           onBack={() => setScreen(returnToScreen || "main")}
+          onSignUp={() => setScreen("signup")}
         />
       )}
       {screen === "selection" && selectedAnime && (
@@ -1582,6 +1610,25 @@ export default function App() {
         message={alertModal.message}
         type={alertModal.type}
       />
+
+      {screen === "kakaoCallback" && (
+        <KakaoCallback />
+      )}
+
+      {screen === "signup" && (
+        <SignUp
+          onBack={() => setScreen("login")}
+          onSuccess={() => {
+            setScreen("login");
+            setAlertModal({
+              isOpen: true,
+              title: "회원가입 성공",
+              message: "이제 로그인할 수 있습니다!",
+              type: "success",
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

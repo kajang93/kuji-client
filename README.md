@@ -14,7 +14,8 @@
 | **프레임워크** | React 18.x |
 | **빌드 툴** | Vite |
 | **UI 스타일링** | CSS Modules (→ TailwindCSS 도입 예정) |
-| **상태 관리** | useState / Context (→ Zustand 고려 중) |
+| **상태 관리** | useState / Context (→ Zustand or Recoil 도입 예정) |
+| **인증 방식** | JWT + LocalStorage |
 | **배포** | Vercel |
 
 ---
@@ -24,15 +25,14 @@
 ```bash
 kuji-client/
 └─ src/
-   └─ components/
-      ├─ Header.tsx           # 상단 공통 UI
-      ├─ Footer.tsx           # 하단 공통 UI
-      ├─ Sidebar.tsx          # 오른쪽 메뉴/필터
-      ├─ MainLayout.tsx       # 화면 전환 (애니메이션 ↔ 쿠지 리스트)
-      ├─ AnimationCardList.tsx
-      ├─ AnimationCardItem.tsx
-      ├─ KujiList.tsx
-      └─ KujiItemCard.tsx
+   ├─ components/
+   │  ├─ Sidebar.tsx          # 메뉴 및 유저 정보
+   │  ├─ Login.tsx            # 통합 로그인 (카카오 + 이메일)
+   │  ├─ SignUp.tsx           # 회원가입 (반응형/프리미엄 UI)
+   │  ├─ TermsConsentModal.tsx # 약관 동의 팝업
+   │  ├─ KakaoCallback.tsx    # 소셜 로그인 처리 센터
+   │  └─ ...
+   └─ App.tsx                 # 화면 전환 및 전체 상태 관리
 
 
 ```
@@ -42,11 +42,11 @@ kuji-client/
 
 | 단계 | 설명 |
 |------|------|
-| 1️⃣ | `MainLayout`에서 초기 상태(`selectedAnimation = null`)로 시작 |
-| 2️⃣ | `AnimationCardList`를 렌더링하여 전체 애니메이션 카드 표시 |
-| 3️⃣ | `AnimationCardItem` 클릭 시 → `selectedAnimation` 상태 변경 |
-| 4️⃣ | 선택된 애니메이션에 따라 `KujiList` 컴포넌트로 전환 |
-| 5️⃣ | `KujiItemCard`에서 개별 쿠지 상품 표시 및 재고 상태 표시 |
+| 1️⃣ | `MainScreen`에서 전체 쿠지 상품 리스트 확인 |
+| 2️⃣ | `Login` 화면에서 카카오 또는 일반 이메일 로그인 |
+| 3️⃣ | 신규 사용자의 경우 `TermsConsentModal`을 통해 필수 약관 동의 |
+| 4️⃣ | 로그인 성공 후 `RoleType`에 따라 대시보드 또는 메인 화면 진입 |
+| 5️⃣ | 상품 상세페이지에서 쿠지 뽑기(Gacha) 진행 |
 
 ---
 
@@ -109,11 +109,13 @@ npm run build
 | 단계 | 기능 | 상태 |
 |------|------|------|
 | 1️⃣ | Vite + React 프로젝트 세팅 | ✅ 완료 |
-| 2️⃣ | 애니메이션 카드 리스트 UI 구현 | ✅ 완료 |
-| 3️⃣ | KujiList 화면 전환 기능 | 🔄 진행 중 |
-| 4️⃣ | 백엔드 API 연동 (axios 기반) | ⏳ 예정 |
-| 5️⃣ | TailwindCSS 적용 | ⏳ 예정 |
-| 6️⃣ | PWA + Capacitor 빌드 테스트 | ⏳ 예정 |
+| 2️⃣ | 카카오 소셜 로그인 연동 (OAuth 2.0) | ✅ 완료 |
+| 3️⃣ | 일반 회원가입 및 로그인 기능 구현 | ✅ 완료 |
+| 4️⃣ | 약관 동의 프로세스(Consent Flow) 구축 | ✅ 완료 |
+| 5️⃣ | 프리미엄 UI 디자인 시스템 (Glassmorphism) | ✅ 완료 |
+| 6️⃣ | 통합 로그인 및 권한별 리다이렉트 자동화 | 🔄 진행 중 |
+| 7️⃣ | 쿠지(Gacha) 뽑기 애니메이션 및 로직 | ⏳ 예정 |
+| 8️⃣ | 판매자/관리자 센터 대시보드 고도화 | ⏳ 예정 |
 
 ---
 
