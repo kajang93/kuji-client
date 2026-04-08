@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import axios from "axios";
 import MainScreen from "./components/MainScreen";
 import AnimeList from "./components/AnimeList";
 import PrizeDetail from "./components/PrizeDetail";
@@ -143,6 +144,16 @@ type ScreenType =
   | "kakaoCallback"
   | "signup";
 
+export type User = {
+  memberId: number;
+  email: string;
+  nickname: string;
+  profileImageUrl?: string;
+  type: "social" | "business" | "admin"; // Derived or mapped from RoleType
+  role: "USER" | "BIZ" | "ADMIN";
+  points?: number;
+};
+
 export type Banner = {
   id: string;
   title: string;
@@ -182,12 +193,7 @@ export default function App() {
   );
   const [purchaseCount, setPurchaseCount] = useState(1);
   const [kujiStatus, setKujiStatus] = useState<boolean[]>([]);
-  const [user, setUser] = useState<{
-    name: string;
-    email: string;
-    type: "social" | "business" | "admin";
-    points?: number;
-  } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [returnToScreen, setReturnToScreen] = useState<
     "detail" | null
@@ -225,7 +231,36 @@ export default function App() {
     },
   ]);
 
-  // Inquiries state
+  // Fetch full user info from backend
+  const fetchUserInfo = async (token: string) => {
+    try {
+      const res = await axios.get("http://localhost:8080/api/members/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = res.data;
+      setUser({
+        memberId: data.memberId,
+        email: data.email,
+        nickname: data.nickname,
+        profileImageUrl: data.profileImageUrl,
+        type:
+          data.role === "ADMIN"
+            ? "admin"
+            : data.role === "BIZ"
+              ? "business"
+              : "social",
+        role: data.role,
+        points: data.points || 0,
+      });
+    } catch (error) {
+      console.error("Failed to fetch user info:", error);
+      localStorage.removeItem("token");
+      setUser(null);
+    }
+  };
+
   const [inquiries, setInquiries] = useState<Inquiry[]>([
     {
       id: "INQ001",
@@ -248,16 +283,8 @@ export default function App() {
   useEffect(() => {
     // 1. Check for stored token on load
     const token = localStorage.getItem("token");
-    if (token && !user) {
-      // In a real app, you'd verify this token with the backend
-      // Here we'll mock a logged-in user if a token exists
-      // You can later update this to fetch user profile from /api/user/me
-      setUser({
-        name: "카카오 사용자",
-        email: "user@kakao.com",
-        type: "social",
-        points: 0,
-      });
+    if (token) {
+      fetchUserInfo(token);
     }
 
     // 2. Check for redirect path
@@ -549,11 +576,31 @@ export default function App() {
   };
 
   const handleLogin = (userData: {
-    name: string;
+    nickname: string;
     email: string;
     type: "social" | "business" | "admin";
   }) => {
-    setUser(userData);
+    // Check if token exists in localStorage (set by Login/Kakao component)
+    const token = localStorage.getItem("token");
+    if (token) {
+      fetchUserInfo(token);
+    } else {
+      // Mock for dev
+      setUser({
+        memberId: 0,
+        email: userData.email,
+        nickname: userData.nickname,
+        role:
+          userData.type === "social"
+            ? "USER"
+            : userData.type === "business"
+              ? "BIZ"
+              : "ADMIN",
+        type: userData.type,
+        points: 0,
+      });
+    }
+
     setIsSidebarOpen(false);
 
     // Business users go to dashboard, regular users return to previous screen or main
@@ -570,6 +617,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
     setUser(null);
     setIsSidebarOpen(false);
     setScreen("main");
@@ -1292,8 +1340,8 @@ export default function App() {
 
             const newInquiry: Inquiry = {
               id: `INQ${Date.now()}`,
-              customerId: user?.id || "customer1",
-              customerName: user?.name || "고객",
+              customerId: user?.memberId.toString() || "customer1",
+              customerName: user?.nickname || "고객",
               sellerId,
               sellerName,
               orderNumber,
@@ -1451,7 +1499,7 @@ export default function App() {
                       {
                         id: `CMT${Date.now()}`,
                         author: "seller",
-                        authorName: user?.name || "판매자",
+                        authorName: user?.nickname || "판매자",
                         content,
                         date: dateStr,
                         time: timeStr,
@@ -1561,7 +1609,7 @@ export default function App() {
                       {
                         id: `CMT${Date.now()}`,
                         author: "seller",
-                        authorName: user?.name || "관리자",
+                        authorName: user?.nickname || "관리자",
                         content,
                         date: dateStr,
                         time: timeStr,

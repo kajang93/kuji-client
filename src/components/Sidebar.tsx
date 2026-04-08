@@ -17,9 +17,10 @@ interface SidebarProps {
     isOpen: boolean;
     onClose: () => void;
     user: {
-        name: string;
+        nickname: string;
         email: string;
         type: "social" | "business" | "admin";
+        profileImageUrl?: string;
         points?: number;
     } | null;
     onLogout: () => void;
@@ -78,11 +79,15 @@ export default function Sidebar({
                         {user ? (
                             <div>
                                 <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                                        <User className="w-5 h-5 text-indigo-600" />
+                                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center overflow-hidden">
+                                        {user.profileImageUrl ? (
+                                            <img src={user.profileImageUrl} alt={user.nickname} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <User className="w-5 h-5 text-indigo-600" />
+                                        )}
                                     </div>
                                     <div>
-                                        <p className="font-bold text-slate-900">{user.name}</p>
+                                        <p className="font-bold text-slate-900">{user.nickname}</p>
                                         <p className="text-xs text-slate-500">{user.email}</p>
                                     </div>
                                 </div>

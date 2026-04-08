@@ -15,9 +15,10 @@ interface BusinessSidebarProps {
     isOpen: boolean;
     onClose: () => void;
     user: {
-        name: string;
+        nickname: string;
         email: string;
         type: "social" | "business" | "admin";
+        profileImageUrl?: string;
     } | null;
     onLogout: () => void;
     onNavigate: (
@@ -75,11 +76,15 @@ export default function BusinessSidebar({
                     <div className="mb-8 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
                         {user && (
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-indigo-200 rounded-full flex items-center justify-center">
-                                    <User className="w-5 h-5 text-indigo-700" />
+                                <div className="w-10 h-10 bg-indigo-200 rounded-full flex items-center justify-center overflow-hidden">
+                                    {user.profileImageUrl ? (
+                                        <img src={user.profileImageUrl} alt={user.nickname} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <User className="w-5 h-5 text-indigo-700" />
+                                    )}
                                 </div>
                                 <div>
-                                    <p className="font-bold text-slate-900">{user.name}</p>
+                                    <p className="font-bold text-slate-900">{user.nickname}</p>
                                     <p className="text-xs text-slate-500">판매자 계정</p>
                                 </div>
                             </div>

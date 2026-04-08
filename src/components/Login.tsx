@@ -4,7 +4,7 @@ import axios from "axios";
 
 interface LoginProps {
     onLogin: (userData: {
-        name: string;
+        nickname: string;
         email: string;
         type: "social" | "business" | "admin";
     }) => void;
@@ -39,10 +39,10 @@ export default function Login({ onLogin, onBack, onSignUp }: LoginProps) {
             const token = response.data;
             localStorage.setItem("token", token);
             
-            // In a real app, you'd decode JWT to get name/type or call /api/members/me
+            // In a real app, you'd decode JWT to get nickname/type or call /api/members/me
             // For now, satisfy the onLogin expectation
             onLogin({
-                name: email.split("@")[0],
+                nickname: email.split("@")[0],
                 email: email,
                 type: "social" // Regular user type
             });
@@ -152,14 +152,14 @@ export default function Login({ onLogin, onBack, onSignUp }: LoginProps) {
                     ) : (
                         <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             <button
-                                onClick={() => onLogin({ name: "판매자", email: "seller@example.com", type: "business" })}
+                                onClick={() => onLogin({ nickname: "판매자", email: "seller@example.com", type: "business" })}
                                 className="py-2.5 bg-slate-800/60 text-slate-300 text-xs font-bold rounded-xl hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-2"
                             >
                                 <LayoutDashboard className="w-3.5 h-3.5" />
                                 판매자 센터
                             </button>
                             <button
-                                onClick={() => onLogin({ name: "관리자", email: "admin@example.com", type: "admin" })}
+                                onClick={() => onLogin({ nickname: "관리자", email: "admin@example.com", type: "admin" })}
                                 className="py-2.5 bg-slate-800/60 text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-700 hover:text-white transition-all flex items-center justify-center gap-2"
                             >
                                 <ShieldCheck className="w-3.5 h-3.5" />

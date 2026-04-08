@@ -125,10 +125,23 @@ export default function SignUp({ onBack, onSuccess }: SignUpProps) {
               </div>
               <input
                 type="date"
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-white/5 rounded-2xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                required
+                className={`w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-white/5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all appearance-none
+                          ${!formData.birthDate ? "text-transparent" : "text-white"}
+                          /* 💡 크롬/사파리에서 기본 연도-월-일 텍스트를 숨깁니다 */
+                          [&::-webkit-datetime-edit]:text-transparent
+                          ${formData.birthDate ? "[&::-webkit-datetime-edit]:text-white" : ""}`}
                 value={formData.birthDate}
                 onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+                style={{
+                  colorScheme: "dark",
+                }}
               />
+              {!formData.birthDate && (
+                <span className="absolute left-12 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-sm font-medium">
+                  생년월일 (선택)
+                </span>
+              )}
             </div>
           </div>
 

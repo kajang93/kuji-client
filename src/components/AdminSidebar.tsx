@@ -16,9 +16,10 @@ interface AdminSidebarProps {
     isOpen: boolean;
     onClose: () => void;
     user: {
-        name: string;
+        nickname: string;
         email: string;
         type: "social" | "business" | "admin";
+        profileImageUrl?: string;
     } | null;
     onLogout: () => void;
     onNavigate: (
@@ -76,11 +77,15 @@ export default function AdminSidebar({
                     <div className="mb-8 p-4 bg-slate-100 rounded-xl border border-slate-200">
                         {user && (
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center">
-                                    <User className="w-5 h-5 text-white" />
+                                <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center overflow-hidden">
+                                    {user.profileImageUrl ? (
+                                        <img src={user.profileImageUrl} alt={user.nickname} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <User className="w-5 h-5 text-white" />
+                                    )}
                                 </div>
                                 <div>
-                                    <p className="font-bold text-slate-900">{user.name}</p>
+                                    <p className="font-bold text-slate-900">{user.nickname}</p>
                                     <p className="text-xs text-slate-500">관리자 계정</p>
                                 </div>
                             </div>
