@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 import MainScreen from "./components/MainScreen";
 import AnimeList from "./components/AnimeList";
 import PrizeDetail from "./components/PrizeDetail";
@@ -35,9 +34,11 @@ import Community from "./components/Community";
 import Notice from "./components/Notice";
 import Events from "./components/Events";
 import AlertModal from "./components/AlertModal";
+import LiveTicker from "./components/LiveTicker";
 import { Menu } from "./components/icons";
+import { Toaster, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
-import SignUp from "./components/SignUp";
+import BusinessPending from "./components/BusinessPending";
 
 export type Prize = {
   id: string;
@@ -66,7 +67,11 @@ export type WinningItem = {
   rank: string;
   prizeName: string;
   prizeImage: string;
-  deliveryStatus: "preparing" | "shipped" | "delivered";
+  deliveryStatus:
+    | "stored"
+    | "preparing"
+    | "shipped"
+    | "delivered";
   trackingNumber?: string;
   needsOptionSelection?: boolean;
   selectedOption?: {
@@ -142,17 +147,7 @@ type ScreenType =
   | "adminUserManagement"
   | "adminStatistics"
   | "kakaoCallback"
-  | "signup";
-
-export type User = {
-  memberId: number;
-  email: string;
-  nickname: string;
-  profileImageUrl?: string;
-  type: "social" | "business" | "admin"; // Derived or mapped from RoleType
-  role: "USER" | "BIZ" | "ADMIN";
-  points?: number;
-};
+  | "businessPending";
 
 export type Banner = {
   id: string;
@@ -193,7 +188,13 @@ export default function App() {
   );
   const [purchaseCount, setPurchaseCount] = useState(1);
   const [kujiStatus, setKujiStatus] = useState<boolean[]>([]);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<{
+    name: string;
+    email: string;
+    type: "social" | "business" | "admin";
+    points?: number;
+    isActive?: boolean; // 추가: 사업자 승인 여부
+  } | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [returnToScreen, setReturnToScreen] = useState<
     "detail" | null
@@ -215,6 +216,63 @@ export default function App() {
     message: "",
     type: "info",
   });
+
+  // Check for existing session or Kakao redirect on mount
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    if (urlParams.has("code")) {
+      setScreen("kakaoCallback");
+    } else if (token) {
+      handleFetchUserInfo(token);
+    }
+  }, []);
+
+  const handleFetchUserInfo = async (token: string) => {
+    try {
+      const response = await fetch("/api/members/me", {
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error("세션이 만료되었습니다.");
+      }
+
+      const userData = await response.json();
+      const formattedUser = {
+        name: userData.nickname || userData.name,
+        email: userData.email,
+        type: (userData.role === "BIZ" ? "business" : "social") as any,
+        points: userData.points || 0,
+        isActive: userData.isActive !== undefined ? userData.isActive : true,
+      };
+      
+      setUser(formattedUser);
+      
+      if (formattedUser.type === "business" && formattedUser.isActive === false) {
+        setScreen("businessPending");
+      }
+    } catch (error) {
+      console.error("Session check failed:", error);
+      localStorage.removeItem("token");
+    }
+  };
+
+  // Notification Settings
+  const [notificationSettings, setNotificationSettings] =
+    useState({
+      pushEnabled: true,
+      soundEnabled: false,
+      vibrationEnabled: true,
+      kakaoWinning: true,
+      kakaoDelivery: true,
+      kakaoInquiry: true,
+      marketingOpen: false,
+      marketingRestock: false,
+      marketingEvent: false,
+      nightPush: false,
+    });
   const [winningHistory, setWinningHistory] = useState<
     WinningItem[]
   >([
@@ -231,36 +289,7 @@ export default function App() {
     },
   ]);
 
-  // Fetch full user info from backend
-  const fetchUserInfo = async (token: string) => {
-    try {
-      const res = await axios.get("http://localhost:8080/api/members/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = res.data;
-      setUser({
-        memberId: data.memberId,
-        email: data.email,
-        nickname: data.nickname,
-        profileImageUrl: data.profileImageUrl,
-        type:
-          data.role === "ADMIN"
-            ? "admin"
-            : data.role === "BIZ"
-              ? "business"
-              : "social",
-        role: data.role,
-        points: data.points || 0,
-      });
-    } catch (error) {
-      console.error("Failed to fetch user info:", error);
-      localStorage.removeItem("token");
-      setUser(null);
-    }
-  };
-
+  // Inquiries state
   const [inquiries, setInquiries] = useState<Inquiry[]>([
     {
       id: "INQ001",
@@ -278,21 +307,6 @@ export default function App() {
       isNew: true,
     },
   ]);
-
-  // Handle Token-based Auth and URL Path for Kakao Callback
-  useEffect(() => {
-    // 1. Check for stored token on load
-    const token = localStorage.getItem("token");
-    if (token) {
-      fetchUserInfo(token);
-    }
-
-    // 2. Check for redirect path
-    const path = window.location.pathname;
-    if (path === "/auth/kakao/callback") {
-      setScreen("kakaoCallback");
-    }
-  }, []);
 
   const animeCollections: AnimeCollection[] = [
     {
@@ -576,36 +590,20 @@ export default function App() {
   };
 
   const handleLogin = (userData: {
-    nickname: string;
+    name: string;
     email: string;
     type: "social" | "business" | "admin";
   }) => {
-    // Check if token exists in localStorage (set by Login/Kakao component)
-    const token = localStorage.getItem("token");
-    if (token) {
-      fetchUserInfo(token);
-    } else {
-      // Mock for dev
-      setUser({
-        memberId: 0,
-        email: userData.email,
-        nickname: userData.nickname,
-        role:
-          userData.type === "social"
-            ? "USER"
-            : userData.type === "business"
-              ? "BIZ"
-              : "ADMIN",
-        type: userData.type,
-        points: 0,
-      });
-    }
-
+    setUser(userData);
     setIsSidebarOpen(false);
 
-    // Business users go to dashboard, regular users return to previous screen or main
+    // Business users go to dashboard (if active) or pending screen
     if (userData.type === "business") {
-      setScreen("businessDashboard");
+      if (userData.isActive === false) {
+        setScreen("businessPending");
+      } else {
+        setScreen("businessDashboard");
+      }
     } else if (userData.type === "admin") {
       setScreen("adminDashboard");
     } else if (returnToScreen === "detail") {
@@ -617,7 +615,6 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
     setUser(null);
     setIsSidebarOpen(false);
     setScreen("main");
@@ -639,7 +636,9 @@ export default function App() {
     }
   };
 
-  const handleRevealComplete = () => {
+  const handleRevealComplete = (
+    destination: "winning" | "detail" = "winning",
+  ) => {
     // Add revealed prizes to winning history with isNew flag!
     const now = new Date();
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -652,7 +651,7 @@ export default function App() {
         rank: prize.rank,
         prizeName: prize.name,
         prizeImage: prize.image,
-        deliveryStatus: "preparing" as const,
+        deliveryStatus: "stored" as const,
         // A~D상은 한정판으로 옵션(색상/버전) 선택 필요
         needsOptionSelection: [
           "A",
@@ -677,16 +676,16 @@ export default function App() {
           points: (prev.points || 0) + earnedPoints,
         };
       });
-      showAlert(
-        `${earnedPoints}포인트가 적립되었습니다!`,
-        "success",
-        "포인트 적립",
-      );
     }
 
-    // Go to winning history after revealing all prizes!
-    setScreen("winning");
-    setSelectedAnime(null);
+    // Go to destination
+    if (destination === "winning") {
+      setScreen("winning");
+      setSelectedAnime(null);
+    } else {
+      setScreen("detail");
+    }
+
     setRevealedPrizes([]);
     setSelectedKuji([]);
   };
@@ -812,7 +811,7 @@ export default function App() {
             prizeName: selectedOption.name, // Update prize name
             prizeImage: selectedOption.image, // Update prize image
             needsOptionSelection: false, // No longer needs selection
-            deliveryStatus: "preparing" as const, // Keep as preparing
+            deliveryStatus: "stored" as const, // Keep as stored until shipping request
           };
         }
         return winning;
@@ -820,6 +819,34 @@ export default function App() {
     );
 
     setScreen("winning");
+  };
+
+  const handleRequestShipping = (winningIds: string[]) => {
+    setWinningHistory((prev) =>
+      prev.map((w) => {
+        if (winningIds.includes(w.id)) {
+          return { ...w, deliveryStatus: "preparing" }; // stored -> preparing
+        }
+        return w;
+      }),
+    );
+
+    showAlert(
+      `총 ${winningIds.length}건의 배송 신청이 완료되었습니다.`,
+      "success",
+      "배송 신청 완료",
+    );
+
+    // Simulate Kakao Notification
+    if (notificationSettings.kakaoDelivery) {
+      setTimeout(() => {
+        showAlert(
+          `[카카오톡 알림톡 전송]\n배송 신청이 접수되었습니다. (운송장 번호 생성 예정)`,
+          "info",
+          "알림 발송 완료",
+        );
+      }, 1500);
+    }
   };
 
   // Alert function
@@ -1203,16 +1230,480 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-800 overflow-hidden">
+    <div className="h-[100dvh] flex flex-col bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-800 overflow-hidden w-full relative">
+      {/* Live Ticker - Show on all screens except login/reveal/detail */}
+      {screen !== "login" &&
+        screen !== "reveal" &&
+        screen !== "detail" && <LiveTicker />}
+
       {/* Hamburger Menu Button - Fixed position */}
       {screen !== "reveal" && screen !== "login" && (
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="fixed top-4 right-4 z-30 p-3 bg-rose-500 rounded-full shadow-lg hover:bg-rose-600 transition-colors"
+          className="fixed top-12 right-4 z-30 p-3 bg-rose-500 rounded-full shadow-lg hover:bg-rose-600 transition-colors"
         >
           <Menu className="w-6 h-6 text-white" />
         </button>
       )}
+
+      <div
+        className="flex-1 overflow-y-auto overflow-x-hidden relative w-full"
+        id="main-scroll-container"
+      >
+        {screen === "main" && (
+          <MainScreen
+            onStart={() => setScreen("list")}
+            banners={banners}
+          />
+        )}
+        {screen === "list" && (
+          <AnimeList
+            collections={animeCollections}
+            onSelect={handleAnimeSelect}
+            onBack={() => setScreen("main")}
+            wishlist={wishlist}
+            onToggleWishlist={handleToggleWishlist}
+          />
+        )}
+        {screen === "detail" && selectedAnime && (
+          <PrizeDetail
+            anime={selectedAnime}
+            onBack={() => setScreen("list")}
+            onPurchase={handlePurchase}
+            user={user}
+          />
+        )}
+        {screen === "login" && (
+          <Login
+            onLogin={handleLogin}
+            onBack={() => setScreen(returnToScreen || "main")}
+          />
+        )}
+        {screen === "selection" && selectedAnime && (
+          <KujiSelection
+            totalKuji={selectedAnime.totalKuji}
+            purchaseCount={purchaseCount}
+            kujiStatus={kujiStatus}
+            onConfirm={handleKujiReveal}
+            onBack={() => setScreen("detail")}
+          />
+        )}
+        {screen === "reveal" && revealedPrizes.length > 0 && (
+          <KujiReveal
+            prizes={revealedPrizes}
+            onComplete={handleRevealComplete}
+          />
+        )}
+        {screen === "profile" && user && (
+          <Profile
+            user={user}
+            onBack={() => setScreen("main")}
+            onEdit={() => setScreen("profileEdit")}
+          />
+        )}
+        {screen === "profileEdit" && user && (
+          <ProfileEdit
+            user={user}
+            onBack={() => setScreen("profile")}
+            onSave={(userData) => {
+              setUser({ ...user, ...userData });
+              setScreen("profile");
+            }}
+          />
+        )}
+        {screen === "purchase" && (
+          <PurchaseHistory onBack={() => setScreen("main")} />
+        )}
+        {screen === "winning" && (
+          <WinningHistory
+            onBack={() => {
+              // Clear NEW badges when leaving winning history
+              setWinningHistory((prev) =>
+                prev.map((w) => ({ ...w, isNew: false })),
+              );
+              setScreen("main");
+            }}
+            onSelectPrizeOption={handleSelectPrizeOption}
+            winningHistory={winningHistory}
+            onRequestShipping={handleRequestShipping}
+            onSubmitInquiry={(
+              sellerId,
+              sellerName,
+              orderNumber,
+              inquiryType,
+              subject,
+              content,
+            ) => {
+              const now = new Date();
+              const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+              const newInquiry: Inquiry = {
+                id: `INQ${Date.now()}`,
+                customerId: user?.id || "customer1",
+                customerName: user?.name || "고객",
+                sellerId,
+                sellerName,
+                orderNumber,
+                inquiryType,
+                subject,
+                content,
+                status: "pending",
+                createdAt: dateStr,
+                comments: [],
+                isNew: true,
+              };
+
+              setInquiries((prev) => [newInquiry, ...prev]);
+              showAlert(
+                "문의가 성공적으로 전송되었습니다",
+                "success",
+              );
+            }}
+          />
+        )}
+        {screen === "prizeSelection" && (
+          <PrizeSelection
+            rank={selectedRank}
+            prizeName={`${selectedRank}상`}
+            availableOptions={getPrizeOptions(selectedRank)}
+            onConfirm={handlePrizeOptionConfirm}
+            onBack={() => setScreen("winning")}
+          />
+        )}
+        {screen === "wishlist" && (
+          <Wishlist
+            onBack={() => setScreen("main")}
+            onSelectAnime={handleWishlistSelect}
+            wishlist={wishlist}
+            allCollections={animeCollections}
+            onRemoveFromWishlist={handleRemoveFromWishlist}
+          />
+        )}
+        {screen === "settings" && (
+          <Settings
+            onBack={() =>
+              setScreen(
+                user?.type === "business"
+                  ? "businessDashboard"
+                  : "main",
+              )
+            }
+            user={user}
+            settings={notificationSettings}
+            onUpdateSettings={setNotificationSettings}
+          />
+        )}
+        {screen === "support" && (
+          <CustomerSupport onBack={() => setScreen("main")} />
+        )}
+        {screen === "community" && (
+          <Community
+            onBack={() => setScreen("main")}
+            onNavigateToNotice={() => setScreen("notice")}
+            onNavigateToSupport={() => setScreen("support")}
+            user={user}
+          />
+        )}
+        {screen === "notice" && (
+          <Notice onBack={() => setScreen("main")} />
+        )}
+        {screen === "events" && (
+          <Events onBack={() => setScreen("main")} />
+        )}
+
+        {/* Business Screens */}
+        {screen === "businessDashboard" && (
+          <BusinessDashboard
+            onNavigate={(screen) => {
+              if (screen === "productList")
+                setScreen("businessProducts");
+              else if (screen === "productRegister")
+                setScreen("businessRegister");
+              else if (screen === "shipping")
+                setScreen("businessShipping");
+              else if (screen === "inquiries")
+                setScreen("businessInquiries");
+            }}
+          />
+        )}
+        {screen === "businessProfile" && user && (
+          <BusinessProfile
+            user={user}
+            onBack={() => setScreen("businessDashboard")}
+            onEdit={() => setScreen("profileEdit")}
+          />
+        )}
+        {screen === "businessProducts" && (
+          <BusinessProductList
+            onBack={() => setScreen("businessDashboard")}
+            collections={animeCollections}
+            onEdit={(id) => {
+              setEditingCollectionId(id);
+              setScreen("businessProductEdit");
+            }}
+          />
+        )}
+        {screen === "businessProductEdit" &&
+          editingCollectionId &&
+          animeCollections.find(
+            (c) => c.id === editingCollectionId,
+          ) && (
+            <BusinessProductEdit
+              onBack={() => setScreen("businessProducts")}
+              collection={
+                animeCollections.find(
+                  (c) => c.id === editingCollectionId,
+                )!
+              }
+              onSave={(updatedCollection) => {
+                // In real app, save to backend
+                showAlert("상품이 수정되었습니다", "success");
+                setScreen("businessProducts");
+              }}
+            />
+          )}
+        {screen === "businessRegister" && (
+          <BusinessProductRegister
+            onBack={() => setScreen("businessDashboard")}
+            onComplete={() => {
+              showAlert("상품이 등록되었습니다!", "success");
+              setScreen("businessProducts");
+            }}
+            onTempSave={(message) => {
+              showAlert(message, "success");
+            }}
+          />
+        )}
+        {screen === "businessShipping" && (
+          <BusinessShippingManagement
+            onBack={() => setScreen("businessDashboard")}
+            winningHistory={winningHistory}
+            onUpdateShipping={handleUpdateShipping}
+          />
+        )}
+        {screen === "businessInquiries" && (
+          <SellerInquiries
+            onBack={() => setScreen("businessDashboard")}
+            inquiries={inquiries}
+            onAddComment={(inquiryId, content) => {
+              const now = new Date();
+              const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+              const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+              setInquiries((prev) =>
+                prev.map((inq) => {
+                  if (inq.id === inquiryId) {
+                    return {
+                      ...inq,
+                      comments: [
+                        ...inq.comments,
+                        {
+                          id: `CMT${Date.now()}`,
+                          author: "seller",
+                          authorName: user?.name || "판매자",
+                          content,
+                          date: dateStr,
+                          time: timeStr,
+                        },
+                      ],
+                      isNew: false,
+                    };
+                  }
+                  return inq;
+                }),
+              );
+              showAlert("답변이 등록되었습니다", "success");
+            }}
+            onEditComment={(inquiryId, commentId, content) => {
+              setInquiries((prev) =>
+                prev.map((inq) => {
+                  if (inq.id === inquiryId) {
+                    return {
+                      ...inq,
+                      comments: inq.comments.map((cmt) =>
+                        cmt.id === commentId
+                          ? { ...cmt, content }
+                          : cmt,
+                      ),
+                    };
+                  }
+                  return inq;
+                }),
+              );
+              showAlert("답변이 수정되었습니다", "success");
+            }}
+            onDeleteComment={(inquiryId, commentId) => {
+              setInquiries((prev) =>
+                prev.map((inq) => {
+                  if (inq.id === inquiryId) {
+                    return {
+                      ...inq,
+                      comments: inq.comments.filter(
+                        (cmt) => cmt.id !== commentId,
+                      ),
+                    };
+                  }
+                  return inq;
+                }),
+              );
+              showAlert("답변이 삭제되었습니다", "success");
+            }}
+            onUpdateStatus={(inquiryId, status) => {
+              setInquiries((prev) =>
+                prev.map((inq) =>
+                  inq.id === inquiryId
+                    ? { ...inq, status }
+                    : inq,
+                ),
+              );
+            }}
+          />
+        )}
+
+        {/* Admin Screens */}
+        {screen === "adminDashboard" && (
+          <AdminDashboard
+            onNavigate={(screen) => {
+              if (screen === "noticeManagement")
+                setScreen("adminNoticeManagement");
+              else if (screen === "eventManagement")
+                setScreen("adminEventManagement");
+              else if (screen === "inquiryManagement")
+                setScreen("adminInquiryManagement");
+              else if (screen === "mainBannerManagement")
+                setScreen("adminMainBannerManagement");
+              else if (screen === "userManagement")
+                setScreen("adminUserManagement");
+              else if (screen === "users")
+                setScreen("adminUserManagement");
+              else if (screen === "statistics")
+                setScreen("adminStatistics");
+              else if (screen === "mainBanner")
+                setScreen("adminMainBannerManagement");
+            }}
+          />
+        )}
+        {screen === "adminNoticeManagement" && (
+          <AdminNoticeManagement
+            onBack={() => setScreen("adminDashboard")}
+          />
+        )}
+        {screen === "adminEventManagement" && (
+          <AdminEventManagement
+            onBack={() => setScreen("adminDashboard")}
+          />
+        )}
+        {screen === "adminInquiryManagement" && (
+          <AdminInquiryManagement
+            onBack={() => setScreen("adminDashboard")}
+            inquiries={inquiries}
+            onAddComment={(inquiryId, content) => {
+              const now = new Date();
+              const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+              const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+              setInquiries((prev) =>
+                prev.map((inq) => {
+                  if (inq.id === inquiryId) {
+                    return {
+                      ...inq,
+                      comments: [
+                        ...inq.comments,
+                        {
+                          id: `CMT${Date.now()}`,
+                          author: "seller",
+                          authorName: user?.name || "관리자",
+                          content,
+                          date: dateStr,
+                          time: timeStr,
+                        },
+                      ],
+                      isNew: false,
+                    };
+                  }
+                  return inq;
+                }),
+              );
+              showAlert("답변이 등록되었습니다", "success");
+
+              // Simulate KakaoTalk Notification for Inquiry Reply
+              if (notificationSettings.kakaoInquiry) {
+                setTimeout(() => {
+                  showAlert(
+                    `[카카오톡 알림톡 전송]\n문의하신 내용에 답변이 등록되었습니다.`,
+                    "info",
+                    "알림 발송 완료",
+                  );
+                }, 1500);
+              }
+            }}
+            onUpdateStatus={(inquiryId, status) => {
+              setInquiries((prev) =>
+                prev.map((inq) =>
+                  inq.id === inquiryId
+                    ? { ...inq, status }
+                    : inq,
+                ),
+              );
+            }}
+          />
+        )}
+        {screen === "adminMainBannerManagement" && (
+          <AdminMainBannerManagement
+            onBack={() => setScreen("adminDashboard")}
+            banners={banners}
+            setBanners={setBanners}
+          />
+        )}
+        {screen === "adminUserManagement" && (
+          <AdminUserManagement
+            onBack={() => setScreen("adminDashboard")}
+          />
+        )}
+        {screen === "adminStatistics" && (
+          <AdminStatistics
+            onBack={() => setScreen("adminDashboard")}
+          />
+        )}
+        {screen === "kakaoCallback" && (
+          <KakaoCallback
+            onLoginSuccess={(token, userData) => {
+              localStorage.setItem("token", token);
+              // Format user data to match app state
+              const formattedUser = {
+                name: userData.nickname || userData.name,
+                email: userData.email,
+                type: (userData.role === "BIZ" ? "business" : "social") as any,
+                points: userData.points || 0,
+              };
+              setUser(formattedUser);
+              
+              // Remove code from URL without refreshing
+              window.history.replaceState({}, document.title, window.location.pathname);
+              
+              if (formattedUser.type === "business") {
+                setScreen("businessDashboard");
+              } else {
+                setScreen("main");
+              }
+              sonnerToast.success("로그인에 성공했습니다!");
+            }}
+            onLoginFailure={(error) => {
+              setScreen("login");
+              window.history.replaceState({}, document.title, window.location.pathname);
+              sonnerToast.error(`로그인 실패: ${error}`);
+            }}
+          />
+        )}
+        {screen === "businessPending" && (
+          <BusinessPending
+            user={user}
+            onBack={() => {
+              handleLogout();
+            }}
+          />
+        )}
+      </div>
 
       {/* Sidebar - Different for Business Users */}
       {user?.type === "business" ? (
@@ -1251,405 +1742,6 @@ export default function App() {
         />
       )}
 
-      {screen === "main" && (
-        <MainScreen
-          onStart={() => setScreen("list")}
-          banners={banners}
-        />
-      )}
-      {screen === "list" && (
-        <AnimeList
-          collections={animeCollections}
-          onSelect={handleAnimeSelect}
-          onBack={() => setScreen("main")}
-          wishlist={wishlist}
-          onToggleWishlist={handleToggleWishlist}
-        />
-      )}
-      {screen === "detail" && selectedAnime && (
-        <PrizeDetail
-          anime={selectedAnime}
-          onBack={() => setScreen("list")}
-          onPurchase={handlePurchase}
-          user={user}
-        />
-      )}
-      {screen === "login" && (
-        <Login
-          onLogin={handleLogin}
-          onBack={() => setScreen(returnToScreen || "main")}
-          onSignUp={() => setScreen("signup")}
-        />
-      )}
-      {screen === "selection" && selectedAnime && (
-        <KujiSelection
-          totalKuji={selectedAnime.totalKuji}
-          purchaseCount={purchaseCount}
-          kujiStatus={kujiStatus}
-          onConfirm={handleKujiReveal}
-          onBack={() => setScreen("detail")}
-        />
-      )}
-      {screen === "reveal" && revealedPrizes.length > 0 && (
-        <KujiReveal
-          prizes={revealedPrizes}
-          onComplete={handleRevealComplete}
-        />
-      )}
-      {screen === "profile" && user && (
-        <Profile
-          user={user}
-          onBack={() => setScreen("main")}
-          onEdit={() => setScreen("profileEdit")}
-        />
-      )}
-      {screen === "profileEdit" && user && (
-        <ProfileEdit
-          user={user}
-          onBack={() => setScreen("profile")}
-          onSave={(userData) => {
-            setUser({ ...user, ...userData });
-            setScreen("profile");
-          }}
-        />
-      )}
-      {screen === "purchase" && (
-        <PurchaseHistory onBack={() => setScreen("main")} />
-      )}
-      {screen === "winning" && (
-        <WinningHistory
-          onBack={() => {
-            // Clear NEW badges when leaving winning history
-            setWinningHistory((prev) =>
-              prev.map((w) => ({ ...w, isNew: false })),
-            );
-            setScreen("main");
-          }}
-          onSelectPrizeOption={handleSelectPrizeOption}
-          winningHistory={winningHistory}
-          onSubmitInquiry={(
-            sellerId,
-            sellerName,
-            orderNumber,
-            inquiryType,
-            subject,
-            content,
-          ) => {
-            const now = new Date();
-            const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-
-            const newInquiry: Inquiry = {
-              id: `INQ${Date.now()}`,
-              customerId: user?.memberId.toString() || "customer1",
-              customerName: user?.nickname || "고객",
-              sellerId,
-              sellerName,
-              orderNumber,
-              inquiryType,
-              subject,
-              content,
-              status: "pending",
-              createdAt: dateStr,
-              comments: [],
-              isNew: true,
-            };
-
-            setInquiries((prev) => [newInquiry, ...prev]);
-            showAlert(
-              "문의가 성공적으로 전송되었습니다",
-              "success",
-            );
-          }}
-        />
-      )}
-      {screen === "prizeSelection" && (
-        <PrizeSelection
-          rank={selectedRank}
-          prizeName={`${selectedRank}상`}
-          availableOptions={getPrizeOptions(selectedRank)}
-          onConfirm={handlePrizeOptionConfirm}
-          onBack={() => setScreen("winning")}
-        />
-      )}
-      {screen === "wishlist" && (
-        <Wishlist
-          onBack={() => setScreen("main")}
-          onSelectAnime={handleWishlistSelect}
-          wishlist={wishlist}
-          allCollections={animeCollections}
-          onRemoveFromWishlist={handleRemoveFromWishlist}
-        />
-      )}
-      {screen === "settings" && (
-        <Settings
-          onBack={() =>
-            setScreen(
-              user?.type === "business"
-                ? "businessDashboard"
-                : "main",
-            )
-          }
-          user={user}
-        />
-      )}
-      {screen === "support" && (
-        <CustomerSupport onBack={() => setScreen("main")} />
-      )}
-      {screen === "community" && (
-        <Community
-          onBack={() => setScreen("main")}
-          onNavigateToNotice={() => setScreen("notice")}
-          onNavigateToSupport={() => setScreen("support")}
-          user={user}
-        />
-      )}
-      {screen === "notice" && (
-        <Notice onBack={() => setScreen("main")} />
-      )}
-      {screen === "events" && (
-        <Events onBack={() => setScreen("main")} />
-      )}
-
-      {/* Business Screens */}
-      {screen === "businessDashboard" && (
-        <BusinessDashboard
-          onNavigate={(screen) => {
-            if (screen === "productList")
-              setScreen("businessProducts");
-            else if (screen === "productRegister")
-              setScreen("businessRegister");
-            else if (screen === "shipping")
-              setScreen("businessShipping");
-            else if (screen === "inquiries")
-              setScreen("businessInquiries");
-          }}
-        />
-      )}
-      {screen === "businessProfile" && user && (
-        <BusinessProfile
-          user={user}
-          onBack={() => setScreen("businessDashboard")}
-          onEdit={() => setScreen("profileEdit")}
-        />
-      )}
-      {screen === "businessProducts" && (
-        <BusinessProductList
-          onBack={() => setScreen("businessDashboard")}
-          collections={animeCollections}
-          onEdit={(id) => {
-            setEditingCollectionId(id);
-            setScreen("businessProductEdit");
-          }}
-        />
-      )}
-      {screen === "businessProductEdit" &&
-        editingCollectionId &&
-        animeCollections.find(
-          (c) => c.id === editingCollectionId,
-        ) && (
-          <BusinessProductEdit
-            onBack={() => setScreen("businessProducts")}
-            collection={
-              animeCollections.find(
-                (c) => c.id === editingCollectionId,
-              )!
-            }
-            onSave={(updatedCollection) => {
-              // In real app, save to backend
-              showAlert("상품이 수정되었습니다", "success");
-              setScreen("businessProducts");
-            }}
-          />
-        )}
-      {screen === "businessRegister" && (
-        <BusinessProductRegister
-          onBack={() => setScreen("businessDashboard")}
-          onComplete={() => {
-            showAlert("상품이 등록되었습니다!", "success");
-            setScreen("businessProducts");
-          }}
-          onTempSave={(message) => {
-            showAlert(message, "success");
-          }}
-        />
-      )}
-      {screen === "businessShipping" && (
-        <BusinessShippingManagement
-          onBack={() => setScreen("businessDashboard")}
-          winningHistory={winningHistory}
-          onUpdateShipping={handleUpdateShipping}
-        />
-      )}
-      {screen === "businessInquiries" && (
-        <SellerInquiries
-          onBack={() => setScreen("businessDashboard")}
-          inquiries={inquiries}
-          onAddComment={(inquiryId, content) => {
-            const now = new Date();
-            const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-            const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-            setInquiries((prev) =>
-              prev.map((inq) => {
-                if (inq.id === inquiryId) {
-                  return {
-                    ...inq,
-                    comments: [
-                      ...inq.comments,
-                      {
-                        id: `CMT${Date.now()}`,
-                        author: "seller",
-                        authorName: user?.nickname || "판매자",
-                        content,
-                        date: dateStr,
-                        time: timeStr,
-                      },
-                    ],
-                    isNew: false,
-                  };
-                }
-                return inq;
-              }),
-            );
-            showAlert("답변이 등록되었습니다", "success");
-          }}
-          onEditComment={(inquiryId, commentId, content) => {
-            setInquiries((prev) =>
-              prev.map((inq) => {
-                if (inq.id === inquiryId) {
-                  return {
-                    ...inq,
-                    comments: inq.comments.map((cmt) =>
-                      cmt.id === commentId
-                        ? { ...cmt, content }
-                        : cmt,
-                    ),
-                  };
-                }
-                return inq;
-              }),
-            );
-            showAlert("답변이 수정되었습니다", "success");
-          }}
-          onDeleteComment={(inquiryId, commentId) => {
-            setInquiries((prev) =>
-              prev.map((inq) => {
-                if (inq.id === inquiryId) {
-                  return {
-                    ...inq,
-                    comments: inq.comments.filter(
-                      (cmt) => cmt.id !== commentId,
-                    ),
-                  };
-                }
-                return inq;
-              }),
-            );
-            showAlert("답변이 삭제되었습니다", "success");
-          }}
-          onUpdateStatus={(inquiryId, status) => {
-            setInquiries((prev) =>
-              prev.map((inq) =>
-                inq.id === inquiryId ? { ...inq, status } : inq,
-              ),
-            );
-          }}
-        />
-      )}
-
-      {/* Admin Screens */}
-      {screen === "adminDashboard" && (
-        <AdminDashboard
-          onNavigate={(screen) => {
-            if (screen === "noticeManagement")
-              setScreen("adminNoticeManagement");
-            else if (screen === "eventManagement")
-              setScreen("adminEventManagement");
-            else if (screen === "inquiryManagement")
-              setScreen("adminInquiryManagement");
-            else if (screen === "mainBannerManagement")
-              setScreen("adminMainBannerManagement");
-            else if (screen === "userManagement")
-              setScreen("adminUserManagement");
-            else if (screen === "users")
-              setScreen("adminUserManagement");
-            else if (screen === "statistics")
-              setScreen("adminStatistics");
-            else if (screen === "mainBanner")
-              setScreen("adminMainBannerManagement");
-          }}
-        />
-      )}
-      {screen === "adminNoticeManagement" && (
-        <AdminNoticeManagement
-          onBack={() => setScreen("adminDashboard")}
-        />
-      )}
-      {screen === "adminEventManagement" && (
-        <AdminEventManagement
-          onBack={() => setScreen("adminDashboard")}
-        />
-      )}
-      {screen === "adminInquiryManagement" && (
-        <AdminInquiryManagement
-          onBack={() => setScreen("adminDashboard")}
-          inquiries={inquiries}
-          onAddComment={(inquiryId, content) => {
-            const now = new Date();
-            const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-            const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-            setInquiries((prev) =>
-              prev.map((inq) => {
-                if (inq.id === inquiryId) {
-                  return {
-                    ...inq,
-                    comments: [
-                      ...inq.comments,
-                      {
-                        id: `CMT${Date.now()}`,
-                        author: "seller",
-                        authorName: user?.nickname || "관리자",
-                        content,
-                        date: dateStr,
-                        time: timeStr,
-                      },
-                    ],
-                    isNew: false,
-                  };
-                }
-                return inq;
-              }),
-            );
-            showAlert("답변이 등록되었습니다", "success");
-          }}
-          onUpdateStatus={(inquiryId, status) => {
-            setInquiries((prev) =>
-              prev.map((inq) =>
-                inq.id === inquiryId ? { ...inq, status } : inq,
-              ),
-            );
-          }}
-        />
-      )}
-      {screen === "adminMainBannerManagement" && (
-        <AdminMainBannerManagement
-          onBack={() => setScreen("adminDashboard")}
-          banners={banners}
-          setBanners={setBanners}
-        />
-      )}
-      {screen === "adminUserManagement" && (
-        <AdminUserManagement
-          onBack={() => setScreen("adminDashboard")}
-        />
-      )}
-      {screen === "adminStatistics" && (
-        <AdminStatistics
-          onBack={() => setScreen("adminDashboard")}
-        />
-      )}
-
       {/* Alert Modal */}
       <AlertModal
         isOpen={alertModal.isOpen}
@@ -1658,25 +1750,7 @@ export default function App() {
         message={alertModal.message}
         type={alertModal.type}
       />
-
-      {screen === "kakaoCallback" && (
-        <KakaoCallback />
-      )}
-
-      {screen === "signup" && (
-        <SignUp
-          onBack={() => setScreen("login")}
-          onSuccess={() => {
-            setScreen("login");
-            setAlertModal({
-              isOpen: true,
-              title: "회원가입 성공",
-              message: "이제 로그인할 수 있습니다!",
-              type: "success",
-            });
-          }}
-        />
-      )}
+      <Toaster position="top-center" richColors />
     </div>
   );
 }

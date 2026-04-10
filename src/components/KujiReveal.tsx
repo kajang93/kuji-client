@@ -1,146 +1,422 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
-import { Sparkles } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from './motion';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { ArrowRight, Package, RefreshCw, Home, Sparkles, Trophy } from './icons';
 import type { Prize } from '../App';
 
 type KujiRevealProps = {
   prizes: Prize[];
-  onComplete: () => void;
+  onComplete: (destination?: "winning" | "detail") => void;
+};
+
+type Particle = {
+  id: number;
+  x: number;
+  y: number;
+  color: string;
+  angle: number;
+  size: number;
 };
 
 export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [stage, setStage] = useState<'ready' | 'tearing' | 'revealed'>('ready');
   const [showInstruction, setShowInstruction] = useState(true);
-
-  const currentPrize = prizes[currentIndex];
-
-  // Motion values for drag
-  const x = useMotionValue(0);
-  const topOpacity = useTransform(x, [0, 150], [1, 0]);
-  const topRotation = useTransform(x, [0, 200], [0, 15]);
+  const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const [isAutoMode, setIsAutoMode] = useState(false);
+  const startX = useRef(0);
+  const particleIdRef = useRef(0);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const lastTearSoundTime = useRef(0);
 
   useEffect(() => {
-    // Hide instruction after 2 seconds
+    if (typeof window !== 'undefined' && 'AudioContext' in window) {
+      audioContextRef.current = new AudioContext();
+    }
+    return () => {
+      audioContextRef.current?.close();
+    };
+  }, []);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  const currentPrize = prizes[currentIndex];
+  const dragThreshold = 150;
+
+  // Massive fireworks logic restored
+  const createFirework = (x: number, y: number, isBig: boolean = false) => {
+    const colors = ['#fbbf24', '#f59e0b', '#ec4899', '#a855f7', '#06b6d4', '#10b981', '#f97316', '#8b5cf6'];
+    const newParticles: Particle[] = [];
+    const count = isBig ? 20 : 10;
+    
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      newParticles.push({
+        id: particleIdRef.current++,
+        x,
+        y,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        angle,
+        size: isBig ? Math.random() * 10 + 8 : Math.random() * 6 + 4,
+      });
+    }
+    
+    setParticles(prev => [...prev, ...newParticles]);
+    
+    setTimeout(() => {
+      setParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id)));
+    }, 1500);
+  };
+
+  // Fireworks during tearing and revealed
+  useEffect(() => {
+    if (stage === 'tearing') {
+      // Initial burst
+      const positions = [
+        { x: -50, y: 50 }, { x: 400, y: 50 }, 
+        { x: -50, y: 200 }, { x: 400, y: 200 },
+        { x: 192, y: -50 }, { x: 192, y: 300 }
+      ];
+      
+      positions.forEach((pos, idx) => {
+        setTimeout(() => createFirework(pos.x, pos.y, true), idx * 100);
+      });
+
+      // Continuous sparks
+      const interval = setInterval(() => {
+        createFirework(Math.random() * 384, Math.random() * 224);
+      }, 100);
+
+      return () => clearInterval(interval);
+    }
+    
+    if (stage === 'revealed') {
+      // Massive celebration loop
+      const interval = setInterval(() => {
+         createFirework(Math.random() * window.innerWidth, Math.random() * window.innerHeight, true);
+      }, 300);
+      return () => clearInterval(interval);
+    }
+  }, [stage]);
+
+  const playTearSound = () => {
+    const now = Date.now();
+    if (now - lastTearSoundTime.current < 15) return;
+    lastTearSoundTime.current = now;
+
+    if (!audioContextRef.current) return;
+    
+    const audioContext = audioContextRef.current;
+    const bufferSize = audioContext.sampleRate * 0.03;
+    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const data = buffer.getChannelData(0);
+    
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.2));
+    }
+    
+    const source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    const gainNode = audioContext.createGain();
+    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.03);
+    const filter = audioContext.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(2500 + Math.random() * 1500, audioContext.currentTime);
+    filter.Q.value = 2;
+    source.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    source.start();
+    source.stop(audioContext.currentTime + 0.03);
+  };
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       setShowInstruction(false);
     }, 2000);
     return () => clearTimeout(timer);
   }, [currentIndex]);
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: any) => {
-    if (info.offset.x > 120) {
-      // Dragged right enough to tear
+  const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    if (stage !== 'ready') return;
+    setIsDragging(true);
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    startX.current = clientX - dragX;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging || stage !== 'ready') return;
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const newDragX = clientX - startX.current;
+    if (newDragX >= 0 && newDragX <= 300) {
+      setDragX(newDragX);
+      if (navigator.vibrate && newDragX > 10) {
+        const vibrationProgress = Math.min(newDragX / dragThreshold, 1);
+        const vibrationIntensity = Math.floor(10 + vibrationProgress * 20);
+        navigator.vibrate(vibrationIntensity);
+      }
+      playTearSound();
+      
+      if (Math.random() > 0.7) {
+         createFirework(Math.random() * 300, Math.random() * 200);
+      }
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging || stage !== 'ready') return;
+    setIsDragging(false);
+    
+    if (dragX > dragThreshold) {
       setStage('tearing');
       setTimeout(() => {
         setStage('revealed');
-      }, 600);
+      }, 1000);
     } else {
-      // Reset position
-      x.set(0);
+      setDragX(0);
     }
   };
 
   const handleNext = () => {
     if (currentIndex < prizes.length - 1) {
-      // Move to next kuji
       setCurrentIndex(currentIndex + 1);
       setStage('ready');
       setShowInstruction(true);
-      x.set(0);
+      setDragX(0);
     } else {
-      // All done
-      onComplete();
+      onComplete('detail');
     }
   };
-
-  const rankColors = {
-    'A': { bg: 'from-yellow-500 to-orange-600', text: 'text-yellow-900' },
-    'B': { bg: 'from-blue-500 to-blue-700', text: 'text-blue-900' },
-    'C': { bg: 'from-orange-500 to-red-600', text: 'text-orange-900' },
-    'D': { bg: 'from-purple-500 to-purple-700', text: 'text-purple-900' },
-    'E': { bg: 'from-green-500 to-green-700', text: 'text-green-900' },
-    'F': { bg: 'from-pink-500 to-pink-700', text: 'text-pink-900' },
-    'G': { bg: 'from-cyan-500 to-cyan-700', text: 'text-cyan-900' },
-    'H': { bg: 'from-red-500 to-red-700', text: 'text-red-900' },
+  
+  const handleManualOpen = () => {
+    setStage('tearing');
+    setTimeout(() => {
+      setStage('revealed');
+    }, 1000);
   };
 
-  const prizeColor = rankColors[currentPrize.rank as keyof typeof rankColors] || rankColors['G'];
-
-  // Serrated edge SVG path for top and bottom
-  const createSerratedPath = (width: number, height: number, isTop: boolean) => {
-    const toothWidth = 12;
-    const toothHeight = 8;
-    const numTeeth = Math.floor(width / toothWidth);
-
-    let path = isTop ? `M 0,${toothHeight} ` : `M 0,0 `;
-
-    for (let i = 0; i < numTeeth; i++) {
-      const x = i * toothWidth;
-      if (isTop) {
-        path += `L ${x + toothWidth / 2},0 L ${x + toothWidth},${toothHeight} `;
-      } else {
-        path += `L ${x + toothWidth / 2},${height} L ${x + toothWidth},${height - toothHeight} `;
+  const handleAutoOpen = async () => {
+    setIsAutoMode(true);
+    
+    for (let i = currentIndex; i < prizes.length; i++) {
+      if (i > currentIndex) {
+        setCurrentIndex(i);
+        setStage('ready');
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
+      
+      setStage('tearing');
+      await new Promise(resolve => setTimeout(resolve, 800));
+      setStage('revealed');
+      await new Promise(resolve => setTimeout(resolve, 1200));
     }
-
-    if (isTop) {
-      path += `L ${width},${toothHeight} L ${width},${height} L 0,${height} Z`;
-    } else {
-      path += `L ${width},${height - toothHeight} L ${width},0 L 0,0 Z`;
-    }
-
-    return path;
+    
+    setIsAutoMode(false);
+    onComplete('winning');
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Background Animation */}
-      <div className="absolute inset-0">
-        {stage === 'revealed' && (
-          <>
-            {[...Array(50)].map((_, i) => (
-              <motion.div
-                key={i}
-                initial={{
-                  x: '50%',
-                  y: '50%',
-                  scale: 0,
-                  opacity: 1
-                }}
-                animate={{
-                  x: `${Math.random() * 100}%`,
-                  y: `${Math.random() * 100}%`,
-                  scale: Math.random() * 2 + 0.5,
-                  opacity: 0
-                }}
-                transition={{
-                  duration: Math.random() * 2 + 1,
-                  ease: 'easeOut'
-                }}
-                className="absolute w-3 h-3 bg-yellow-400 rounded-full"
-                style={{
-                  left: '50%',
-                  top: '50%',
-                }}
-              />
-            ))}
-          </>
-        )}
+    <div 
+      className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden bg-slate-900"
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onTouchMove={handleMouseMove}
+      onTouchEnd={handleMouseUp}
+    >
+      <style>{`
+         @keyframes slideRight {
+           0%, 100% { transform: translateX(0px); }
+           50% { transform: translateX(60px); }
+         }
+         .arrow-slide {
+           animation: slideRight 1.2s ease-in-out infinite;
+         }
+         @keyframes particleBurst {
+           0% { transform: translate(0, 0) scale(1); opacity: 1; }
+           100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+         }
+         .particle {
+           animation: particleBurst 1.5s ease-out forwards;
+         }
+      `}</style>
+
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+         {/* Particles Overlay */}
+         {particles.map(p => {
+             const distance = 100 + Math.random() * 100;
+             const tx = Math.cos(p.angle) * distance;
+             const ty = Math.sin(p.angle) * distance;
+             return (
+               <div
+                 key={p.id}
+                 className="particle absolute rounded-full"
+                 style={{
+                   left: p.x,
+                   top: p.y,
+                   width: p.size,
+                   height: p.size,
+                   backgroundColor: p.color,
+                   '--tx': `${tx}px`,
+                   '--ty': `${ty}px`,
+                   zIndex: 100
+                 } as any}
+               />
+             );
+         })}
       </div>
 
-      {/* Counter */}
-      {prizes.length > 1 && (
-        <div className="absolute top-8 right-8 bg-white/20 backdrop-blur-sm rounded-full px-6 py-3 border border-white/30">
-          <span className="text-white text-xl">
-            {currentIndex + 1} / {prizes.length}
-          </span>
-        </div>
-      )}
+      {/* Full Screen Reveal Overlay */}
+      <AnimatePresence>
+        {stage === 'revealed' && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden bg-black/80 backdrop-blur-sm p-4"
+          >
+            {/* Full Background Image */}
+            <div className="absolute inset-0 opacity-40">
+              <ImageWithFallback 
+                src={currentPrize.image} 
+                alt=""
+                className="w-full h-full object-cover blur-md scale-110"
+              />
+            </div>
 
-      <AnimatePresence mode="wait">
-        {(stage === 'ready' || stage === 'tearing') && (
+             {/* Particles in revealed stage */}
+            {particles.map(p => {
+                 const distance = 200 + Math.random() * 300;
+                 const tx = Math.cos(p.angle) * distance;
+                 const ty = Math.sin(p.angle) * distance;
+                 return (
+                   <div
+                     key={`rev-${p.id}`}
+                     className="particle absolute rounded-full"
+                     style={{
+                       left: '50%',
+                       top: '50%',
+                       width: p.size * 1.5,
+                       height: p.size * 1.5,
+                       backgroundColor: p.color,
+                       '--tx': `${tx}px`,
+                       '--ty': `${ty}px`,
+                       zIndex: 10
+                     } as any}
+                   />
+                 );
+             })}
+
+            {/* Certificate Card (Traditional Design) */}
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0, rotateY: -90 }}
+              animate={{ scale: 1, opacity: 1, rotateY: 0 }}
+              transition={{ type: "spring", damping: 15 }}
+              className="relative z-20 w-full max-w-xs bg-[#fffcf5] rounded-sm shadow-2xl overflow-hidden"
+            >
+               {/* Gold Frame Border */}
+               <div className="absolute inset-2 border-4 border-double border-yellow-600 pointer-events-none z-10" />
+               
+               {/* Corner Decorations */}
+               <div className="absolute top-2 left-2 w-8 h-8 border-t-4 border-l-4 border-yellow-600 z-10" />
+               <div className="absolute top-2 right-2 w-8 h-8 border-t-4 border-r-4 border-yellow-600 z-10" />
+               <div className="absolute bottom-2 left-2 w-8 h-8 border-b-4 border-l-4 border-yellow-600 z-10" />
+               <div className="absolute bottom-2 right-2 w-8 h-8 border-b-4 border-r-4 border-yellow-600 z-10" />
+
+               <div className="p-8 flex flex-col items-center text-center">
+                  <div className="mb-4">
+                     <Trophy className="w-12 h-12 text-yellow-600 drop-shadow-sm" />
+                  </div>
+                  
+                  <h2 className="text-3xl font-black text-gray-900 font-serif mb-1 tracking-tight">당첨 증서</h2>
+                  <div className="text-[10px] text-yellow-700 font-serif tracking-[0.2em] mb-6 uppercase font-bold">Certificate of Winning</div>
+                  
+                  <div className="relative mb-6 mt-2">
+                    <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br shadow-xl flex flex-col items-center justify-center border-2 border-white/30 mx-auto ${
+                         currentPrize.rank === 'A' ? 'from-yellow-400 to-orange-600' :
+                         currentPrize.rank === 'B' ? 'from-blue-400 to-indigo-600' :
+                         currentPrize.rank === 'C' ? 'from-orange-400 to-red-600' :
+                         currentPrize.rank === 'D' ? 'from-purple-400 to-purple-700' :
+                         currentPrize.rank === 'E' ? 'from-green-400 to-emerald-700' :
+                         currentPrize.rank === 'F' ? 'from-pink-400 to-rose-700' :
+                         'from-gray-400 to-slate-700'
+                      }`}>
+                        <span className="text-white font-black text-5xl leading-none drop-shadow-md">{currentPrize.rank}</span>
+                        <span className="text-white/90 text-sm font-bold mt-1">상</span>
+                    </div>
+                  </div>
+                  
+                  <div className="text-lg font-bold text-gray-800 mb-6 px-2 leading-tight break-keep">
+                     {currentPrize.name}
+                  </div>
+                  
+                  <div className="w-28 h-28 rounded border-4 border-gray-200 shadow-inner bg-white mb-6 overflow-hidden">
+                     <ImageWithFallback src={currentPrize.image} className="w-full h-full object-contain" />
+                  </div>
+                  
+                  <div className="text-xs text-gray-500 font-serif italic">
+                     귀하께서는 위 상품에<br/>당첨되셨음을 증명합니다.
+                  </div>
+               </div>
+            </motion.div>
+
+            {/* Buttons (Below Certificate) */}
+            <motion.div
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ delay: 0.5 }}
+               className="mt-8 w-full max-w-xs flex flex-col gap-3 relative z-30"
+            >
+               {!isAutoMode && currentIndex < prizes.length - 1 ? (
+                  <button 
+                    onClick={handleNext}
+                    className="w-full py-3.5 bg-white text-black rounded-full font-bold text-base hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 shadow-xl"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                    다음 쿠지 뜯기
+                  </button>
+                ) : !isAutoMode && (
+                  <div className="space-y-3 w-full">
+                    <button 
+                      onClick={() => onComplete('winning')}
+                      className="w-full py-3.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full font-bold text-base shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Package className="w-5 h-5" />
+                      보관함으로 바로 이동
+                    </button>
+                    <button 
+                      onClick={() => onComplete('detail')}
+                      className="w-full py-3.5 bg-white/10 backdrop-blur-md text-white border border-white/20 rounded-full font-medium hover:bg-white/20 transition-colors flex items-center justify-center gap-2"
+                    >
+                       <Home className="w-5 h-5" />
+                       다시 뽑기
+                    </button>
+                  </div>
+                )}
+                
+                {isAutoMode && (
+                   <div className="text-white/90 text-sm font-medium bg-black/40 px-4 py-2 rounded-full animate-pulse">
+                     자동으로 다음 쿠지를 개봉합니다...
+                   </div>
+                )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Kuji Card (Ready/Tearing Stage) */}
+      <AnimatePresence>
+        {stage !== 'revealed' && (
           <motion.div
             key="kuji-card"
             initial={{ scale: 0.8, opacity: 0 }}
@@ -150,238 +426,126 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
           >
             {/* Instruction */}
             <AnimatePresence>
-              {showInstruction && stage === 'ready' && (
+              {showInstruction && stage === 'ready' && !isAutoMode && (
                 <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="absolute -top-20 left-1/2 -translate-x-1/2 whitespace-nowrap z-50"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute -top-24 left-1/2 -translate-x-1/2 whitespace-nowrap z-50"
                 >
-                  <div className="bg-white/90 text-purple-900 px-6 py-3 rounded-full shadow-lg">
-                    <motion.div
-                      animate={{ x: [3, -3, 3] }}
-                      transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                      className="flex items-center gap-2"
-                    >
-                      <span>→</span>
-                      <span>오른쪽으로 슬라이드하여 뜯기</span>
-                    </motion.div>
+                  <div className="px-6 py-3 rounded-full shadow-lg bg-white/90 text-purple-900 flex items-center gap-2">
+                    <ArrowRight className="w-5 h-5 arrow-slide" />
+                    <span className="font-bold">오른쪽으로 밀어서 뜯기</span>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Kuji Card - Two Layer Structure */}
-            <div className="w-96 h-56 relative">
-              {/* Bottom Layer - Prize Result */}
-              <div className="absolute inset-0 overflow-hidden">
-                <svg width="384" height="224" className="absolute inset-0">
-                  <defs>
-                    <clipPath id="bottom-clip">
-                      <path d={createSerratedPath(384, 224, true)} />
-                    </clipPath>
+            <div className="w-80 h-48 sm:w-96 sm:h-56 relative shadow-2xl">
+              {/* Bottom Layer (Inside Paper Texture + Image) */}
+              <div className="absolute inset-0 overflow-hidden bg-white rounded-xl" style={{ zIndex: 1 }}>
+                <svg width="100%" height="100%" viewBox="0 0 384 224" className="absolute inset-0" preserveAspectRatio="none">
+                   <defs>
+                    <filter id="paper-noise">
+                      <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" stitchTiles="stitch" />
+                      <feColorMatrix type="saturate" values="0" />
+                      <feComponentTransfer>
+                         <feFuncA type="linear" slope="0.2" />
+                      </feComponentTransfer>
+                    </filter>
+                    <linearGradient id="bottom-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                       <stop offset="0%" stopColor="#f8fafc" />
+                       <stop offset="100%" stopColor="#e2e8f0" />
+                    </linearGradient>
                   </defs>
-                  <g clipPath="url(#bottom-clip)">
-                    <rect width="384" height="224" className={`fill-current bg-gradient-to-br ${prizeColor.bg}`} fill="url(#gradient-bottom)" />
-                    <defs>
-                      <linearGradient id="gradient-bottom" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" className="text-current" style={{ stopColor: prizeColor.bg.includes('yellow') ? '#eab308' : prizeColor.bg.includes('blue') ? '#3b82f6' : prizeColor.bg.includes('orange') ? '#f97316' : prizeColor.bg.includes('purple') ? '#a855f7' : prizeColor.bg.includes('green') ? '#22c55e' : prizeColor.bg.includes('pink') ? '#ec4899' : prizeColor.bg.includes('cyan') ? '#06b6d4' : '#ef4444' }} />
-                        <stop offset="100%" className="text-current" style={{ stopColor: prizeColor.bg.includes('yellow') ? '#ea580c' : prizeColor.bg.includes('blue') ? '#1d4ed8' : prizeColor.bg.includes('orange') ? '#dc2626' : prizeColor.bg.includes('purple') ? '#7e22ce' : prizeColor.bg.includes('green') ? '#15803d' : prizeColor.bg.includes('pink') ? '#be185d' : prizeColor.bg.includes('cyan') ? '#0e7490' : '#b91c1c' }} />
-                      </linearGradient>
-                    </defs>
-                  </g>
-                </svg>
+                  
+                  <rect width="384" height="224" fill="url(#bottom-gradient)" />
+                  
+                  {/* Restored Image inside - with opacity and grayscale for "paper print" look */}
+                  <image 
+                    href={currentPrize.image} 
+                    x="0" y="0" width="384" height="224" 
+                    preserveAspectRatio="xMidYMid slice" 
+                    opacity="0.25" 
+                    style={{ filter: 'grayscale(100%) contrast(1.2)' }}
+                  />
 
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center text-white drop-shadow-2xl">
-                    <div className="text-9xl mb-2">{currentPrize.rank}</div>
-                    <div className="text-4xl opacity-90">{currentPrize.rank}賞</div>
-                  </div>
-                </div>
+                  <rect width="384" height="224" filter="url(#paper-noise)" opacity="0.4" />
+                  
+                  {/* Rank Text inside paper */}
+                  <text 
+                    x="192" 
+                    y="130" 
+                    textAnchor="middle" 
+                    fill="#0f172a" 
+                    fontSize="60" 
+                    fontWeight="900"
+                    opacity="0.8"
+                    style={{ letterSpacing: '-0.05em' }}
+                  >
+                    {currentPrize.rank}상
+                  </text>
+                </svg>
               </div>
 
-              {/* Top Layer - Tearable Cover */}
-              <motion.div
-                drag={stage === 'ready' ? 'x' : false}
-                dragConstraints={{ left: 0, right: 300 }}
-                dragElastic={0.1}
-                onDragEnd={handleDragEnd}
-                style={{
-                  x: stage === 'tearing' ? 350 : x,
-                  opacity: stage === 'tearing' ? topOpacity : 1,
-                  rotateZ: stage === 'tearing' ? topRotation : 0,
+              {/* Top Layer (Cover) */}
+              <div
+                onMouseDown={handleMouseDown}
+                onTouchStart={handleMouseDown}
+                style={{ 
+                  transform: `translateX(${stage === 'tearing' ? '110%' : dragX}px)`,
+                  transition: stage === 'tearing' ? 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
+                  zIndex: 5,
                 }}
-                className={`absolute inset-0 ${stage === 'ready' ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                className={`absolute inset-0 ${stage === 'ready' && !isAutoMode ? 'cursor-grab active:cursor-grabbing' : ''}`}
               >
-                <svg width="384" height="224" className="absolute inset-0 drop-shadow-2xl">
+                <svg width="100%" height="100%" viewBox="0 0 384 224" className="drop-shadow-xl" preserveAspectRatio="none">
                   <defs>
-                    <clipPath id="top-clip">
-                      <path d={createSerratedPath(384, 224, true)} />
-                    </clipPath>
+                    <linearGradient id="kuji-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#ec4899" />
+                      <stop offset="50%" stopColor="#a855f7" />
+                      <stop offset="100%" stopColor="#6366f1" />
+                    </linearGradient>
+                    <pattern id="dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                      <circle cx="10" cy="10" r="1.5" fill="white" opacity="0.15" />
+                    </pattern>
                   </defs>
-                  <g clipPath="url(#top-clip)">
-                    {/* Main background */}
-                    <rect width="384" height="224" fill="#1e293b" />
-
-                    {/* Top bar */}
-                    <rect width="384" height="32" fill="#0f172a" />
-                    <text x="192" y="20" textAnchor="middle" fill="#60a5fa" fontSize="14" fontWeight="bold">
-                      店舗ひきとり用
-                    </text>
-
-                    {/* Instructions text */}
-                    <text x="8" y="48" fill="#3b82f6" fontSize="10">
-                      株券の誤領得引き取制限上、商品をお渡しください
-                    </text>
-
-                    {/* Main content - Large rank letter */}
-                    <text x="80" y="140" fill="#475569" fontSize="96" fontWeight="bold" opacity="0.3">
-                      {currentPrize.rank}
-                    </text>
-                    <text x="160" y="140" fill="#cbd5e1" fontSize="32">
-                      賞
-                    </text>
-                    <text x="210" y="140" fill="#94a3b8" fontSize="24">
-                      ラバーストラップ
-                    </text>
-
-                    {/* Bottom notice */}
-                    <text x="8" y="208" fill="#475569" fontSize="10">
-                      ※購入店舗の保有別
-                    </text>
-
-                    {/* Perforated line */}
-                    <g>
-                      {[...Array(28)].map((_, i) => (
-                        <circle key={i} cx={64} cy={8 + i * 8} r="1.5" fill="#334155" />
-                      ))}
-                    </g>
-                  </g>
+                  
+                  {/* Card Body */}
+                  <rect x="0" y="0" width="384" height="224" rx="12" ry="12" fill="url(#kuji-gradient)" />
+                  <rect x="0" y="0" width="384" height="224" rx="12" ry="12" fill="url(#dots)" />
+                  
+                  {/* Decorative elements */}
+                  <rect x="20" y="20" width="344" height="184" rx="8" ry="8" fill="none" stroke="white" strokeWidth="2" strokeDasharray="6,6" opacity="0.6" />
+                  
+                  <text x="192" y="100" textAnchor="middle" fill="white" fontSize="36" fontWeight="bold">KUJI</text>
+                  <text x="192" y="140" textAnchor="middle" fill="white" fontSize="16" opacity="0.8">一番くじ</text>
                 </svg>
-
-                {/* Tear indicator arrow */}
-                <div className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400">
-                  <motion.div
-                    animate={{ x: [0, 8, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                    className="text-4xl"
-                  >
-                    ☞
-                  </motion.div>
-                </div>
-              </motion.div>
-
-              {/* Tearing particles */}
-              {stage === 'tearing' && (
-                <>
-                  {[...Array(20)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{
-                        x: 64 + Math.random() * 50,
-                        y: Math.random() * 224,
-                        opacity: 1,
-                        scale: 1,
-                        rotate: 0
-                      }}
-                      animate={{
-                        x: 250 + Math.random() * 200,
-                        y: Math.random() * 224 + (Math.random() - 0.5) * 150,
-                        opacity: 0,
-                        scale: 0,
-                        rotate: Math.random() * 720 - 360
-                      }}
-                      transition={{ duration: 0.8, ease: 'easeOut' }}
-                      className="absolute w-4 h-4 bg-slate-700 shadow-lg"
-                      style={{
-                        clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'
-                      }}
-                    />
-                  ))}
-                </>
-              )}
+              </div>
             </div>
           </motion.div>
         )}
-
-        {stage === 'revealed' && (
-          <motion.div
-            key="revealed"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="relative z-10"
-          >
-            {/* Prize Card */}
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-              className={`w-80 bg-gradient-to-br ${prizeColor.bg} rounded-3xl shadow-2xl p-8 border-4 border-white/30`}
-            >
-              {/* Sparkle effect */}
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                className="absolute -top-6 -right-6"
-              >
-                <Sparkles className="w-12 h-12 text-yellow-300" />
-              </motion.div>
-
-              {/* Prize Rank */}
-              <div className="text-center mb-6">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                  className="inline-block"
-                >
-                  <div className="text-white text-8xl drop-shadow-2xl">{currentPrize.rank}</div>
-                  <div className="text-white text-2xl mt-2 opacity-90">상 당첨!</div>
-                </motion.div>
-              </div>
-
-              {/* Prize Image */}
-              <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ delay: 0.4, type: 'spring', stiffness: 150 }}
-                className="w-full h-48 rounded-2xl overflow-hidden mb-4 bg-white/20 border-2 border-white/30"
-              >
-                <ImageWithFallback
-                  src={currentPrize.image}
-                  alt={currentPrize.name}
-                  className="w-full h-full object-cover"
-                />
-              </motion.div>
-
-              {/* Prize Name */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                className="text-center"
-              >
-                <div className="text-white text-xl mb-4">{currentPrize.name}</div>
-                <div className="text-white/80 text-sm">축하합니다!</div>
-              </motion.div>
-            </motion.div>
-
-            {/* Continue Button */}
-            <motion.button
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleNext}
-              className="mt-8 w-full py-4 bg-white text-purple-900 rounded-full text-xl shadow-2xl"
-            >
-              {currentIndex < prizes.length - 1
-                ? `다음 쿠지 뜯기 (${prizes.length - currentIndex - 1}개 남음)`
-                : '메인으로 돌아가기'}
-            </motion.button>
-          </motion.div>
-        )}
       </AnimatePresence>
+      
+      {/* Bottom Controls (Restored Buttons) */}
+      {stage === 'ready' && !isAutoMode && (
+         <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-4 px-6 z-40">
+            <button 
+              className="px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white text-sm font-medium hover:bg-white/20 transition-colors shadow-lg"
+              onClick={handleManualOpen}
+            >
+              바로 뜯기
+            </button>
+            {prizes.length > 1 && (
+              <button 
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full text-white text-sm font-bold hover:from-purple-500 hover:to-indigo-500 transition-all shadow-lg shadow-purple-500/30"
+                onClick={handleAutoOpen}
+              >
+                모두 자동 오픈
+              </button>
+            )}
+         </div>
+      )}
     </div>
   );
 }

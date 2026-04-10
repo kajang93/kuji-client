@@ -1,15 +1,22 @@
-import { motion } from 'motion/react';
-import { ChevronLeft } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { ChevronLeft, Heart } from './icons';
+import { useEffect } from 'react';
+import { motion } from './motion';
 import type { AnimeCollection } from '../App';
 
 type AnimeListProps = {
   collections: AnimeCollection[];
   onSelect: (anime: AnimeCollection) => void;
   onBack: () => void;
+  wishlist: string[];
+  onToggleWishlist: (animeId: string) => void;
 };
 
-export default function AnimeList({ collections, onSelect, onBack }: AnimeListProps) {
+export default function AnimeList({ collections, onSelect, onBack, wishlist, onToggleWishlist }: AnimeListProps) {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -27,52 +34,91 @@ export default function AnimeList({ collections, onSelect, onBack }: AnimeListPr
 
       {/* Collection List */}
       <div className="p-6 space-y-4">
-        {collections.map((anime, index) => (
-          <motion.div
-            key={anime.id}
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => onSelect(anime)}
-            className="bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/20 shadow-xl cursor-pointer hover:shadow-2xl hover:border-yellow-400/50 transition-all"
-          >
-            <div className="flex items-center p-4 gap-4">
-              {/* Image */}
-              <div className="w-32 h-32 rounded-xl overflow-hidden flex-shrink-0 border-2 border-white/20">
+        {collections.map((anime, index) => {
+          const isWishlisted = wishlist.includes(anime.id);
+          
+          return (
+            <motion.div
+              key={anime.id}
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="relative rounded-3xl overflow-hidden border-2 border-white/20 shadow-2xl hover:shadow-yellow-400/30 hover:border-yellow-400/50 transition-all h-64"
+            >
+              {/* Background Image with Overlay */}
+              <div className="absolute inset-0">
                 <ImageWithFallback
                   src={anime.image}
                   alt={anime.name}
                   className="w-full h-full object-cover"
                 />
+                {/* Dark gradient overlay for readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/30" />
               </div>
 
-              {/* Info */}
-              <div className="flex-1">
-                <h2 className="text-white text-2xl mb-2">{anime.name}</h2>
-                <div className="flex items-center gap-4 text-white/70">
-                  <div className="flex items-center gap-2">
-                    <span>잔여</span>
-                    <span className="text-yellow-400">{anime.remainingKuji}</span>
-                    <span>/</span>
-                    <span>{anime.totalKuji}</span>
+              {/* Wishlist Heart Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleWishlist(anime.id);
+                }}
+                className="absolute top-4 right-4 z-10 p-3 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-colors"
+              >
+                <Heart 
+                  className={`w-6 h-6 transition-colors ${
+                    isWishlisted 
+                      ? 'fill-pink-500 text-pink-500' 
+                      : 'text-white/70 hover:text-pink-300'
+                  }`}
+                />
+              </button>
+
+              {/* Content */}
+              <div 
+                onClick={() => onSelect(anime)}
+                className="relative h-full flex flex-col justify-end p-6 cursor-pointer"
+              >
+                {/* Series Name */}
+                <h2 className="text-white text-3xl mb-3 drop-shadow-lg" style={{ fontWeight: 800 }}>{anime.name}</h2>
+                
+                {/* Stats */}
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="bg-black/40 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+                    <div className="flex items-center gap-2 text-white/90">
+                      <span className="text-sm">잔여</span>
+                      <span className="text-yellow-400 text-lg" style={{ fontWeight: 700 }}>{anime.remainingKuji}</span>
+                      <span className="text-white/60">/</span>
+                      <span className="text-lg">{anime.totalKuji}</span>
+                    </div>
                   </div>
-                  <div className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden max-w-32">
+                  <div className="bg-black/40 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+                    <span className="text-white/90 text-sm">{anime.prizes.length}개 등급</span>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="mb-2">
+                  <div className="h-2 bg-black/40 backdrop-blur-sm rounded-full overflow-hidden border border-white/20">
                     <div 
-                      className="h-full bg-gradient-to-r from-yellow-400 to-orange-500"
+                      className="h-full bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 shadow-lg"
                       style={{ width: `${(anime.remainingKuji / anime.totalKuji) * 100}%` }}
                     />
                   </div>
+                  <div className="text-white/60 text-xs mt-1 text-right">
+                    {Math.round((anime.remainingKuji / anime.totalKuji) * 100)}% 남음
+                  </div>
                 </div>
-                <p className="text-white/50 mt-2">{anime.prizes.length}개 등급</p>
-              </div>
 
-              {/* Arrow */}
-              <div className="text-white/30 text-3xl flex-shrink-0">›</div>
-            </div>
-          </motion.div>
-        ))}
+                {/* Arrow Indicator */}
+                <div className="absolute bottom-6 right-6 text-white/50 text-5xl">
+                  ›
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Info Banner */}
