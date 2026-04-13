@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, X, Plus, Minus, ChevronRight } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import type { AnimeCollection } from '../App';
+import type { AnimeCollection } from '@/shared-types';
 
 type PrizeDetailProps = {
   anime: AnimeCollection;

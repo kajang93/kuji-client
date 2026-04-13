@@ -1,7 +1,7 @@
 import { motion } from './motion';
 import { ChevronLeft, Edit, Package, TrendingUp, TrendingDown } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import type { AnimeCollection } from '../App';
+import type { AnimeCollection } from '@/shared-types';
 
 type BusinessProductListProps = {
   onBack: () => void;

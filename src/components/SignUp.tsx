@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Check, Upload, X, FileText, Search } from './icons';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 type SignupProps = {
   userType: 'customer' | 'business';

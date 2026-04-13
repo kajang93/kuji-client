@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from './motion';
 import { ChevronLeft, Save, Upload, X, Plus } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import type { AnimeCollection } from '../App';
+import type { AnimeCollection } from '@/shared-types';
 
 type BusinessProductEditProps = {
   onBack: () => void;

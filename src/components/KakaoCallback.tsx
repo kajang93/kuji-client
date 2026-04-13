@@ -23,22 +23,59 @@ export default function KakaoCallback({
 
   const handleKakaoLogin = async (code: string) => {
     try {
-      // 1. 카카오 인가 코드를 우리 백엔드로 전달
+      // [STEP 1] 프런트엔드 ➡️ 카카오 : "인가 코드 줄 테니까 액세스 토큰 내놔!"
+      const REST_API_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY;
+      const CLIENT_SECRET = import.meta.env.VITE_KAKAO_CLIENT_SECRET;
+      const REDIRECT_URI = `${window.location.origin}/auth/kakao/callback`;
+
+      const params = new URLSearchParams();
+      params.append('grant_type', 'authorization_code');
+      params.append('client_id', REST_API_KEY);
+      params.append('client_secret', CLIENT_SECRET);
+      params.append('redirect_uri', REDIRECT_URI);
+      params.append('code', code);
+
+      const tokenResponse = await fetch("https://kauth.kakao.com/oauth/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: params,
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error("카카오 토큰 발급에 실패했습니다.");
+      }
+
+      const tokenData = await tokenResponse.json();
+      const kakaoAccessToken = tokenData.access_token;
+
+      // [STEP 2] 프런트엔드 ➡️ 우리 백엔드 : "이 토큰(kakaoAccessToken)으로 로그인시켜줘!"
       const response = await fetch("/api/members/login/kakao", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ 
+          kakaoAccessToken: kakaoAccessToken 
+        }),
       });
 
       if (!response.ok) {
-        throw new Error("로그인 요청에 실패했습니다.");
+        throw new Error("서비스 로그인 요청에 실패했습니다.");
       }
 
       const data = await response.json();
-      // 백엔드 응답 구조에 따라 수정 필요 (예: data.accessToken, data.user)
-      onLoginSuccess(data.token, data.user);
+      
+      // 토큰으로 실제 사용자 상세 정보(/api/members/me) 가져오기
+      const infoResponse = await fetch("/api/members/me", {
+        headers: { "Authorization": `Bearer ${data.token}` },
+      });
+      
+      if (!infoResponse.ok) throw new Error("사용자 정보를 불러오는데 실패했습니다.");
+      
+      const userData = await infoResponse.json();
+      onLoginSuccess(data.token, userData);
     } catch (error: any) {
       console.error("Kakao Login Error:", error);
       onLoginFailure(error.message || "서버 통신 중 오류가 발생했습니다.");

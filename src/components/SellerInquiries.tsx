@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from './motion';
 import { ChevronLeft, MessageSquare, Send, Edit2, Trash2, CheckCircle, Clock } from './icons';
-import type { Inquiry } from '../App';
+import type { Inquiry } from '@/shared-types';
 
 type SellerInquiriesProps = {
   onBack: () => void;

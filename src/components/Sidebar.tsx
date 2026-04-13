@@ -5,7 +5,7 @@ import { useState } from 'react';
 type SidebarProps = {
   isOpen: boolean;
   onClose: () => void;
-  user: { name: string; email: string; type: 'social' | 'business'; points?: number } | null;
+  user: { name: string; email: string; type: 'social' | 'business'; points?: number; profileImageUrl?: string } | null;
   onLogout: () => void;
   onLogin: () => void;
   onNavigate: (screen: 'profile' | 'purchase' | 'winning' | 'wishlist' | 'settings' | 'support' | 'community' | 'events' | 'notice') => void;
@@ -72,9 +72,17 @@ export default function Sidebar({ isOpen, onClose, user, onLogout, onLogin, onNa
               {user && (
                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-pink-500 rounded-full flex items-center justify-center">
-                      <User className="w-6 h-6 text-white" />
-                    </div>
+                    {user.profileImageUrl ? (
+                      <img 
+                        src={user.profileImageUrl} 
+                        alt={user.name} 
+                        className="w-12 h-12 rounded-full object-cover border-2 border-yellow-400 shadow-[0_0_10px_rgba(251,191,36,0.3)]" 
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-pink-500 rounded-full flex items-center justify-center">
+                        <User className="w-6 h-6 text-white" />
+                      </div>
+                    )}
                     <div className="flex-1">
                       <div className="text-white">{user.name}</div>
                       <div className="text-purple-300 text-sm">{user.email}</div>

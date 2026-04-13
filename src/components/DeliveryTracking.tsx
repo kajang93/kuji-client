@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { X, ChevronDown, ChevronUp, Package, Truck, MapPin, CheckCircle, Phone, MessageCircle } from './icons';
-import type { WinningItem } from '../App';
+import type { WinningItem } from '@/shared-types';
 import SellerInquiryModal from './SellerInquiryModal';
 
 type DeliveryStatus = {

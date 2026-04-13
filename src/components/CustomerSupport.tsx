@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from './motion';
 import { ChevronLeft, Send, FileText } from './icons';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import SupportHistory from './SupportHistory';
 
 type CustomerSupportProps = {

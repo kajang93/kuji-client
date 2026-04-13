@@ -1,21 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
-import { ChevronLeft, Mail, Lock, Building, Eye, EyeOff, X, Ticket, Shield } from './icons';
-import { toast } from 'sonner@2.0.3';
+import { ChevronLeft, Mail, Building2, Users, Eye, EyeOff, X, Ticket } from './icons';
+import { toast } from 'sonner';
 import Signup from './Signup';
 
-// Additional icon components
-const Users = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-  </svg>
-);
+// Auth Migration: Login.tsx updated.
 
-const Building2 = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-  </svg>
-);
+
 
 type LoginProps = {
   onLogin: (user: { name: string; email: string; type: 'social' | 'business' }) => void;
@@ -236,12 +227,12 @@ export default function Login({ onLogin, onBack }: LoginProps) {
               className="space-y-4"
             >
               {/* ID/PW Login Form */}
-              <form onSubmit={(e) => handleIdPwLogin(e, 'customer')} className="space-y-3 mb-6">
+              <form onSubmit={(e: React.FormEvent) => handleIdPwLogin(e, 'customer')} className="space-y-3 mb-6">
                 <input
                   type="text"
                   value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  onKeyDown={(e) => {
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserId(e.target.value)}
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                     if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
                       e.preventDefault();
                       customerPwRef.current?.focus();
@@ -254,7 +245,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 <input
                   type="password"
                   value={userPw}
-                  onChange={(e) => setUserPw(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserPw(e.target.value)}
                   placeholder="비밀번호"
                   className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
                   required
@@ -267,7 +258,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                     type="checkbox"
                     id="rememberMe"
                     checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRememberMe(e.target.checked)}
                     className="w-4 h-4 rounded border-white/30 bg-white/10 text-pink-500 focus:ring-pink-400 focus:ring-offset-0"
                   />
                   <label htmlFor="rememberMe" className="text-white/80 text-sm cursor-pointer select-none">
@@ -392,20 +383,20 @@ export default function Login({ onLogin, onBack }: LoginProps) {
             </motion.div>
           ) : (
             /* Business Login */
-            <motion.form
-              key="business"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              onSubmit={(e) => handleIdPwLogin(e, 'business')}
-              className="space-y-4"
-            >
+              <motion.form
+                key="business"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                onSubmit={(e: React.FormEvent) => handleIdPwLogin(e, 'business')}
+                className="space-y-4"
+              >
               <div>
                 <label className="block text-white mb-2">사업자 ID</label>
                 <input
                   type="text"
                   value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  onKeyDown={(e) => {
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserId(e.target.value)}
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                     if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
                       e.preventDefault();
                       businessPwRef.current?.focus();
@@ -422,7 +413,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 <input
                   type="password"
                   value={userPw}
-                  onChange={(e) => setUserPw(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserPw(e.target.value)}
                   placeholder="비밀번호를 입력하세요"
                   className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
                   required
@@ -436,7 +427,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                   type="checkbox"
                   id="rememberMeBusiness"
                   checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 rounded border-white/30 bg-white/10 text-yellow-500 focus:ring-yellow-400 focus:ring-offset-0"
                 />
                 <label htmlFor="rememberMeBusiness" className="text-white/80 text-sm cursor-pointer select-none">
@@ -504,7 +495,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 className="bg-gradient-to-br from-purple-800 to-blue-900 rounded-2xl p-6 w-full max-w-md border border-white/20 shadow-2xl"
               >
                 <div className="flex items-center justify-between mb-6">
@@ -523,7 +514,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                     <input
                       type="email"
                       value={findEmail}
-                      onChange={(e) => setFindEmail(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFindEmail(e.target.value)}
                       placeholder="이메일을 입력하세요"
                       className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
                       required
@@ -535,7 +526,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                     <input
                       type="tel"
                       value={findPhone}
-                      onChange={(e) => setFindPhone(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFindPhone(e.target.value)}
                       placeholder="010-0000-0000"
                       className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
                       required
@@ -572,7 +563,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 className="bg-gradient-to-br from-purple-800 to-blue-900 rounded-2xl p-6 w-full max-w-md border border-white/20 shadow-2xl"
               >
                 <div className="flex items-center justify-between mb-6">
@@ -601,7 +592,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                     <input
                       type="email"
                       value={findEmail}
-                      onChange={(e) => setFindEmail(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFindEmail(e.target.value)}
                       placeholder="이메일을 입력하세요"
                       className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
                       required
@@ -613,7 +604,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                     <input
                       type="tel"
                       value={findPhone}
-                      onChange={(e) => setFindPhone(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFindPhone(e.target.value)}
                       placeholder="010-0000-0000"
                       className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
                       required
@@ -650,7 +641,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 className="bg-gradient-to-br from-purple-800 to-blue-900 rounded-2xl p-6 w-full max-w-md border border-white/20 shadow-2xl"
               >
                 <div className="flex items-center justify-between mb-6">
@@ -669,8 +660,8 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                     <input
                       type="text"
                       value={userId}
-                      onChange={(e) => setUserId(e.target.value)}
-                      onKeyDown={(e) => {
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserId(e.target.value)}
+                      onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                         if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
                           e.preventDefault();
                           adminPwRef.current?.focus();
@@ -687,7 +678,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                     <input
                       type="password"
                       value={userPw}
-                      onChange={(e) => setUserPw(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserPw(e.target.value)}
                       placeholder="비밀번호를 입력하세요"
                       className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
                       required

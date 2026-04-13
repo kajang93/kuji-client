@@ -1,7 +1,8 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 @import 'tailwindcss' source(none);
-@source './**/*.{js,ts,jsx,tsx}';
 @import 'tw-animate-css';
 @import './styles/globals.css';
+@source './**/*.{js,ts,jsx,tsx}';
 
 @layer base {
   html, body, #root { min-height: 100vh; height: 100%; margin: 0; }

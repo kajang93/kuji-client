@@ -1,9 +1,11 @@
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Trophy, Calendar, Package, Gift, Sparkles, Truck, X, Check, CheckCircle, ShoppingBag, Info } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { WinningItem } from '../App';
+import type { WinningItem } from '@/shared-types';
 import { useState, useEffect } from 'react';
 import DeliveryTracking from './DeliveryTracking';
+
+// Type Migration: WinningHistory updated.
 
 type WinningHistoryProps = {
   onBack: () => void;

@@ -40,127 +40,19 @@ import { Toaster, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import BusinessPending from "./components/BusinessPending";
 
-export type Prize = {
-  id: string;
-  rank: string;
-  name: string;
-  image: string;
-  totalCount: number;
-  remainingCount: number;
-  opened: boolean[];
-};
+import { 
+  Prize, 
+  AnimeCollection, 
+  WinningItem, 
+  PrizeOption, 
+  InquiryComment, 
+  Inquiry, 
+  ScreenType, 
+  Banner 
+} from "./shared-types";
 
-export type AnimeCollection = {
-  id: string;
-  name: string;
-  image: string;
-  totalKuji: number;
-  remainingKuji: number;
-  prizes: Prize[];
-  operationStatus?: "scheduled" | "active" | "ended"; // 운영예정, 운영중, 운영종료
-};
 
-export type WinningItem = {
-  id: string;
-  date: string;
-  animeName: string;
-  rank: string;
-  prizeName: string;
-  prizeImage: string;
-  deliveryStatus:
-    | "stored"
-    | "preparing"
-    | "shipped"
-    | "delivered";
-  trackingNumber?: string;
-  needsOptionSelection?: boolean;
-  selectedOption?: {
-    id: string;
-    name: string;
-    image: string;
-  };
-  isNew?: boolean;
-};
 
-export type PrizeOption = {
-  id: string;
-  name: string;
-  image: string;
-  description: string;
-};
-
-export type InquiryComment = {
-  id: string;
-  author: "customer" | "seller";
-  authorName: string;
-  content: string;
-  date: string;
-  time: string;
-};
-
-export type Inquiry = {
-  id: string;
-  customerId: string;
-  customerName: string;
-  sellerId: string;
-  sellerName: string;
-  orderNumber: string;
-  inquiryType: "주문" | "배송" | "결제" | "상품문의" | "기타"; // Added inquiry type
-  subject: string;
-  content: string;
-  status: "pending" | "answered" | "closed";
-  createdAt: string;
-  comments: InquiryComment[];
-  isNew?: boolean;
-};
-
-type ScreenType =
-  | "main"
-  | "list"
-  | "detail"
-  | "login"
-  | "selection"
-  | "reveal"
-  | "profile"
-  | "profileEdit"
-  | "purchase"
-  | "winning"
-  | "wishlist"
-  | "settings"
-  | "support"
-  | "prizeSelection"
-  | "businessDashboard"
-  | "businessProfile"
-  | "businessProducts"
-  | "businessProductEdit"
-  | "businessRegister"
-  | "businessShipping"
-  | "businessInquiries"
-  | "community"
-  | "notice"
-  | "events"
-  | "adminDashboard"
-  | "adminNoticeManagement"
-  | "adminEventManagement"
-  | "adminInquiryManagement"
-  | "adminMainBannerManagement"
-  | "adminUserManagement"
-  | "adminStatistics"
-  | "kakaoCallback"
-  | "businessPending";
-
-export type Banner = {
-  id: string;
-  title: string;
-  subtitle: string;
-  imageUrl: string;
-  order: number;
-  isActive: boolean;
-  link?: string;
-  buttonText?: string;
-  createdAt: string;
-  updatedAt: string;
-};
 
 export default function App() {
   const [screen, setScreen] = useState<ScreenType>("main");
@@ -194,6 +86,7 @@ export default function App() {
     type: "social" | "business" | "admin";
     points?: number;
     isActive?: boolean; // 추가: 사업자 승인 여부
+    profileImageUrl?: string; // 추가: 사용자 프로필 이미지
   } | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [returnToScreen, setReturnToScreen] = useState<
@@ -246,6 +139,7 @@ export default function App() {
         type: (userData.role === "BIZ" ? "business" : "social") as any,
         points: userData.points || 0,
         isActive: userData.isActive !== undefined ? userData.isActive : true,
+        profileImageUrl: userData.profileImageUrl || "",
       };
       
       setUser(formattedUser);
@@ -1675,6 +1569,7 @@ export default function App() {
                 email: userData.email,
                 type: (userData.role === "BIZ" ? "business" : "social") as any,
                 points: userData.points || 0,
+                profileImageUrl: userData.profileImageUrl || "",
               };
               setUser(formattedUser);
               

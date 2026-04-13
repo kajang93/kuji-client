@@ -2,7 +2,7 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 import { ChevronLeft, Heart } from './icons';
 import { useEffect } from 'react';
 import { motion } from './motion';
-import type { AnimeCollection } from '../App';
+import type { AnimeCollection } from '@/shared-types';
 
 type AnimeListProps = {
   collections: AnimeCollection[];

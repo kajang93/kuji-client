@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Package, Truck, CheckCircle, ChevronRight, Save } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import type { WinningItem } from '../App';
+import type { WinningItem } from '@/shared-types';
 
 type BusinessShippingManagementProps = {
   onBack: () => void;
