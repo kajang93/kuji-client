@@ -36,11 +36,11 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       const REST_API_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY || "YOUR_KAKAO_REST_API_KEY";
       const REDIRECT_URI = `${window.location.origin}/auth/kakao/callback`;
       const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code`;
-      
+
       window.location.href = KAKAO_AUTH_URL;
       return;
     }
-    
+
     // Other providers mock
     toast.info(`${provider} 로그인은 준비 중입니다.`);
   };
@@ -53,7 +53,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       const response = await fetch("/api/members/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, password: userPw }),
+        body: JSON.stringify({ email: userId, password: userPw }),
       });
 
       if (!response.ok) {
@@ -70,7 +70,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       });
 
       if (!infoResponse.ok) throw new Error("사용자 정보를 불러오는데 실패했습니다.");
-      
+
       const userData = await infoResponse.json();
       onLogin({
         name: userData.nickname || userData.name,
@@ -98,7 +98,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
   const handleFindId = (e: React.FormEvent) => {
     e.preventDefault();
     // Mock find ID
-    toast.success(`입력하신 이메일/휴대폰으로 아이디 정보를 전송했습니다.\n아이디: user123`);
+    toast.success(`입력하신 이메일/휴대폰으로 이메일 정보를 전송했습니다.\n이메일: user123`);
     setShowFindId(false);
     setFindEmail('');
     setFindPhone('');
@@ -192,11 +192,10 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 setUserId('');
                 setUserPw('');
               }}
-              className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${
-                activeTab === 'customer'
+              className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${activeTab === 'customer'
                   ? 'bg-gradient-to-r from-rose-500 to-indigo-600 text-white shadow-lg'
                   : 'bg-white/10 text-white/60 hover:bg-white/20'
-              }`}
+                }`}
             >
               <Users className="w-5 h-5" />
               <span>일반 고객</span>
@@ -207,11 +206,10 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 setUserId('');
                 setUserPw('');
               }}
-              className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${
-                activeTab === 'business'
+              className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${activeTab === 'business'
                   ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-slate-900 shadow-lg'
                   : 'bg-white/10 text-white/60 hover:bg-white/20'
-              }`}
+                }`}
             >
               <Building2 className="w-5 h-5" />
               <span>사업자</span>
@@ -238,7 +236,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                       customerPwRef.current?.focus();
                     }
                   }}
-                  placeholder="아이디"
+                  placeholder="이메일"
                   className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
                   required
                 />
@@ -251,7 +249,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                   required
                   ref={customerPwRef}
                 />
-                
+
                 {/* Remember Me Checkbox */}
                 <div className="flex items-center gap-2">
                   <input
@@ -277,14 +275,14 @@ export default function Login({ onLogin, onBack }: LoginProps) {
               </form>
 
               <div className="flex justify-between text-sm mb-6">
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowFindId(true)}
                   className="text-purple-300 hover:text-white"
                 >
-                  아이디 찾기
+                  이메일 찾기
                 </button>
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowFindPw(true)}
                   className="text-purple-300 hover:text-white"
@@ -383,13 +381,13 @@ export default function Login({ onLogin, onBack }: LoginProps) {
             </motion.div>
           ) : (
             /* Business Login */
-              <motion.form
-                key="business"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                onSubmit={(e: React.FormEvent) => handleIdPwLogin(e, 'business')}
-                className="space-y-4"
-              >
+            <motion.form
+              key="business"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              onSubmit={(e: React.FormEvent) => handleIdPwLogin(e, 'business')}
+              className="space-y-4"
+            >
               <div>
                 <label className="block text-white mb-2">사업자 ID</label>
                 <input
@@ -450,7 +448,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                   onClick={() => setShowFindId(true)}
                   className="text-yellow-400 hover:underline"
                 >
-                  아이디 찾기
+                  이메일 찾기
                 </button>
                 <button
                   type="button"
@@ -499,7 +497,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 className="bg-gradient-to-br from-purple-800 to-blue-900 rounded-2xl p-6 w-full max-w-md border border-white/20 shadow-2xl"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-white text-xl">아이디 찾기</h2>
+                  <h2 className="text-white text-xl">이메일 찾기</h2>
                   <button
                     onClick={() => setShowFindId(false)}
                     className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
@@ -539,7 +537,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                     type="submit"
                     className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl shadow-xl mt-4"
                   >
-                    <div className="text-center">아이디 찾기</div>
+                    <div className="text-center">이메일 찾기</div>
                   </motion.button>
                 </form>
               </motion.div>
@@ -578,10 +576,10 @@ export default function Login({ onLogin, onBack }: LoginProps) {
 
                 <form onSubmit={handleFindPw} className="space-y-4">
                   <div>
-                    <label className="block text-white mb-2">아이디</label>
+                    <label className="block text-white mb-2">이메일</label>
                     <input
                       type="text"
-                      placeholder="아이디를 입력하세요"
+                      placeholder="이메일을 입력하세요"
                       className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
                       required
                     />
@@ -656,7 +654,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
 
                 <form onSubmit={handleAdminLogin} className="space-y-4">
                   <div>
-                    <label className="block text-white mb-2">아이디</label>
+                    <label className="block text-white mb-2">이메일</label>
                     <input
                       type="text"
                       value={userId}
@@ -667,7 +665,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                           adminPwRef.current?.focus();
                         }
                       }}
-                      placeholder="아이디를 입력하세요"
+                      placeholder="이메일을 입력하세요"
                       className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
                       required
                     />
@@ -692,7 +690,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                     type="submit"
                     className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl shadow-xl mt-4"
                   >
-                    <div className="text-center">관리자 로그인</div>
+                    <div className="text-center">이메일 로그인</div>
                   </motion.button>
                 </form>
               </motion.div>

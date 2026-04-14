@@ -40,12 +40,14 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
     businessFile: null as File | null,
   });
 
-  const [idChecked, setIdChecked] = useState(false);
-  const [idAvailable, setIdAvailable] = useState(false);
+  const [emailChecked, setEmailChecked] = useState(false);
+  const [emailAvailable, setEmailAvailable] = useState(false);
   const [businessNumberChecked, setBusinessNumberChecked] = useState(false);
   const [businessNumberValid, setBusinessNumberValid] = useState(false);
   const [phoneVerificationSent, setPhoneVerificationSent] = useState(false);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [agreeMarketing, setAgreeMarketing] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -88,9 +90,9 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
     }
     
     setFormData({ ...formData, [field]: value });
-    if (field === 'id') {
-      setIdChecked(false);
-      setIdAvailable(false);
+    if (field === 'emailId' || field === 'emailDomain' || field === 'customDomain') {
+      setEmailChecked(false);
+      setEmailAvailable(false);
     }
     if (field === 'businessNumber') {
       setBusinessNumberChecked(false);
@@ -139,16 +141,23 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
     }
   };
 
-  const handleIdCheck = () => {
-    if (formData.id.length >= 4) {
+  const handleEmailCheck = () => {
+    const email = formData.emailDomain === '직접입력' 
+      ? `${formData.emailId}@${formData.customDomain}`
+      : `${formData.emailId}@${formData.emailDomain}`;
+
+    if (formData.emailId.length >= 2) {
+      // Mock API call for email duplicate check
       const isAvailable = Math.random() > 0.3;
-      setIdAvailable(isAvailable);
-      setIdChecked(true);
+      setEmailAvailable(isAvailable);
+      setEmailChecked(true);
       if (isAvailable) {
-        toast.success('사용 가능한 아이디입니다.');
+        toast.success('사용 가능한 이메일입니다.');
       } else {
-        toast.error('이미 사용중인 아이디입니다.');
+        toast.error('이미 사용중인 이메일입니다.');
       }
+    } else {
+      toast.error('이메일 주소를 입력해주세요.');
     }
   };
 
@@ -244,17 +253,17 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!agreedToTerms) {
-      toast.error('이용약관에 동의해주세요.');
+    if (!agreeTerms || !agreePrivacy) {
+      toast.error('필수 이용약관에 동의해주세요.');
       return;
     }
 
-    if (userType === 'customer') {
-      if (!idChecked || !idAvailable) {
-        toast.error('아이디 중복확인을 완료해주세요.');
-        return;
-      }
-    } else {
+    if (!emailChecked || !emailAvailable) {
+      toast.error('이메일 중복확인을 완료해주세요.');
+      return;
+    }
+
+    if (userType === 'business') {
       if (!businessNumberChecked || !businessNumberValid) {
         toast.error('사업자번호 확인을 완료해주세요.');
         return;
@@ -322,15 +331,13 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
     }
 
     const signupData = {
-      userId: userType === 'customer' ? formData.id : formData.businessNumber,
-      password: formData.password,
-      name: userType === 'customer' ? formData.name : formData.businessName,
       email: email,
-      phone: formData.phone,
-      address: userType === 'customer' ? formData.address : formData.shippingAddress,
-      birthdate: userType === 'customer' ? formData.birthdate : null,
-      businessNumber: userType === 'business' ? formData.businessNumber : null,
-      authorities: userType === 'business' ? ['ROLE_BUSINESS'] : ['ROLE_USER']
+      password: formData.password,
+      nickname: formData.nickname || (userType === 'customer' ? formData.name : formData.businessName),
+      birthDate: userType === 'customer' ? formData.birthdate : null,
+      isTermsAgreed: agreeTerms,
+      isPrivacyAgreed: agreePrivacy,
+      isMarketingAgreed: agreeMarketing
     };
 
     fetch("/api/members/signup", {
@@ -379,54 +386,9 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="p-6 space-y-4 max-w-2xl mx-auto">
-        {userType === 'customer' ? (
+        {/* Business Form Specifics */}
+        {userType === 'business' && (
           <>
-            {/* Customer Form */}
-            {/* ID */}
-            <div>
-              <label className="block text-white mb-2">
-                아이디 <span className="text-red-400">*</span>
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={formData.id}
-                  onChange={(e) => handleChange('id', e.target.value)}
-                  onKeyDown={(e) => {
-                    // ID 입력 후 엔터 시 중복확인 실행 대신 비밀번호로 이동하도록 변경
-                    // 또는 여기서 엔터 치면 바로 비밀번호로 가는 게 더 자연스러움
-                    if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                       e.preventDefault();
-                       passwordRef.current?.focus();
-                    }
-                  }}
-                  placeholder="4자 이상 입력"
-                  className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={handleIdCheck}
-                  disabled={formData.id.length < 4}
-                  className={`px-6 py-3 rounded-xl whitespace-nowrap ${
-                    formData.id.length >= 4
-                      ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
-                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  }`}
-                >
-                  <div className="text-center">확인</div>
-                </button>
-              </div>
-              {idChecked && (
-                <p className={`mt-1 text-sm ${idAvailable ? 'text-green-400' : 'text-red-400'}`}>
-                  {idAvailable ? '✓ 사용 가능한 아이디입니다' : '✗ 이미 사용중인 아이디입니다'}
-                </p>
-              )}
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Business Form */}
             {/* Business Number */}
             <div>
               <label className="block text-white mb-2">
@@ -601,29 +563,66 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
             이메일 <span className="text-red-400">*</span>
           </label>
           <div className="flex flex-col sm:flex-row gap-2">
-            <div className="flex gap-2 flex-1">
+            <div className="flex-1 flex gap-2">
               <input
                 type="text"
                 value={formData.emailId}
                 onChange={(e) => handleChange('emailId', e.target.value)}
-                placeholder="이메일 ID"
+                placeholder="이메일 주소"
                 className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
                 required
               />
-              <span className="flex items-center text-white px-1 sm:px-2">@</span>
+              <span className="text-white self-center text-lg">@</span>
+              {formData.emailDomain === '직접입력' ? (
+                <div className="flex-1 flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.customDomain}
+                    onChange={(e) => handleChange('customDomain', e.target.value)}
+                    placeholder="도메인 입력"
+                    className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleChange('emailDomain', 'naver.com')}
+                    className="p-3 bg-white/10 rounded-xl text-white hover:bg-white/20"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={formData.emailDomain}
+                  onChange={(e) => handleChange('emailDomain', e.target.value)}
+                  className="flex-1 px-4 py-3 rounded-xl bg-slate-800 border border-white/30 text-white focus:outline-none focus:border-yellow-400 appearance-none"
+                >
+                  {emailDomains.map((domain) => (
+                    <option key={domain} value={domain}>
+                      {domain}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
-            <select
-              value={formData.emailDomain}
-              onChange={(e) => handleChange('emailDomain', e.target.value)}
-              className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white focus:outline-none focus:border-yellow-400"
+            
+            <button
+              type="button"
+              onClick={handleEmailCheck}
+              disabled={!formData.emailId}
+              className={`px-6 py-3 rounded-xl whitespace-nowrap font-bold ${
+                formData.emailId
+                  ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
+                  : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              }`}
             >
-              {emailDomains.map((domain) => (
-                <option key={domain} value={domain} className="bg-purple-900">
-                  {domain}
-                </option>
-              ))}
-            </select>
+              중복확인
+            </button>
           </div>
+          {emailChecked && (
+            <p className={`mt-1 text-sm ${emailAvailable ? 'text-green-400' : 'text-red-400'}`}>
+              {emailAvailable ? '✓ 사용 가능한 이메일입니다' : '✗ 이미 사용중인 이메일입니다'}
+            </p>
+          )}
           {formData.emailDomain === '직접입력' && (
             <input
               type="text"
@@ -838,39 +837,56 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
         )}
 
         {/* Terms Agreement */}
-        <div className="pt-6 border-t border-white/20">
-          <label className="flex items-start gap-3">
-            <div className="flex-shrink-0 pt-1">
-              <div
-                onClick={() => setAgreedToTerms(!agreedToTerms)}
-                className={`w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
-                  agreedToTerms
-                    ? 'bg-yellow-500 border-yellow-500'
-                    : 'border-white/30 bg-white/10'
-                }`}
-              >
-                {agreedToTerms && <Check className="w-4 h-4 text-purple-900" />}
-              </div>
+        <div className="pt-6 border-t border-white/20 space-y-4">
+          {/* Agree All */}
+          <div 
+            onClick={() => {
+              const nextState = !(agreeTerms && agreePrivacy && agreeMarketing);
+              setAgreeTerms(nextState);
+              setAgreePrivacy(nextState);
+              setAgreeMarketing(nextState);
+            }}
+            className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition-colors border border-white/10"
+          >
+            <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+              agreeTerms && agreePrivacy && agreeMarketing ? 'bg-yellow-500 border-yellow-500' : 'border-white/30 bg-white/10'
+            }`}>
+              {agreeTerms && agreePrivacy && agreeMarketing && <Check className="w-4 h-4 text-purple-900" />}
             </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-white">
-                  이용약관 동의 <span className="text-red-400">*</span>
-                </span>
+            <span className="text-white font-bold text-lg">전체 동의하기</span>
+          </div>
+
+          {/* Individual Terms */}
+          <div className="space-y-3 px-2">
+            {[
+              { id: 'terms', label: '이용약관 동의', isRequired: true, state: agreeTerms, setter: setAgreeTerms },
+              { id: 'privacy', label: '개인정보 수집 및 이용 동의', isRequired: true, state: agreePrivacy, setter: setAgreePrivacy },
+              { id: 'marketing', label: '마케팅 정보 수신 동의', isRequired: false, state: agreeMarketing, setter: setAgreeMarketing }
+            ].map((item) => (
+              <div key={item.id} className="flex items-center justify-between">
+                <div 
+                  onClick={() => item.setter(!item.state)}
+                  className="flex items-center gap-3 cursor-pointer"
+                >
+                  <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                    item.state ? 'bg-yellow-500 border-yellow-500' : 'border-white/30 bg-white/10'
+                  }`}>
+                    {item.state && <Check className="w-3.5 h-3.5 text-purple-900" />}
+                  </div>
+                  <span className="text-white/80 text-sm">
+                    {item.label} {item.isRequired && <span className="text-red-400">*</span>}
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowTermsModal(true)}
-                  className="text-yellow-400 text-sm underline hover:text-yellow-300 flex items-center gap-1"
+                  className="text-white/40 text-xs underline hover:text-white/60"
                 >
-                  <FileText className="w-3 h-3" />
-                  <span>전문 보기</span>
+                  전문 보기
                 </button>
               </div>
-              <p className="text-white/60 text-sm">
-                일본 이치방 쿠지 서비스 이용약관 및 개인정보 처리방침에 동의합니다.
-              </p>
-            </div>
-          </label>
+            ))}
+          </div>
         </div>
 
         {/* Submit Button */}

@@ -3,20 +3,26 @@ import { ChevronLeft, User, Mail, Phone, MapPin, Calendar, Camera, ImageIcon } f
 import { useState, useRef, useEffect } from 'react';
 
 type ProfileProps = {
-  user: { name: string; email: string; type: 'social' | 'business'; points?: number };
+  user: { name: string; email: string; type: 'social' | 'business' | 'admin'; points?: number; profileImageUrl?: string };
   onBack: () => void;
   onEdit: () => void;
 };
 
 export default function Profile({ user, onBack, onEdit }: ProfileProps) {
   const [showImagePicker, setShowImagePicker] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(user.profileImageUrl || null);
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  useEffect(() => {
+    if (user.profileImageUrl) {
+      setProfileImage(user.profileImageUrl);
+    }
+  }, [user.profileImageUrl]);
 
   // Mock user data
   const [userDetails, setUserDetails] = useState({
@@ -234,7 +240,7 @@ export default function Profile({ user, onBack, onEdit }: ProfileProps) {
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-white text-xl mb-4 text-center">프로필 사진 선택</h3>
-              
+
               <div className="space-y-3">
                 <button
                   onClick={() => handleImageSelect('gallery')}

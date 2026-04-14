@@ -40,15 +40,15 @@ import { Toaster, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import BusinessPending from "./components/BusinessPending";
 
-import { 
-  Prize, 
-  AnimeCollection, 
-  WinningItem, 
-  PrizeOption, 
-  InquiryComment, 
-  Inquiry, 
-  ScreenType, 
-  Banner 
+import {
+  Prize,
+  AnimeCollection,
+  WinningItem,
+  PrizeOption,
+  InquiryComment,
+  Inquiry,
+  ScreenType,
+  Banner
 } from "./shared-types";
 
 
@@ -114,7 +114,7 @@ export default function App() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const urlParams = new URLSearchParams(window.location.search);
-    
+
     if (urlParams.has("code")) {
       setScreen("kakaoCallback");
     } else if (token) {
@@ -141,9 +141,9 @@ export default function App() {
         isActive: userData.isActive !== undefined ? userData.isActive : true,
         profileImageUrl: userData.profileImageUrl || "",
       };
-      
+
       setUser(formattedUser);
-      
+
       if (formattedUser.type === "business" && formattedUser.isActive === false) {
         setScreen("businessPending");
       }
@@ -1572,10 +1572,10 @@ export default function App() {
                 profileImageUrl: userData.profileImageUrl || "",
               };
               setUser(formattedUser);
-              
+
               // Remove code from URL without refreshing
               window.history.replaceState({}, document.title, window.location.pathname);
-              
+
               if (formattedUser.type === "business") {
                 setScreen("businessDashboard");
               } else {
