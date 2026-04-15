@@ -19,8 +19,14 @@ export default function Profile({ user, onBack, onEdit }: ProfileProps) {
   }, []);
 
   useEffect(() => {
-    if (user.profileImageUrl) {
-      setProfileImage(user.profileImageUrl);
+    if (user.profileImageUrl || user.email || user.name) {
+      setProfileImage(user.profileImageUrl || null);
+
+      setUserDetails(prev => ({
+        ...prev,
+        name: user.name,
+        email: user.email
+      }));
     }
   }, [user.profileImageUrl]);
 
