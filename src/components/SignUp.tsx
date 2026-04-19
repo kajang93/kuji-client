@@ -335,6 +335,10 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       password: formData.password,
       nickname: formData.nickname || (userType === 'customer' ? formData.name : formData.businessName),
       birthDate: userType === 'customer' ? formData.birthdate : null,
+      role: userType === 'business' ? 'BIZ' : 'USER',
+      businessNumber: userType === 'business' ? formData.businessNumber : null,
+      companyName: userType === 'business' ? formData.businessName : null,
+      ceoName: userType === 'business' ? formData.managerName : null,
       isTermsAgreed: agreeTerms,
       isPrivacyAgreed: agreePrivacy,
       isMarketingAgreed: agreeMarketing
