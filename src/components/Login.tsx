@@ -72,11 +72,12 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       if (!infoResponse.ok) throw new Error("사용자 정보를 불러오는데 실패했습니다.");
 
       const userData = await infoResponse.json();
+      const userRole = userData.role || "USER";
       onLogin({
         name: userData.nickname || userData.name,
         email: userData.email,
-        type: (userData.role === "BIZ" ? "business" : "social") as any,
-        isActive: userData.isActive !== undefined ? userData.isActive : true // Default to true if not present
+        type: (userRole === "BIZ" ? "business" : userRole === "ADMIN" ? "admin" : "social") as any,
+        isActive: userData.isActive !== undefined ? userData.isActive : true
       } as any);
 
       toast.success("로그인 성공!");

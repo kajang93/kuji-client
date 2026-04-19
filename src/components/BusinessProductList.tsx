@@ -1,5 +1,5 @@
 import { motion } from './motion';
-import { ChevronLeft, Edit, Package, TrendingUp, TrendingDown } from './icons';
+import { ChevronLeft, Edit, Package, TrendingUp, TrendingDown, Menu } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import type { AnimeCollection } from '@/shared-types';
 
@@ -7,9 +7,10 @@ type BusinessProductListProps = {
   onBack: () => void;
   collections: AnimeCollection[];
   onEdit?: (id: string) => void;
+  onOpenSidebar?: () => void;
 };
 
-export default function BusinessProductList({ onBack, collections, onEdit }: BusinessProductListProps) {
+export default function BusinessProductList({ onBack, collections, onEdit, onOpenSidebar }: BusinessProductListProps) {
   const getStockStatus = (remaining: number, total: number) => {
     const percentage = (remaining / total) * 100;
     if (percentage > 50) return { color: 'text-green-400', icon: TrendingUp, label: '재고 충분' };
@@ -35,14 +36,22 @@ export default function BusinessProductList({ onBack, collections, onEdit }: Bus
       {/* Header */}
       <div className="sticky top-0 z-10 bg-purple-900/80 backdrop-blur-md border-b border-white/10">
         <div className="p-4">
-          <div className="flex items-center gap-4 mb-2">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={onBack}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <ChevronLeft className="w-6 h-6 text-white" />
+              </button>
+              <h1 className="text-2xl text-white">등록된 상품 조회</h1>
+            </div>
             <button
-              onClick={onBack}
+              onClick={onOpenSidebar}
               className="p-2 hover:bg-white/10 rounded-full transition-colors"
             >
-              <ChevronLeft className="w-6 h-6 text-white" />
+              <Menu className="w-6 h-6 text-white" />
             </button>
-            <h1 className="text-2xl text-white">등록된 상품 조회</h1>
           </div>
           <div className="text-white/60 text-sm ml-14">
             총 {collections.length}개 시리즈 등록됨

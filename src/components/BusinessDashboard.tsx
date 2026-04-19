@@ -1,11 +1,13 @@
 import { motion } from './motion';
-import { Package, TrendingUp, ShoppingCart, Truck, DollarSign, Users } from './icons';
+import { Package, TrendingUp, ShoppingCart, Truck, DollarSign, Users, Menu } from './icons';
 
 type BusinessDashboardProps = {
   onNavigate: (screen: 'productList' | 'productRegister' | 'shipping') => void;
+  onOpenSidebar?: () => void;
+  onLogout?: () => void;
 };
 
-export default function BusinessDashboard({ onNavigate }: BusinessDashboardProps) {
+export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout }: BusinessDashboardProps) {
   // Mock data for demo
   const stats = [
     {
@@ -74,6 +76,24 @@ export default function BusinessDashboard({ onNavigate }: BusinessDashboardProps
           <div className="flex items-center gap-3">
             <Users className="w-6 h-6 text-cyan-400" />
             <h1 className="text-white text-xl">사업자 대시보드</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (window.confirm('로그아웃 하시겠습니까?')) {
+                  onLogout?.();
+                }
+              }}
+              className="px-3 py-1 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm hover:bg-red-500/30 transition-colors mr-2"
+            >
+              로그아웃
+            </button>
+            <button
+              onClick={onOpenSidebar}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            >
+              <Menu className="w-6 h-6 text-white" />
+            </button>
           </div>
         </div>
       </div>

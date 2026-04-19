@@ -449,13 +449,17 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="mt-4 bg-amber-500/20 border-2 border-amber-400/50 rounded-xl p-4"
+          className="mt-4 bg-indigo-500/20 border-2 border-indigo-400/50 rounded-xl p-4"
         >
           <div className="flex items-start gap-3">
             <div className="text-xl">💡</div>
             <div className="text-white/70 text-sm">
-              <p className="mb-1">각 등급별로 여러 상품을 등록할 수 있습니다.</p>
-              <p>등급을 선택하고 상품 추가 버튼을 눌러 상품을 등록하세요.</p>
+              <p className="mb-2 font-bold text-indigo-300">이미지 업로드 안내</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>파일당 최대 용량: <span className="text-teal-300 font-bold">2MB</span></li>
+                <li>한 번에 전송 가능한 최대 용량: <span className="text-teal-300 font-bold">10MB</span></li>
+                <li>각 등급별로 여러 상품을 등록할 수 있으며, 고화질 이미지 사용을 권장합니다.</li>
+              </ul>
             </div>
           </div>
         </motion.div>

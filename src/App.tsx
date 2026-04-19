@@ -175,15 +175,17 @@ export default function App() {
       }
 
       const userData = await response.json();
+      const userRole = userData.role || "USER";
       const formattedUser = {
         name: userData.nickname || userData.name,
         email: userData.email,
-        type: (userData.role === "BIZ" ? "business" : "social") as any,
+        type: (userRole === "BIZ" ? "business" : userRole === "ADMIN" ? "admin" : "social") as any,
         points: userData.points || 0,
         isActive: userData.isActive !== undefined ? userData.isActive : true,
         profileImageUrl: userData.profileImageUrl || "",
       };
 
+      console.log("Logged in user type:", formattedUser.type);
       setUser(formattedUser);
 
       if (formattedUser.type === "business" && formattedUser.isActive === false) {
@@ -1096,6 +1098,8 @@ export default function App() {
         {/* Business Screens */}
         {screen === "businessDashboard" && (
           <BusinessDashboard
+            onOpenSidebar={() => setIsSidebarOpen(true)}
+            onLogout={handleLogout}
             onNavigate={(screen) => {
               if (screen === "productList")
                 setScreen("businessProducts");
@@ -1118,6 +1122,7 @@ export default function App() {
         {screen === "businessProducts" && (
           <BusinessProductList
             onBack={() => setScreen("businessDashboard")}
+            onOpenSidebar={() => setIsSidebarOpen(true)}
             collections={animeCollections}
             onEdit={(id) => {
               setEditingCollectionId(id);

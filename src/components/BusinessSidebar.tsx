@@ -45,85 +45,85 @@ export default function BusinessSidebar({ isOpen, onClose, user, onLogout, onNav
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-80 bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 z-50 shadow-2xl"
+            className="fixed right-0 top-0 h-full w-80 bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 z-50 shadow-2xl flex flex-col"
           >
-            <div className="flex flex-col h-full">
-              {/* Header */}
-              <div className="p-6 border-b border-white/20">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl text-white">사업자 메뉴</h2>
-                  <button
-                    onClick={onClose}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                  >
-                    <X className="w-6 h-6 text-white" />
-                  </button>
-                </div>
+            {/* Header */}
+            <div className="p-6 border-b border-white/20">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl text-white">사업자 메뉴</h2>
+                <button
+                  onClick={onClose}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <X className="w-6 h-6 text-white" />
+                </button>
+              </div>
 
-                {/* User Info */}
-                {user && (
-                  <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white text-xl">
-                        {user.name[0]}
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-white">{user.name}</div>
-                        <div className="text-white/60 text-sm">{user.email}</div>
-                        <div className="text-xs bg-orange-500/30 text-orange-300 px-2 py-0.5 rounded-full inline-block mt-1">
-                          사업자 계정
-                        </div>
+              {/* User Info */}
+              {user && (
+                <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white text-xl">
+                      {user.name[0]}
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-white">{user.name}</div>
+                      <div className="text-white/60 text-sm">{user.email}</div>
+                      <div className="text-xs bg-orange-500/30 text-orange-300 px-2 py-0.5 rounded-full inline-block mt-1">
+                        사업자 계정
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
-
-              {/* Menu Items */}
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-2">
-                  {menuItems.map((item, index) => {
-                    const Icon = item.icon;
-                    return (
-                      <motion.button
-                        key={item.id}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        onClick={() => handleMenuClick(item.id)}
-                        className={`w-full flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r ${item.color} hover:opacity-90 transition-all shadow-lg hover:shadow-xl group`}
-                      >
-                        <div className="p-2 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
-                          <Icon className="w-5 h-5 text-white" />
-                        </div>
-                        <span className="text-white">{item.label}</span>
-                        {item.badge && item.badge > 0 && (
-                          <div className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full ml-2">
-                            {item.badge}
-                          </div>
-                        )}
-                      </motion.button>
-                    );
-                  })}
                 </div>
-              </div>
+              )}
+            </div>
 
-              {/* Logout Button */}
+            {/* Menu Items */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-2">
+                {menuItems.map((item, index) => {
+                  const Icon = item.icon;
+                  return (
+                    <motion.button
+                      key={item.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => handleMenuClick(item.id)}
+                      className={`w-full flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r ${item.color} hover:opacity-90 transition-all shadow-lg hover:shadow-xl group`}
+                    >
+                      <div className="p-2 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                        <Icon className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="text-white">{item.label}</span>
+                      {item.badge && item.badge > 0 && (
+                        <div className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full ml-2">
+                          {item.badge}
+                        </div>
+                      )}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Logout Button - Consistent with regular Sidebar */}
+            {user && (
               <div className="p-4 border-t border-white/20">
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => {
                     onLogout();
                     onClose();
                   }}
-                  className="w-full flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:opacity-90 transition-all shadow-lg"
+                  className="w-full flex items-center justify-center gap-3 px-4 py-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 hover:bg-red-500/30 transition-colors"
                 >
-                  <div className="p-2 bg-white/20 rounded-lg">
-                    <LogOut className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-white">로그아웃</span>
-                </button>
+                  <LogOut className="w-5 h-5" />
+                  <span className="text-lg">로그아웃</span>
+                </motion.button>
               </div>
-            </div>
+            )}
           </motion.div>
         </>
       )}
