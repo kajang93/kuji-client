@@ -1,5 +1,25 @@
 export const TYPES_MODULE = true;
 
+export type BoardStatus = 'PREPARING' | 'ACTIVE' | 'FINISHED';
+export type BoardImageType = 'THUMBNAIL' | 'DETAIL' | 'BANNER';
+
+export interface KujiBoardImage {
+  id: number;
+  imageUrl: string;
+  sequence: number;
+  imageType: BoardImageType;
+}
+
+export interface KujiBoard {
+  id: number;
+  title: string;
+  pricePerDraw: number;
+  status: BoardStatus;
+  rewardRate: number;
+  createdAt: string;
+  images: KujiBoardImage[];
+}
+
 export type Prize = {
   id: string;
   rank: string;
@@ -18,6 +38,7 @@ export type AnimeCollection = {
   remainingKuji: number;
   prizes: Prize[];
   operationStatus?: "scheduled" | "active" | "ended";
+  boardId?: number; // Backend alignment
 };
 
 export type WinningItem = {
