@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from './motion';
-import { ChevronLeft, Upload, Save, X, Plus, Check } from './icons';
+import { ChevronLeft, Upload, Save, X, Plus, Check, Loader2 } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { createKujiBoard, uploadBoardImages } from '../api/kuji';
 
 type BusinessProductRegisterProps = {
   onBack: () => void;
@@ -24,8 +25,12 @@ type RankData = {
 export default function BusinessProductRegister({ onBack, onComplete, onTempSave }: BusinessProductRegisterProps) {
   const [seriesName, setSeriesName] = useState('');
   const [seriesImage, setSeriesImage] = useState<string | null>(null);
+  const [seriesFile, setSeriesFile] = useState<File | null>(null);
+  const [pricePerDraw, setPricePerDraw] = useState<number>(10000);
+  const [rewardRate, setRewardRate] = useState<number>(100); // 100% default
   const [selectedRank, setSelectedRank] = useState<string>('A');
   const [rankData, setRankData] = useState<Record<string, ProductItem[]>>({});
+  const [isRegistering, setIsRegistering] = useState(false);
   
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const seriesImageInputRef = useRef<HTMLInputElement>(null);
@@ -46,6 +51,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
   const handleSeriesImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSeriesFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setSeriesImage(reader.result as string);
@@ -100,9 +106,14 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
     }));
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!seriesName.trim()) {
       alert('시리즈명을 입력해주세요');
+      return;
+    }
+
+    if (!seriesFile) {
+      alert('시리즈 이미지를 등록해주세요');
       return;
     }
 
@@ -115,11 +126,30 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
       return;
     }
 
-    // In real app, save data here
-    console.log('Registering:', { seriesName, seriesImage, rankData });
-    
-    // Navigate to product list
-    onComplete?.();
+    setIsRegistering(true);
+    try {
+      // 1. Create Kuji Board
+      const boardId = await createKujiBoard({
+        title: seriesName,
+        pricePerDraw: pricePerDraw,
+        status: 'PREPARING',
+        rewardRate: rewardRate
+      });
+
+      // 2. Upload Series Image as THUMBNAIL
+      await uploadBoardImages(boardId, 'THUMBNAIL', [seriesFile]);
+      
+      // 3. Upload Detail images (if any) - for now just the same one or skip
+      // In a real app, we'd have a separate field for detail images
+      
+      alert('쿠지 상품이 성공적으로 등록되었습니다.');
+      onComplete?.();
+    } catch (error) {
+      console.error('Registration failed:', error);
+      alert('상품 등록 중 오류가 발생했습니다.');
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   const handleTempSave = () => {
@@ -197,7 +227,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
           </div>
 
           {/* Series Name */}
-          <div>
+          <div className="mb-4">
             <label className="text-white/70 text-sm block mb-2">시리즈명</label>
             <input
               type="text"
@@ -206,6 +236,30 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-teal-400"
               placeholder="예: 원피스 쿠지 시리즈 Vol.1"
             />
+          </div>
+
+          {/* New Fields: Price and Reward Rate */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-white/70 text-sm block mb-2">1회 구매 가격 (원)</label>
+              <input
+                type="number"
+                value={pricePerDraw}
+                onChange={(e) => setPricePerDraw(parseInt(e.target.value) || 0)}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-teal-400"
+                placeholder="예: 10000"
+              />
+            </div>
+            <div>
+              <label className="text-white/70 text-sm block mb-2">환급률 (%)</label>
+              <input
+                type="number"
+                value={rewardRate}
+                onChange={(e) => setRewardRate(parseInt(e.target.value) || 0)}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-teal-400"
+                placeholder="예: 100"
+              />
+            </div>
           </div>
         </motion.div>
 
@@ -371,18 +425,22 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
             <span>임시 저장</span>
           </motion.button>
 
-          {/* Register Button */}
           <motion.button
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: isRegistering ? 1 : 1.02 }}
+            whileTap={{ scale: isRegistering ? 1 : 0.98 }}
             onClick={handleRegister}
-            className="py-4 bg-gradient-to-r from-teal-400 to-blue-500 text-white rounded-xl shadow-xl flex items-center justify-center gap-2"
+            disabled={isRegistering}
+            className={`py-4 bg-gradient-to-r from-teal-400 to-blue-500 text-white rounded-xl shadow-xl flex items-center justify-center gap-2 ${isRegistering ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            <Check className="w-5 h-5" />
-            <span>상품 등록</span>
+            {isRegistering ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Check className="w-5 h-5" />
+            )}
+            <span>{isRegistering ? '등록 중...' : '상품 등록'}</span>
           </motion.button>
         </div>
 
