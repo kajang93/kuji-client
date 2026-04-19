@@ -39,6 +39,7 @@ import { Menu } from "./components/icons";
 import { Toaster, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import BusinessPending from "./components/BusinessPending";
+import { fetchKujiBoards } from "./api/kuji";
 
 import {
   Prize,
@@ -48,7 +49,8 @@ import {
   InquiryComment,
   Inquiry,
   ScreenType,
-  Banner
+  Banner,
+  KujiBoard
 } from "./shared-types";
 
 
@@ -109,6 +111,46 @@ export default function App() {
     message: "",
     type: "info",
   });
+
+  const [animeCollections, setAnimeCollections] = useState<AnimeCollection[]>([]);
+
+  // Fetch Kuji Boards from server
+  const handleFetchBoards = async () => {
+    try {
+      const boards = await fetchKujiBoards();
+      const mappedCollections: AnimeCollection[] = boards.map((board: KujiBoard) => ({
+        id: board.id.toString(),
+        name: board.title,
+        image: board.images.find(img => img.imageType === 'THUMBNAIL')?.imageUrl || 
+               board.images[0]?.imageUrl || 
+               "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
+        totalKuji: 80, // Default for now
+        remainingKuji: 80,
+        boardId: board.id,
+        operationStatus: board.status === 'ACTIVE' ? 'active' : 
+                         board.status === 'PREPARING' ? 'scheduled' : 'ended',
+        prizes: [
+          // Mock prizes for now as requested by UI structure
+          {
+            id: "A",
+            rank: "A",
+            name: "A상 피규어",
+            image: board.images.find(img => img.imageType === 'THUMBNAIL')?.imageUrl || "",
+            totalCount: 2,
+            remainingCount: 2,
+            opened: [false, false],
+          }
+        ]
+      }));
+      setAnimeCollections(mappedCollections);
+    } catch (error) {
+      console.error("Failed to fetch boards:", error);
+    }
+  };
+
+  useEffect(() => {
+    handleFetchBoards();
+  }, []);
 
   // Check for existing session or Kakao redirect on mount
   useEffect(() => {
@@ -202,261 +244,7 @@ export default function App() {
     },
   ]);
 
-  const animeCollections: AnimeCollection[] = [
-    {
-      id: "1",
-      name: "원피스",
-      image:
-        "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
-      totalKuji: 80,
-      remainingKuji: 80,
-      operationStatus: "active", // 운영중
-      prizes: [
-        {
-          id: "A",
-          rank: "A",
-          name: "A상 피규어",
-          image:
-            "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=200",
-          totalCount: 2,
-          remainingCount: 2,
-          opened: [false, false],
-        },
-        {
-          id: "B",
-          rank: "B",
-          name: "B상 피규어",
-          image:
-            "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=200",
-          totalCount: 3,
-          remainingCount: 3,
-          opened: [false, false, false],
-        },
-        {
-          id: "C",
-          rank: "C",
-          name: "C상 피규어",
-          image:
-            "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=200",
-          totalCount: 2,
-          remainingCount: 2,
-          opened: [false, false],
-        },
-        {
-          id: "D",
-          rank: "D",
-          name: "D상 피규어",
-          image:
-            "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=200",
-          totalCount: 3,
-          remainingCount: 3,
-          opened: [false, false, false],
-        },
-        {
-          id: "E",
-          rank: "E",
-          name: "E상 피규어",
-          image:
-            "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=200",
-          totalCount: 1,
-          remainingCount: 1,
-          opened: [false],
-        },
-        {
-          id: "F",
-          rank: "F",
-          name: "F상 머그",
-          image:
-            "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=200",
-          totalCount: 1,
-          remainingCount: 1,
-          opened: [false],
-        },
-        {
-          id: "G",
-          rank: "G",
-          name: "G상 아크릴 스탠드",
-          image:
-            "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=200",
-          totalCount: 24,
-          remainingCount: 24,
-          opened: new Array(24).fill(false),
-        },
-        {
-          id: "H",
-          rank: "H",
-          name: "H상 코드밴드/코스터",
-          image:
-            "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=200",
-          totalCount: 21,
-          remainingCount: 21,
-          opened: new Array(21).fill(false),
-        },
-      ],
-    },
-    {
-      id: "2",
-      name: "귀멸의 칼날",
-      image:
-        "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=400",
-      totalKuji: 80,
-      remainingKuji: 80,
-      operationStatus: "scheduled", // 운영예정
-      prizes: [
-        {
-          id: "A",
-          rank: "A",
-          name: "A상 피규어",
-          image:
-            "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=200",
-          totalCount: 2,
-          remainingCount: 2,
-          opened: [false, false],
-        },
-        {
-          id: "B",
-          rank: "B",
-          name: "B상 피규어",
-          image:
-            "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=200",
-          totalCount: 3,
-          remainingCount: 3,
-          opened: [false, false, false],
-        },
-        {
-          id: "C",
-          rank: "C",
-          name: "C상 피규어",
-          image:
-            "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=200",
-          totalCount: 2,
-          remainingCount: 2,
-          opened: [false, false],
-        },
-        {
-          id: "D",
-          rank: "D",
-          name: "D상 피규어",
-          image:
-            "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=200",
-          totalCount: 3,
-          remainingCount: 3,
-          opened: [false, false, false],
-        },
-        {
-          id: "E",
-          rank: "E",
-          name: "E상 타월",
-          image:
-            "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=200",
-          totalCount: 5,
-          remainingCount: 5,
-          opened: new Array(5).fill(false),
-        },
-        {
-          id: "F",
-          rank: "F",
-          name: "F상 파우치",
-          image:
-            "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=200",
-          totalCount: 8,
-          remainingCount: 8,
-          opened: new Array(8).fill(false),
-        },
-        {
-          id: "G",
-          rank: "G",
-          name: "G상 키링",
-          image:
-            "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=200",
-          totalCount: 30,
-          remainingCount: 30,
-          opened: new Array(30).fill(false),
-        },
-      ],
-    },
-    {
-      id: "3",
-      name: "나루토",
-      image:
-        "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=400",
-      totalKuji: 80,
-      remainingKuji: 80,
-      operationStatus: "ended", // 운영종료
-      prizes: [
-        {
-          id: "A",
-          rank: "A",
-          name: "A상 피규어",
-          image:
-            "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=200",
-          totalCount: 1,
-          remainingCount: 1,
-          opened: [false],
-        },
-        {
-          id: "B",
-          rank: "B",
-          name: "B상 피규어",
-          image:
-            "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=200",
-          totalCount: 2,
-          remainingCount: 2,
-          opened: [false, false],
-        },
-        {
-          id: "C",
-          rank: "C",
-          name: "C상 피규어",
-          image:
-            "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=200",
-          totalCount: 3,
-          remainingCount: 3,
-          opened: [false, false, false],
-        },
-        {
-          id: "D",
-          rank: "D",
-          name: "D상 피규어",
-          image:
-            "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=200",
-          totalCount: 4,
-          remainingCount: 4,
-          opened: [false, false, false, false],
-        },
-        {
-          id: "E",
-          rank: "E",
-          name: "E상 플레이트",
-          image:
-            "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=200",
-          totalCount: 10,
-          remainingCount: 10,
-          opened: new Array(10).fill(false),
-        },
-        {
-          id: "F",
-          rank: "F",
-          name: "F상 스티커",
-          image:
-            "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=200",
-          totalCount: 25,
-          remainingCount: 25,
-          opened: new Array(25).fill(false),
-        },
-        {
-          id: "G",
-          rank: "G",
-          name: "G상 배지",
-          image:
-            "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=200",
-          totalCount: 35,
-          remainingCount: 35,
-          opened: new Array(35).fill(false),
-        },
-      ],
-    },
-  ];
+  // Remove static animeCollections array
 
   const handleAnimeSelect = (anime: AnimeCollection) => {
     setSelectedAnime(anime);

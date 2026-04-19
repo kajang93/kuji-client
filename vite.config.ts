@@ -69,7 +69,11 @@ export default defineConfig({
   server: {
     host: true, // 로컬 네트워크(192.168.x.x)에서도 접속 가능하도록 설정
     proxy: {
-      '/api': { // 만약 Spring Boot의 컨트롤러 주소가 /api 로 시작한다면
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/uploads': {
         target: 'http://localhost:8080',
         changeOrigin: true,
       }

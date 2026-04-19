@@ -389,7 +389,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
               className="space-y-4"
             >
               <div>
-                <label className="block text-white mb-2">사업자 ID</label>
+                <label className="block text-white mb-2">이메일</label>
                 <input
                   type="text"
                   value={userId}
@@ -400,7 +400,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                       businessPwRef.current?.focus();
                     }
                   }}
-                  placeholder="사업자 ID를 입력하세요"
+                  placeholder="이메일을 입력하세요"
                   className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
                   required
                 />
