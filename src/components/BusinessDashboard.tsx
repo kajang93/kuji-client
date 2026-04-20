@@ -12,7 +12,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
   const stats = [
     {
       title: '등록된 시리즈',
-      value: '3',
+      value: '0',
       icon: Package,
       color: 'from-purple-600 to-purple-700',
       bgColor: 'bg-purple-500/20',
@@ -20,7 +20,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
     },
     {
       title: '오늘 판매',
-      value: '12',
+      value: '0',
       icon: ShoppingCart,
       color: 'from-blue-600 to-blue-700',
       bgColor: 'bg-blue-500/20',
@@ -28,7 +28,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
     },
     {
       title: '배송 대기',
-      value: '8',
+      value: '0',
       icon: Truck,
       color: 'from-pink-600 to-pink-700',
       bgColor: 'bg-pink-500/20',
@@ -36,7 +36,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
     },
     {
       title: '이번 달 매출',
-      value: '₩1,250,000',
+      value: '₩0',
       icon: DollarSign,
       color: 'from-cyan-600 to-cyan-700',
       bgColor: 'bg-cyan-500/20',
@@ -155,23 +155,9 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
             className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/20 shadow-lg"
           >
             <div className="space-y-3">
-              {[
-                { time: '10분 전', event: '원피스 시리즈 - B상 판매', icon: ShoppingCart, color: 'text-green-400' },
-                { time: '1시간 전', event: '귀멸의 칼날 시리즈 배송 처리', icon: Truck, color: 'text-blue-400' },
-                { time: '3시간 전', event: '나루토 시리즈 - A상 판매', icon: ShoppingCart, color: 'text-green-400' },
-                { time: '5시간 전', event: '원피스 시리즈 - G상 판매', icon: ShoppingCart, color: 'text-green-400' },
-                { time: '7시간 전', event: '나루토 시리즈 배송 처리', icon: Truck, color: 'text-blue-400' },
-              ].map((activity, index) => (
-                <div key={index} className="flex items-center gap-3 pb-3 border-b border-white/10 last:border-0 last:pb-0">
-                  <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <activity.icon className={`w-4 h-4 ${activity.color}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-white text-sm">{activity.event}</div>
-                    <div className="text-white/50 text-xs">{activity.time}</div>
-                  </div>
-                </div>
-              ))}
+              <div className="text-center py-10 text-white/40">
+                <p>최근 활동 내역이 없습니다.</p>
+              </div>
             </div>
           </motion.div>
 

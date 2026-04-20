@@ -11,35 +11,11 @@ type Winner = {
 };
 
 export default function LiveTicker() {
-  const [winners, setWinners] = useState<Winner[]>([
-    { id: '1', user: 'happy**', prize: 'A상 루피 피규어', rank: 'A', time: '방금 전' },
-    { id: '2', user: 'lucky7**', prize: 'Last One상 샹크스', rank: 'Last One', time: '방금 전' },
-    { id: '3', user: 'winner**', prize: 'B상 조로 피규어', rank: 'B', time: '1분 전' },
-    { id: '4', user: 'kuji_king**', prize: 'A상 에이스 피규어', rank: 'A', time: '2분 전' },
-    { id: '5', user: 'otaku1**', prize: 'C상 쵸파 인형', rank: 'C', time: '3분 전' },
-    { id: '6', user: 'gacha**', prize: 'A상 나루토 피규어', rank: 'A', time: '5분 전' },
-    { id: '7', user: 'onepiece**', prize: 'Last One상 카이도우', rank: 'Last One', time: '7분 전' },
-    { id: '8', user: 'love_ani**', prize: 'B상 사스케 피규어', rank: 'B', time: '10분 전' },
-    { id: '9', user: 'zoro_fan**', prize: 'D상 텀블러', rank: 'D', time: '12분 전' },
-    { id: '10', user: 'nami_swan**', prize: 'E상 타올', rank: 'E', time: '15분 전' },
-  ]);
-
+  const [winners, setWinners] = useState<Winner[]>([]);
+  // Mock generation disabled to keep data clean as requested
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Add mock new winner every 5-10 seconds
-      if (Math.random() > 0.3) {
-        const newWinner = {
-          id: Date.now().toString(),
-          user: `user${Math.floor(Math.random() * 9000) + 1000}**`,
-          prize: ['A상', 'B상', 'Last One상'][Math.floor(Math.random() * 3)] + ' 피규어',
-          rank: ['A', 'B', 'Last One'][Math.floor(Math.random() * 3)],
-          time: '방금 전'
-        };
-        setWinners(prev => [newWinner, ...prev.slice(0, 4)]);
-      }
-    }, 8000);
-
-    return () => clearInterval(interval);
+    // Real-time winner logic will be implemented here later
+    return () => {};
   }, []);
 
   return (

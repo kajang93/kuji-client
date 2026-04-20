@@ -58,20 +58,7 @@ import {
 
 export default function App() {
   const [screen, setScreen] = useState<ScreenType>("main");
-  const [banners, setBanners] = useState<Banner[]>([
-    {
-      id: "1",
-      title: "이치방쿠지",
-      subtitle: "一番くじ",
-      imageUrl:
-        "https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=1920",
-      order: 1,
-      isActive: true,
-      buttonText: "시작하기",
-      createdAt: "2024-01-01",
-      updatedAt: "2024-01-01",
-    },
-  ]);
+  const [banners, setBanners] = useState<Banner[]>([]);
   const [selectedAnime, setSelectedAnime] =
     useState<AnimeCollection | null>(null);
   const [selectedKuji, setSelectedKuji] = useState<number[]>(
@@ -129,18 +116,7 @@ export default function App() {
         boardId: board.id,
         operationStatus: board.status === 'ACTIVE' ? 'active' : 
                          board.status === 'PREPARING' ? 'scheduled' : 'ended',
-        prizes: [
-          // Mock prizes for now as requested by UI structure
-          {
-            id: "A",
-            rank: "A",
-            name: "A상 피규어",
-            image: board.images.find(img => img.imageType === 'THUMBNAIL')?.imageUrl || "",
-            totalCount: 2,
-            remainingCount: 2,
-            opened: [false, false],
-          }
-        ]
+        prizes: []
       }));
       setAnimeCollections(mappedCollections);
     } catch (error) {
@@ -185,7 +161,6 @@ export default function App() {
         profileImageUrl: userData.profileImageUrl || "",
       };
 
-      console.log("Logged in user type:", formattedUser.type);
       setUser(formattedUser);
 
       if (formattedUser.type === "business" && formattedUser.isActive === false) {
@@ -213,38 +188,10 @@ export default function App() {
     });
   const [winningHistory, setWinningHistory] = useState<
     WinningItem[]
-  >([
-    // Mock old data
-    {
-      id: "W20241116003",
-      date: "2024-11-16 11:25",
-      animeName: "나루토 시리즈",
-      rank: "C",
-      prizeName: "C상 피규어",
-      prizeImage:
-        "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=200",
-      deliveryStatus: "preparing",
-    },
-  ]);
+  >([]);
 
   // Inquiries state
-  const [inquiries, setInquiries] = useState<Inquiry[]>([
-    {
-      id: "INQ001",
-      customerId: "customer1",
-      customerName: "홍길동",
-      sellerId: "seller1",
-      sellerName: "원피스 전문샵",
-      orderNumber: "W20241116003",
-      inquiryType: "배송", // Added inquiry type
-      subject: "배송 문의",
-      content: "배송이 언제 출발하나요?",
-      status: "pending",
-      createdAt: "2024-11-18 14:30",
-      comments: [],
-      isNew: true,
-    },
-  ]);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
 
   // Remove static animeCollections array
 

@@ -21,36 +21,7 @@ export default function SupportHistory({ onBack }: SupportHistoryProps) {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
 
   // Mock support tickets
-  const tickets: SupportTicket[] = [
-    {
-      id: 'INQ-2024-001',
-      category: '주문/배송',
-      title: '배송 주소 변경 문의',
-      content: '주문한 상품의 배송 주소를 변경하고 싶습니다. 가능한가요?',
-      status: 'answered',
-      createdAt: '2024-11-18 14:30',
-      answer: '안녕하세요. 배송 전이라면 주소 변경이 가능합니다. 고객센터(1588-0000)로 연락 주시면 빠르게 처리해드리겠습니다.',
-      answeredAt: '2024-11-18 16:20',
-    },
-    {
-      id: 'INQ-2024-002',
-      category: '상품 문의',
-      title: '피규어 재입고 일정',
-      content: '원피스 A상 피규어 재입고 예정이 언제인가요?',
-      status: 'answered',
-      createdAt: '2024-11-17 10:15',
-      answer: '원피스 A상은 다음 주 화요일(11/26) 재입고 예정입니다. 재입고 알림을 설정하시면 입고 시 바로 알려드립니다.',
-      answeredAt: '2024-11-17 14:50',
-    },
-    {
-      id: 'INQ-2024-003',
-      category: '결제',
-      title: '결제 오류 문의',
-      content: '결제 시도 중 오류가 발생했습니다. 확인 부탁드립니다.',
-      status: 'pending',
-      createdAt: '2024-11-19 09:00',
-    },
-  ];
+  const tickets: SupportTicket[] = [];
 
   return (
     <div className="min-h-screen flex flex-col">

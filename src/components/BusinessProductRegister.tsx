@@ -26,8 +26,8 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
   const [seriesName, setSeriesName] = useState('');
   const [seriesImage, setSeriesImage] = useState<string | null>(null);
   const [seriesFile, setSeriesFile] = useState<File | null>(null);
-  const [pricePerDraw, setPricePerDraw] = useState<number>(10000);
-  const [rewardRate, setRewardRate] = useState<number>(100); // 100% default
+  const [pricePerDraw, setPricePerDraw] = useState<number | ''>('');
+  const [rewardRate, setRewardRate] = useState<number | ''>('');
   const [selectedRank, setSelectedRank] = useState<string>('A');
   const [rankData, setRankData] = useState<Record<string, ProductItem[]>>({});
   const [isRegistering, setIsRegistering] = useState(false);

@@ -43,32 +43,7 @@ export default function PurchaseHistory({ onBack }: PurchaseHistoryProps) {
   });
 
   // Mock purchase history data
-  const purchases: PurchaseItem[] = [
-    {
-      id: '20241118001',
-      date: '2024-11-18 14:30',
-      animeName: '원피스 원 수당 해적단',
-      quantity: 5,
-      totalPrice: 3250,
-      status: 'completed',
-    },
-    {
-      id: '20241117002',
-      date: '2024-11-17 16:45',
-      animeName: '나루토 시리즈',
-      quantity: 3,
-      totalPrice: 1950,
-      status: 'completed',
-    },
-    {
-      id: '20241116003',
-      date: '2024-11-16 11:20',
-      animeName: '귀멸의 칼날',
-      quantity: 10,
-      totalPrice: 6500,
-      status: 'pending',
-    },
-  ];
+  const purchases: PurchaseItem[] = [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
