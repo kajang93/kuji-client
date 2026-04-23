@@ -18,6 +18,9 @@ export interface KujiBoard {
   rewardRate: number;
   createdAt: string;
   images: KujiBoardImage[];
+  totalCount?: number; // Added for aggregate info
+  remainCount?: number; // Added for aggregate info
+  prizes?: Prize[];    // Added for detailed info
 }
 
 export type Prize = {
@@ -27,6 +30,8 @@ export type Prize = {
   image: string;
   totalCount: number;
   remainingCount: number;
+  totalQty?: number;     // Backend field alignment
+  remainQty?: number;    // Backend field alignment
   opened: boolean[];
 };
 

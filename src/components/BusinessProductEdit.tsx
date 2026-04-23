@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { motion } from './motion';
 import { ChevronLeft, Save, Upload, X, Plus } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import type { AnimeCollection } from '@/shared-types';
+import type { AnimeCollection, Prize } from '@/shared-types';
+import { updateKujiItem, deleteKujiItem, registerBoardItems } from '../api/kuji';
 
 type BusinessProductEditProps = {
   onBack: () => void;
@@ -15,6 +16,7 @@ type PrizeProduct = {
   name: string;
   image: string;
   stock: number;
+  originalData?: Prize; // Store original to check for changes
 };
 
 export default function BusinessProductEdit({ onBack, collection, onSave }: BusinessProductEditProps) {
@@ -22,21 +24,25 @@ export default function BusinessProductEdit({ onBack, collection, onSave }: Busi
   const [seriesImage, setSeriesImage] = useState(collection.image);
   const [operationStatus, setOperationStatus] = useState<'scheduled' | 'active' | 'ended'>(collection.operationStatus || 'scheduled');
   
-  // Check if editing is allowed (only scheduled products can be edited)
-  const isEditingAllowed = collection.operationStatus === 'scheduled' || !collection.operationStatus;
+  // Check if editing is allowed based on current UI selection
+  const isEditingAllowed = operationStatus === 'scheduled';
   
   // Initialize prizes with products
   const [prizes, setPrizes] = useState<Record<string, PrizeProduct[]>>(
     collection.prizes.reduce((acc, prize) => {
-      acc[prize.rank] = [{
+      if (!acc[prize.rank]) acc[prize.rank] = [];
+      acc[prize.rank].push({
         id: prize.id,
         name: prize.name,
         image: prize.image,
-        stock: prize.remainingCount
-      }];
+        stock: prize.remainingCount,
+        originalData: prize
+      });
       return acc;
     }, {} as Record<string, PrizeProduct[]>)
   );
+  
+  const [isSaving, setIsSaving] = useState(false);
 
   const ranks = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
@@ -55,7 +61,20 @@ export default function BusinessProductEdit({ onBack, collection, onSave }: Busi
     }));
   };
 
-  const handleRemoveProduct = (rank: string, index: number) => {
+  const handleRemoveProduct = async (rank: string, index: number) => {
+    const product = prizes[rank][index];
+    
+    // If it's an existing item (numeric ID), delete from server
+    if (!isNaN(Number(product.id))) {
+      if (!confirm('정말로 이 경품을 삭제하시겠습니까?')) return;
+      try {
+        await deleteKujiItem(Number(product.id));
+      } catch (error) {
+        alert('경품 삭제에 실패했습니다.');
+        return;
+      }
+    }
+
     setPrizes(prev => ({
       ...prev,
       [rank]: prev[rank].filter((_, i) => i !== index)
@@ -82,29 +101,55 @@ export default function BusinessProductEdit({ onBack, collection, onSave }: Busi
     }
   };
 
-  const handleSave = () => {
-    // Convert prizes back to collection format
-    const updatedPrizes = Object.entries(prizes).flatMap(([rank, products]) =>
-      products.map(product => ({
-        id: product.id,
-        rank: rank as any,
-        name: product.name,
-        image: product.image,
-        totalCount: product.stock || 0,
-        remainingCount: product.stock || 0,
-        opened: new Array(Math.max(0, product.stock || 0)).fill(false)
-      }))
-    );
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // 1. Separate items: Updates vs New
+      const itemsToUpdate: PrizeProduct[] = [];
+      const itemsToCreate: { data: any; file?: File }[] = [];
 
-    const updatedCollection: AnimeCollection = {
-      ...collection,
-      name: seriesName,
-      image: seriesImage,
-      prizes: updatedPrizes,
-      operationStatus: operationStatus
-    };
+      Object.entries(prizes).forEach(([rank, products]) => {
+        products.forEach(product => {
+          if (!isNaN(Number(product.id))) {
+            // Check if changed
+            const original = product.originalData;
+            if (original && (original.name !== product.name || original.remainingCount !== product.stock)) {
+              itemsToUpdate.push(product);
+            }
+          } else {
+            // New item
+            itemsToCreate.push({
+              data: { grade: rank, name: product.name, totalQty: product.stock },
+              // In this simplified version, we're not handling new images during edit yet
+              // but we can add image support if needed
+            });
+          }
+        });
+      });
 
-    onSave(updatedCollection);
+      // 2. Execute Updates
+      for (const item of itemsToUpdate) {
+        await updateKujiItem(Number(item.id), {
+          name: item.name,
+          totalQty: item.stock
+        });
+      }
+
+      // 3. Execute Creations (if any)
+      if (itemsToCreate.length > 0) {
+        const createData = itemsToCreate.map(i => i.data);
+        const createFiles = itemsToCreate.map(i => i.file).filter((f): f is File => !!f);
+        await registerBoardItems(Number(collection.id), createData, createFiles);
+      }
+
+      alert('성공적으로 저장되었습니다.');
+      onBack();
+    } catch (error) {
+      console.error('Save failed:', error);
+      alert('저장 도중 오류가 발생했습니다.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const rankColors: Record<string, string> = {
@@ -226,7 +271,6 @@ export default function BusinessProductEdit({ onBack, collection, onSave }: Busi
         <div className="space-y-4">
           {ranks.map((rank, rankIndex) => {
             const products = prizes[rank] || [];
-            if (products.length === 0) return null;
 
             return (
               <motion.div

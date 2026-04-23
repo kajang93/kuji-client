@@ -39,7 +39,7 @@ import { Menu } from "./components/icons";
 import { Toaster, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import BusinessPending from "./components/BusinessPending";
-import { fetchKujiBoards } from "./api/kuji";
+import { fetchKujiBoards, fetchKujiBoardDetail } from "./api/kuji";
 
 import {
   Prize,
@@ -111,8 +111,8 @@ export default function App() {
         image: board.images.find(img => img.imageType === 'THUMBNAIL')?.imageUrl || 
                board.images[0]?.imageUrl || 
                "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
-        totalKuji: 80, // Default for now
-        remainingKuji: 80,
+        totalKuji: board.totalCount || 0,
+        remainingKuji: board.remainCount || 0,
         boardId: board.id,
         operationStatus: board.status === 'ACTIVE' ? 'active' : 
                          board.status === 'PREPARING' ? 'scheduled' : 'ended',
@@ -195,15 +195,40 @@ export default function App() {
 
   // Remove static animeCollections array
 
-  const handleAnimeSelect = (anime: AnimeCollection) => {
-    setSelectedAnime(anime);
-    setScreen("detail");
-    // Initialize kuji status - 15% already opened
-    const status = Array.from(
-      { length: anime.totalKuji },
-      () => Math.random() < 0.15,
-    );
-    setKujiStatus(status);
+  const handleAnimeSelect = async (anime: AnimeCollection) => {
+    try {
+      // 1. Fetch real detail data from server
+      const boardDetail = await fetchKujiBoardDetail(Number(anime.id));
+      
+      // 2. Map backend items to frontend prizes structure
+      const updatedPrizes = boardDetail.prizes?.map(p => ({
+        ...p,
+        // Ensure frontend fields are synced with backend qty fields
+        totalCount: p.totalQty || p.totalCount,
+        remainingCount: p.remainQty || p.remainingCount,
+        opened: p.opened || []
+      })) || [];
+
+      const updatedAnime = {
+        ...anime,
+        prizes: updatedPrizes,
+        totalKuji: boardDetail.totalCount || anime.totalKuji,
+        remainingKuji: boardDetail.remainCount || anime.remainingKuji
+      };
+
+      setSelectedAnime(updatedAnime);
+      setScreen("detail");
+      
+      // Initialize kuji status - currently simplified, later can link to real tags
+      const status = Array.from(
+        { length: updatedAnime.totalKuji },
+        () => Math.random() < 0.15,
+      );
+      setKujiStatus(status);
+    } catch (error) {
+      console.error("Failed to load board details:", error);
+      alert("상품 상세 정보를 가져오는데 실패했습니다.");
+    }
   };
 
   const handlePurchase = (count: number) => {

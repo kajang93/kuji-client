@@ -30,6 +30,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
   const [rewardRate, setRewardRate] = useState<number | ''>('');
   const [selectedRank, setSelectedRank] = useState<string>('A');
   const [rankData, setRankData] = useState<Record<string, ProductItem[]>>({});
+  const [productFiles, setProductFiles] = useState<Record<string, File>>({}); // Added to track actual File objects
   const [isRegistering, setIsRegistering] = useState(false);
   
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -63,6 +64,9 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
   const handleProductImageUpload = (productId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Store the actual file for submission
+      setProductFiles(prev => ({ ...prev, [productId]: file }));
+      
       const reader = new FileReader();
       reader.onloadend = () => {
         setRankData(prev => ({
@@ -131,18 +135,42 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
       // 1. Create Kuji Board
       const boardId = await createKujiBoard({
         title: seriesName,
-        pricePerDraw: pricePerDraw,
+        pricePerDraw: Number(pricePerDraw) || 0,
         status: 'PREPARING',
-        rewardRate: rewardRate
+        rewardRate: Number(rewardRate) || 0
       });
 
       // 2. Upload Series Image as THUMBNAIL
       await uploadBoardImages(boardId, 'THUMBNAIL', [seriesFile]);
       
-      // 3. Upload Detail images (if any) - for now just the same one or skip
-      // In a real app, we'd have a separate field for detail images
+      // 3. Prepare Items Data and Files in synchronized order
+      const allItemsData: { grade: string; name: string; totalQty: number }[] = [];
+      const allItemFiles: File[] = [];
+
+      // Iterate through all ranks and products
+      Object.entries(rankData).forEach(([rank, products]) => {
+        products.forEach(product => {
+          allItemsData.push({
+            grade: rank,
+            name: product.name,
+            totalQty: product.stock
+          });
+          
+          // Get the corresponding file for this product
+          const file = productFiles[product.id];
+          if (file) {
+            allItemFiles.push(file);
+          }
+        });
+      });
+
+      // 4. Register All Items
+      if (allItemsData.length > 0) {
+        // Only call if there are items, although we validated this above
+        await import('../api/kuji').then(m => m.registerBoardItems(boardId, allItemsData, allItemFiles));
+      }
       
-      alert('쿠지 상품이 성공적으로 등록되었습니다.');
+      alert('쿠지 상품과 경품 리스트가 성공적으로 등록되었습니다.');
       onComplete?.();
     } catch (error) {
       console.error('Registration failed:', error);
