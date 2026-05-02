@@ -105,19 +105,43 @@ export default function App() {
   const handleFetchBoards = async () => {
     try {
       const boards = await fetchKujiBoards();
-      const mappedCollections: AnimeCollection[] = boards.map((board: KujiBoard) => ({
-        id: board.id.toString(),
-        name: board.title,
-        image: board.images.find(img => img.imageType === 'THUMBNAIL')?.imageUrl || 
-               board.images[0]?.imageUrl || 
-               "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
-        totalKuji: board.totalCount || 0,
-        remainingKuji: board.remainCount || 0,
-        boardId: board.id,
-        operationStatus: board.status === 'ACTIVE' ? 'active' : 
-                         board.status === 'PREPARING' ? 'scheduled' : 'ended',
-        prizes: []
-      }));
+      
+      const mappedCollections: AnimeCollection[] = await Promise.all(
+        boards.map(async (board: KujiBoard) => {
+          let prizes: Prize[] = [];
+          try {
+            const items = await fetchKujiBoardDetail(board.id);
+            prizes = items.map((p: any) => ({
+              ...p,
+              id: p.id?.toString() || Math.random().toString(),
+              rank: p.grade || p.rank,
+              image: (p.imageUrls && p.imageUrls.length > 0) 
+                       ? p.imageUrls[0] 
+                       : p.imageUrl || p.image,
+              totalCount: p.totalQty ?? p.totalCount ?? 0,
+              remainingCount: p.remainQty ?? p.remainingCount ?? 0,
+              opened: p.opened || []
+            }));
+          } catch (e) {
+            console.error("Failed to fetch details for board", board.id, e);
+          }
+
+          return {
+            id: board.id.toString(),
+            name: board.title,
+            image: board.images.find((img: any) => img.imageType === 'THUMBNAIL')?.imageUrl || 
+                   board.images[0]?.imageUrl || 
+                   "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
+            totalKuji: board.totalCount || 0,
+            remainingKuji: board.remainCount || 0,
+            boardId: board.id,
+            operationStatus: board.status === 'ACTIVE' ? 'active' : 
+                             board.status === 'PREPARING' ? 'scheduled' : 'ended',
+            prizes
+          };
+        })
+      );
+      
       setAnimeCollections(mappedCollections);
     } catch (error) {
       console.error("Failed to fetch boards:", error);
@@ -197,23 +221,29 @@ export default function App() {
 
   const handleAnimeSelect = async (anime: AnimeCollection) => {
     try {
-      // 1. Fetch real detail data from server
-      const boardDetail = await fetchKujiBoardDetail(Number(anime.id));
+      // 1. Fetch real detail data from server (Backend returns List<KujiItem>)
+      const items = await fetchKujiBoardDetail(Number(anime.id));
       
       // 2. Map backend items to frontend prizes structure
-      const updatedPrizes = boardDetail.prizes?.map(p => ({
+      // 2. Map backend items (KujiItemResponse) to frontend prizes structure
+      const updatedPrizes = items.map(p => ({
         ...p,
-        // Ensure frontend fields are synced with backend qty fields
-        totalCount: p.totalQty || p.totalCount,
-        remainingCount: p.remainQty || p.remainingCount,
-        opened: p.opened || []
-      })) || [];
+        id: (p as any).id?.toString() || Math.random().toString(),
+        rank: (p as any).grade || (p as any).rank,
+        // Match the backend's imageUrls array
+        image: ((p as any).imageUrls && (p as any).imageUrls.length > 0) 
+                 ? (p as any).imageUrls[0] 
+                 : (p as any).imageUrl || (p as any).image,
+        totalCount: (p as any).totalQty ?? (p as any).totalCount ?? 0,
+        remainingCount: (p as any).remainQty ?? (p as any).remainingCount ?? 0,
+        opened: (p as any).opened || []
+      }));
 
       const updatedAnime = {
         ...anime,
         prizes: updatedPrizes,
-        totalKuji: boardDetail.totalCount || anime.totalKuji,
-        remainingKuji: boardDetail.remainCount || anime.remainingKuji
+        totalKuji: updatedPrizes.reduce((sum, p) => sum + p.totalCount, 0),
+        remainingKuji: updatedPrizes.reduce((sum, p) => sum + p.remainingCount, 0)
       };
 
       setSelectedAnime(updatedAnime);
@@ -1096,9 +1126,39 @@ export default function App() {
             onBack={() => setScreen("businessDashboard")}
             onOpenSidebar={() => setIsSidebarOpen(true)}
             collections={animeCollections}
-            onEdit={(id) => {
-              setEditingCollectionId(id);
-              setScreen("businessProductEdit");
+            onEdit={async (id) => {
+              try {
+                // Fetch full details of items (Backend returns List<KujiItem>)
+                const items = await fetchKujiBoardDetail(Number(id));
+                const updatedPrizes = items.map(p => ({
+                  ...p,
+                  id: (p as any).id?.toString() || Math.random().toString(),
+                  rank: (p as any).grade || (p as any).rank,
+                  // Match the backend's imageUrls array
+                  image: ((p as any).imageUrls && (p as any).imageUrls.length > 0) 
+                           ? (p as any).imageUrls[0] 
+                           : (p as any).imageUrl || (p as any).image,
+                  totalCount: (p as any).totalQty ?? (p as any).totalCount ?? 0,
+                  remainingCount: (p as any).remainQty ?? (p as any).remainingCount ?? 0,
+                  opened: (p as any).opened || []
+                }));
+
+                // Update the collection in our global state to include prizes
+                setAnimeCollections(prev => prev.map(c => 
+                  c.id === id ? { 
+                    ...c, 
+                    prizes: updatedPrizes,
+                    totalKuji: updatedPrizes.reduce((sum, p) => sum + p.totalCount, 0),
+                    remainingKuji: updatedPrizes.reduce((sum, p) => sum + p.remainingCount, 0)
+                  } : c
+                ));
+                
+                setEditingCollectionId(id);
+                setScreen("businessProductEdit");
+              } catch (error) {
+                console.error("Failed to fetch product details for editing:", error);
+                alert("상품 정보를 불러오는데 실패했습니다.");
+              }
             }}
           />
         )}

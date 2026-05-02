@@ -65,6 +65,20 @@ export const uploadBoardImages = async (
   }
 };
 
+export const updateKujiBoardStatus = async (
+  boardId: number,
+  status: BoardStatus
+): Promise<void> => {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`${API_BASE_URL}/${boardId}/status?status=${status}`, {
+    method: "PATCH",
+    headers: getHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to update kuji board status");
+  }
+};
+
 /**
  * Register multiple items for a kuji board with images.
  */
@@ -99,14 +113,14 @@ export const registerBoardItems = async (
 };
 
 /**
- * Fetch detailed information of a single board (includes prizes/items).
+ * Fetch detailed information of items for a board.
  */
-export const fetchKujiBoardDetail = async (boardId: number): Promise<KujiBoard> => {
+export const fetchKujiBoardDetail = async (boardId: number): Promise<Prize[]> => {
   const response = await fetch(`${API_BASE_URL}/${boardId}`, {
     headers: getHeaders(),
   });
   if (!response.ok) {
-    throw new Error(`Failed to fetch board detail for ID: ${boardId}`);
+    throw new Error(`Failed to fetch board details for ID: ${boardId}`);
   }
   return response.json();
 };
@@ -125,6 +139,29 @@ export const updateKujiItem = async (
   });
   if (!response.ok) {
     throw new Error("Failed to update kuji item");
+  }
+};
+
+/**
+ * Update a specific kuji item's image.
+ */
+export const updateKujiItemImage = async (
+  itemId: number,
+  file: File
+): Promise<void> => {
+  const token = localStorage.getItem("token");
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/items/${itemId}/images`, {
+    method: "POST",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+  if (!response.ok) {
+    throw new Error("Failed to update kuji item image");
   }
 };
 

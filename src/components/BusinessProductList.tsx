@@ -128,36 +128,50 @@ export default function BusinessProductList({ onBack, collections, onEdit, onOpe
 
                   {/* Prize List */}
                   <div className="border-t border-white/10 pt-4 mb-4">
-                    <div className="text-white/60 text-sm mb-3">상품 목록</div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {collection.prizes.map((prize) => (
-                        <div
-                          key={prize.id}
-                          className="bg-white/5 rounded-lg p-3 border border-white/10"
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
-                              prize.rank === 'A' ? 'bg-yellow-500' :
-                              prize.rank === 'B' ? 'bg-blue-500' :
-                              prize.rank === 'C' ? 'bg-orange-500' :
-                              prize.rank === 'D' ? 'bg-purple-500' :
-                              prize.rank === 'E' ? 'bg-green-500' :
-                              prize.rank === 'F' ? 'bg-pink-500' :
-                              prize.rank === 'G' ? 'bg-cyan-500' :
-                              'bg-red-500'
-                            }`}>
-                              {prize.rank}
-                            </div>
-                            <div className="flex-1 text-white text-sm truncate">
-                              {prize.name}
-                            </div>
-                          </div>
-                          <div className="text-white/60 text-xs">
-                            {prize.remainingCount}/{prize.totalCount}
-                          </div>
-                        </div>
-                      ))}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-white/60 text-sm">상품 목록</div>
+                      <div className="text-white/40 text-xs">총 {collection.prizes.length}개 항목</div>
                     </div>
+                    {collection.prizes.length === 0 ? (
+                      <div className="text-center py-4 bg-white/5 rounded-xl border border-dashed border-white/10">
+                        <p className="text-white/30 text-xs">수정 버튼을 눌러 경품을 등록하세요</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {collection.prizes.map((prize) => (
+                          <div
+                            key={prize.id}
+                            className="bg-white/5 rounded-lg p-2 border border-white/10 flex items-center gap-3"
+                          >
+                            <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-white/10">
+                              <ImageWithFallback
+                                src={prize.image}
+                                alt={prize.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className={`text-[10px] px-1 rounded-sm font-bold text-white ${
+                                  prize.rank === 'A' ? 'bg-yellow-500' :
+                                  prize.rank === 'B' ? 'bg-blue-500' :
+                                  prize.rank === 'C' ? 'bg-orange-500' :
+                                  'bg-purple-500'
+                                }`}>
+                                  {prize.rank}
+                                </span>
+                                <div className="text-white text-xs truncate">
+                                  {prize.name}
+                                </div>
+                              </div>
+                              <div className="text-white/50 text-[10px]">
+                                {prize.remainingCount}/{prize.totalCount}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Action Buttons */}

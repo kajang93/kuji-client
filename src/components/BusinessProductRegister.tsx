@@ -160,6 +160,9 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
           const file = productFiles[product.id];
           if (file) {
             allItemFiles.push(file);
+          } else {
+            // Push an empty blob to maintain array index mapping with allItemsData
+            allItemFiles.push(new File([new Blob()], "empty.bin", { type: "application/octet-stream" }));
           }
         });
       });
@@ -272,8 +275,11 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
               <label className="text-white/70 text-sm block mb-2">1회 구매 가격 (원)</label>
               <input
                 type="number"
-                value={pricePerDraw}
-                onChange={(e) => setPricePerDraw(parseInt(e.target.value) || 0)}
+                value={pricePerDraw === 0 || pricePerDraw === '' ? '' : pricePerDraw}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                  setPricePerDraw(val as number | '');
+                }}
                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-teal-400"
                 placeholder="예: 10000"
               />
@@ -282,8 +288,11 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
               <label className="text-white/70 text-sm block mb-2">환급률 (%)</label>
               <input
                 type="number"
-                value={rewardRate}
-                onChange={(e) => setRewardRate(parseInt(e.target.value) || 0)}
+                value={rewardRate === 0 || rewardRate === '' ? '' : rewardRate}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                  setRewardRate(val as number | '');
+                }}
                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-teal-400"
                 placeholder="예: 100"
               />
@@ -414,8 +423,11 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
                         <label className="text-white/60 text-xs block mb-1">재고</label>
                         <input
                           type="number"
-                          value={product.stock || ''}
-                          onChange={(e) => handleProductChange(product.id, 'stock', parseInt(e.target.value) || 0)}
+                          value={product.stock === 0 ? '' : product.stock}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                            handleProductChange(product.id, 'stock', val);
+                          }}
                           className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/40 focus:outline-none focus:border-teal-400"
                           placeholder="재고 수량"
                           min="0"
