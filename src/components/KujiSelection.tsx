@@ -157,7 +157,6 @@ export default function KujiSelection({ totalKuji, purchaseCount, kujiStatus, on
                 {/* Selected Glow Background */}
                 {isSelected && (
                    <motion.div
-                     layoutId={`glow-${index}`}
                      className="absolute -inset-2 bg-cyan-400/30 rounded-lg blur-md -z-10"
                      initial={{ opacity: 0 }}
                      animate={{ opacity: 1 }}

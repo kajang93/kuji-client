@@ -42,6 +42,8 @@ const MotionDiv = forwardRef<HTMLDivElement, MotionProps>(({
   dragElastic,
   onDragStart,
   onDragEnd,
+  layoutId,
+  layout,
   ...props 
 }, ref) => {
   const [isHovered, setIsHovered] = React.useState(false);
@@ -92,6 +94,8 @@ const MotionButton = forwardRef<HTMLButtonElement, MotionProps>(({
   transition,
   whileHover,
   whileTap,
+  layoutId,
+  layout,
   ...props 
 }, ref) => {
   const [isHovered, setIsHovered] = React.useState(false);
