@@ -16,6 +16,10 @@ export default function KujiSelection({ totalKuji, purchaseCount, kujiStatus, on
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
+    const container = document.getElementById('main-scroll-container');
+    if (container) {
+      container.scrollTo(0, 0);
+    }
   }, []);
 
   const toggleKuji = (index: number) => {
@@ -302,8 +306,9 @@ export default function KujiSelection({ totalKuji, purchaseCount, kujiStatus, on
       </div>
 
       {/* Fixed Confirm Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-purple-900 via-purple-900/95 to-transparent">
-        <motion.button
+      <div className="fixed bottom-0 left-0 right-0 px-6 pt-6 pb-[calc(env(safe-area-inset-bottom)+2rem)] z-40 bg-gradient-to-t from-purple-900 via-purple-900/95 to-transparent pointer-events-none">
+        <div className="pointer-events-auto">
+          <motion.button
           whileHover={{ scale: selectedKuji.length === purchaseCount ? 1.02 : 1 }}
           whileTap={{ scale: selectedKuji.length === purchaseCount ? 0.98 : 1 }}
           onClick={handleConfirm}
@@ -320,6 +325,7 @@ export default function KujiSelection({ totalKuji, purchaseCount, kujiStatus, on
               : `${purchaseCount - selectedKuji.length}개 더 선택하세요`}
           </div>
         </motion.button>
+        </div>
       </div>
     </div>
   );
