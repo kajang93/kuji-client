@@ -94,7 +94,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
   };
 
   return (
-    <div className="min-h-full pb-44 pt-[200px]">
+    <div className="min-h-full pb-44 pt-[140px]">
       {/* Header - Fixed Position */}
       <div className="fixed top-0 left-0 right-0 z-30 bg-gradient-to-r from-purple-900 to-blue-900 border-b-2 border-cyan-400/50 shadow-lg pt-safe-top pb-0">
         <div className="flex items-center justify-between p-4 max-w-md mx-auto w-full">
@@ -119,10 +119,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
           </div>
         </div>
         
-        {/* Subtitle - Moved inside fixed header */}
-        <div className="bg-gradient-to-r from-blue-800 to-purple-800 py-3 px-6 border-t border-white/10">
-          <p className="text-white text-center font-medium shadow-black drop-shadow-sm">원 수당 해적단</p>
-        </div>
+
       </div>
 
       {/* Status Board (현황판) */}
@@ -132,7 +129,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
             <h3 className="text-white font-bold flex items-center gap-2">
               <span className="text-yellow-400">📊</span> 현황판
             </h3>
-            <div className="text-white/50 text-xs">실시간 업데이트 중</div>
+
           </div>
           
           <div className="space-y-3">
@@ -214,7 +211,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
       <div className="px-6 py-3">
         <div className="bg-gradient-to-r from-purple-800 to-blue-800 rounded-xl p-4 text-center border border-cyan-400/30">
           <p className="text-cyan-200 text-sm">
-            상품을 대신하여 상품번호를 확인할 수 있습니다.
+            구매 전 남은 경품 수량을 꼭 확인해 주세요.
           </p>
         </div>
       </div>
@@ -307,10 +304,10 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                 }}
                 className="flex justify-center mb-3"
               >
-                <div className="w-20 h-20 rounded-full overflow-hidden border-3 border-yellow-400 shadow-lg">
-                  <img 
-                    src="https://images.unsplash.com/photo-1629019725574-72be06ff740f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjdXRlJTIwYW5pbWUlMjBjaGFyYWN0ZXIlMjBjaGliaXxlbnwxfHx8fDE3NjM1MzM2MTZ8MA&ixlib=rb-4.1.0&q=80&w=1080" 
-                    alt="Cute Character"
+                <div className="w-20 h-20 rounded-full overflow-hidden border-3 border-yellow-400 shadow-lg bg-white">
+                  <ImageWithFallback
+                    src={anime.image}
+                    alt={anime.name}
                     className="w-full h-full object-cover"
                   />
                 </div>
