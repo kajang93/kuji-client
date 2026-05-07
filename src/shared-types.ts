@@ -18,9 +18,10 @@ export interface KujiBoard {
   rewardRate: number;
   createdAt: string;
   images: KujiBoardImage[];
-  totalCount?: number; // Added for aggregate info
-  remainCount?: number; // Added for aggregate info
-  prizes?: Prize[];    // Added for detailed info
+  totalCount?: number;
+  remainCount?: number;
+  gradeCount?: number; // 추가
+  prizes?: Prize[];
 }
 
 export type Prize = {
@@ -41,6 +42,7 @@ export type AnimeCollection = {
   image: string;
   totalKuji: number;
   remainingKuji: number;
+  gradeCount?: number; // 추가
   prizes: Prize[];
   operationStatus?: "scheduled" | "active" | "ended";
   boardId?: number; // Backend alignment

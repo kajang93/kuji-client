@@ -77,7 +77,9 @@ export default function Login({ onLogin, onBack }: LoginProps) {
         name: userData.nickname || userData.name,
         email: userData.email,
         type: (userRole === "BIZ" ? "business" : userRole === "ADMIN" ? "admin" : "social") as any,
-        isActive: userData.isActive !== undefined ? userData.isActive : true
+        points: userData.points || 0,
+        isActive: userData.isActive !== undefined ? userData.isActive : true,
+        profileImageUrl: userData.profileImageUrl || ""
       } as any);
 
       toast.success("로그인 성공!");

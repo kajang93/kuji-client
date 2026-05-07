@@ -177,3 +177,18 @@ export const deleteKujiItem = async (itemId: number): Promise<void> => {
     throw new Error("Failed to delete kuji item");
   }
 };
+/**
+ * Execute a random kuji draw.
+ */
+export const drawKuji = async (boardId: number, count: number): Promise<{ results: any[], totalRemaining: number }> => {
+  const response = await fetch(`${API_BASE_URL}/${boardId}/draw`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({ count }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: "Failed to draw kuji" }));
+    throw new Error(errorData.message || "Failed to draw kuji");
+  }
+  return response.json();
+};

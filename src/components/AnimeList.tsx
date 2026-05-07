@@ -94,7 +94,11 @@ export default function AnimeList({ collections, onSelect, onBack, wishlist, onT
                     </div>
                   </div>
                   <div className="bg-black/40 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
-                    <span className="text-white/90 text-sm">{anime.prizes.length}개 등급</span>
+                    <span className="text-white/90 text-sm">
+                      {anime.gradeCount !== undefined 
+                        ? `경품 구성: ${anime.gradeCount}종` 
+                        : '상품 정보 로딩 중...'}
+                    </span>
                   </div>
                 </div>
 

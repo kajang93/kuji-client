@@ -39,7 +39,7 @@ import { Menu } from "./components/icons";
 import { Toaster, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import BusinessPending from "./components/BusinessPending";
-import { fetchKujiBoards, fetchKujiBoardDetail } from "./api/kuji";
+import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji } from "./api/kuji";
 
 import {
   Prize,
@@ -106,41 +106,22 @@ export default function App() {
     try {
       const boards = await fetchKujiBoards();
       
-      const mappedCollections: AnimeCollection[] = await Promise.all(
-        boards.map(async (board: KujiBoard) => {
-          let prizes: Prize[] = [];
-          try {
-            const items = await fetchKujiBoardDetail(board.id);
-            prizes = items.map((p: any) => ({
-              ...p,
-              id: p.id?.toString() || Math.random().toString(),
-              rank: p.grade || p.rank,
-              image: (p.imageUrls && p.imageUrls.length > 0) 
-                       ? p.imageUrls[0] 
-                       : p.imageUrl || p.image,
-              totalCount: p.totalQty ?? p.totalCount ?? 0,
-              remainingCount: p.remainQty ?? p.remainingCount ?? 0,
-              opened: p.opened || []
-            }));
-          } catch (e) {
-            console.error("Failed to fetch details for board", board.id, e);
-          }
-
-          return {
-            id: board.id.toString(),
-            name: board.title,
-            image: board.images.find((img: any) => img.imageType === 'THUMBNAIL')?.imageUrl || 
-                   board.images[0]?.imageUrl || 
-                   "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
-            totalKuji: board.totalCount || 0,
-            remainingKuji: board.remainCount || 0,
-            boardId: board.id,
-            operationStatus: board.status === 'ACTIVE' ? 'active' : 
-                             board.status === 'PREPARING' ? 'scheduled' : 'ended',
-            prizes
-          };
-        })
-      );
+      const mappedCollections: AnimeCollection[] = boards.map((board: KujiBoard) => {
+        return {
+          id: board.id.toString(),
+          name: board.title,
+          image: board.images.find((img: any) => img.imageType === 'THUMBNAIL')?.imageUrl || 
+                 board.images[0]?.imageUrl || 
+                 "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
+          totalKuji: board.totalCount || 0,
+          remainingKuji: board.remainCount || 0,
+          gradeCount: board.gradeCount || 0, // 추가
+          boardId: board.id,
+          operationStatus: board.status === 'ACTIVE' ? 'active' : 
+                           board.status === 'PREPARING' ? 'scheduled' : 'ended',
+          prizes: [] // 상세 정보는 클릭 시점에 불러옵니다.
+        };
+      });
       
       setAnimeCollections(mappedCollections);
     } catch (error) {
@@ -191,7 +172,7 @@ export default function App() {
         setScreen("businessPending");
       }
     } catch (error) {
-      console.error("Session check failed:", error);
+      // 세션 만료 시 에러 로그를 남기지 않고 조용히 토큰만 정리합니다.
       localStorage.removeItem("token");
     }
   };
@@ -249,11 +230,21 @@ export default function App() {
       setSelectedAnime(updatedAnime);
       setScreen("detail");
       
-      // Initialize kuji status - currently simplified, later can link to real tags
-      const status = Array.from(
-        { length: updatedAnime.totalKuji },
-        () => Math.random() < 0.15,
-      );
+      // Initialize kuji status from backend data
+      const status: boolean[] = [];
+      updatedPrizes.forEach(p => {
+        if (p.opened) {
+          status.push(...p.opened);
+        }
+      });
+      
+      // If status is empty (new board), fill with false
+      if (status.length === 0) {
+        for (let i = 0; i < updatedAnime.totalKuji; i++) {
+          status.push(false);
+        }
+      }
+      
       setKujiStatus(status);
     } catch (error) {
       console.error("Failed to load board details:", error);
@@ -306,19 +297,55 @@ export default function App() {
     setScreen("main");
   };
 
-  const handleKujiReveal = (kujiIndices: number[]) => {
-    // Simulate random prizes for each selected kuji
-    if (selectedAnime) {
-      const prizes = kujiIndices.map(() => {
-        return selectedAnime.prizes[
-          Math.floor(
-            Math.random() * selectedAnime.prizes.length,
-          )
-        ];
+  const handleKujiReveal = async (kujiIndices: number[]) => {
+    if (!selectedAnime || !user) return;
+
+    try {
+      // 1. Call the real draw API
+      const response = await drawKuji(selectedAnime.boardId, kujiIndices.length);
+      
+      // 2. Map backend results (KujiItemResponse) to frontend prizes structure
+      const prizes: Prize[] = response.results.map((p: any) => ({
+        ...p,
+        id: p.id?.toString() || Math.random().toString(),
+        rank: p.grade || p.rank,
+        image: (p.imageUrls && p.imageUrls.length > 0) 
+                 ? p.imageUrls[0] 
+                 : p.imageUrl || p.image,
+        totalCount: p.totalQty ?? p.totalCount ?? 0,
+        remainingCount: p.remainQty ?? p.remainingCount ?? 0,
+        opened: p.opened || []
+      }));
+
+      // 3. Update the board state locally
+      const updatedPrizes = selectedAnime.prizes.map(p => {
+        // Count how many items of this rank were won
+        const countWon = response.results.filter((r: any) => (r.grade || r.rank) === p.rank).length;
+        return {
+          ...p,
+          remainingCount: Math.max(0, p.remainingCount - countWon)
+        };
       });
+
+      const updatedAnime = {
+        ...selectedAnime,
+        prizes: updatedPrizes,
+        remainingKuji: response.totalRemaining
+      };
+
       setRevealedPrizes(prizes);
       setSelectedKuji(kujiIndices);
+      setSelectedAnime(updatedAnime);
+      
+      // Update the collection in the list as well
+      setAnimeCollections(prev => prev.map(c => 
+        c.id === updatedAnime.id ? updatedAnime : c
+      ));
+
       setScreen("reveal");
+    } catch (error: any) {
+      console.error("Failed to draw kuji:", error);
+      sonnerToast.error(error.message || "추첨 중 오류가 발생했습니다.");
     }
   };
 
