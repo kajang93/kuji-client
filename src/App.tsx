@@ -105,24 +105,24 @@ export default function App() {
   const handleFetchBoards = async () => {
     try {
       const boards = await fetchKujiBoards();
-      
+
       const mappedCollections: AnimeCollection[] = boards.map((board: KujiBoard) => {
         return {
           id: board.id.toString(),
           name: board.title,
-          image: board.images.find((img: any) => img.imageType === 'THUMBNAIL')?.imageUrl || 
-                 board.images[0]?.imageUrl || 
-                 "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
+          image: board.images.find((img: any) => img.imageType === 'THUMBNAIL')?.imageUrl ||
+            board.images[0]?.imageUrl ||
+            "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
           totalKuji: board.totalCount || 0,
           remainingKuji: board.remainCount || 0,
           gradeCount: board.gradeCount || 0, // 추가
           boardId: board.id,
-          operationStatus: board.status === 'ACTIVE' ? 'active' : 
-                           board.status === 'PREPARING' ? 'scheduled' : 'ended',
+          operationStatus: board.status === 'ACTIVE' ? 'active' :
+            board.status === 'PREPARING' ? 'scheduled' : 'ended',
           prizes: [] // 상세 정보는 클릭 시점에 불러옵니다.
         };
       });
-      
+
       setAnimeCollections(mappedCollections);
     } catch (error) {
       console.error("Failed to fetch boards:", error);
@@ -204,7 +204,7 @@ export default function App() {
     try {
       // 1. Fetch real detail data from server (Backend returns List<KujiItem>)
       const items = await fetchKujiBoardDetail(Number(anime.id));
-      
+
       // 2. Map backend items to frontend prizes structure
       // 2. Map backend items (KujiItemResponse) to frontend prizes structure
       const updatedPrizes = items.map(p => ({
@@ -212,9 +212,9 @@ export default function App() {
         id: (p as any).id?.toString() || Math.random().toString(),
         rank: (p as any).grade || (p as any).rank,
         // Match the backend's imageUrls array
-        image: ((p as any).imageUrls && (p as any).imageUrls.length > 0) 
-                 ? (p as any).imageUrls[0] 
-                 : (p as any).imageUrl || (p as any).image,
+        image: ((p as any).imageUrls && (p as any).imageUrls.length > 0)
+          ? (p as any).imageUrls[0]
+          : (p as any).imageUrl || (p as any).image,
         totalCount: (p as any).totalQty ?? (p as any).totalCount ?? 0,
         remainingCount: (p as any).remainQty ?? (p as any).remainingCount ?? 0,
         opened: (p as any).opened || []
@@ -229,7 +229,7 @@ export default function App() {
 
       setSelectedAnime(updatedAnime);
       setScreen("detail");
-      
+
       // Initialize kuji status from backend data
       const status: boolean[] = [];
       updatedPrizes.forEach(p => {
@@ -237,14 +237,14 @@ export default function App() {
           status.push(...p.opened);
         }
       });
-      
+
       // If status is empty (new board), fill with false
       if (status.length === 0) {
         for (let i = 0; i < updatedAnime.totalKuji; i++) {
           status.push(false);
         }
       }
-      
+
       setKujiStatus(status);
     } catch (error) {
       console.error("Failed to load board details:", error);
@@ -303,18 +303,19 @@ export default function App() {
     try {
       // 1. Call the real draw API
       const response = await drawKuji(selectedAnime.boardId, kujiIndices.length);
-      
+
       // 2. Map backend results (KujiItemResponse) to frontend prizes structure
       const prizes: Prize[] = response.results.map((p: any) => ({
         ...p,
         id: p.id?.toString() || Math.random().toString(),
         rank: p.grade || p.rank,
-        image: (p.imageUrls && p.imageUrls.length > 0) 
-                 ? p.imageUrls[0] 
-                 : p.imageUrl || p.image,
+        image: (p.imageUrls && p.imageUrls.length > 0)
+          ? p.imageUrls[0]
+          : p.imageUrl || p.image,
         totalCount: p.totalQty ?? p.totalCount ?? 0,
         remainingCount: p.remainQty ?? p.remainingCount ?? 0,
-        opened: p.opened || []
+        opened: p.opened || [],
+        drawHistoryId: p.drawHistoryId // 추가
       }));
 
       // 3. Update the board state locally
@@ -336,9 +337,9 @@ export default function App() {
       setRevealedPrizes(prizes);
       setSelectedKuji(kujiIndices);
       setSelectedAnime(updatedAnime);
-      
+
       // Update the collection in the list as well
-      setAnimeCollections(prev => prev.map(c => 
+      setAnimeCollections(prev => prev.map(c =>
         c.id === updatedAnime.id ? updatedAnime : c
       ));
 
@@ -359,6 +360,7 @@ export default function App() {
     const newWinnings: WinningItem[] = revealedPrizes.map(
       (prize, index) => ({
         id: `W${Date.now()}${index}`,
+        drawHistoryId: prize.drawHistoryId,
         date: dateStr,
         animeName: selectedAnime?.name || "알 수 없음",
         rank: prize.rank,
@@ -1162,24 +1164,24 @@ export default function App() {
                   id: (p as any).id?.toString() || Math.random().toString(),
                   rank: (p as any).grade || (p as any).rank,
                   // Match the backend's imageUrls array
-                  image: ((p as any).imageUrls && (p as any).imageUrls.length > 0) 
-                           ? (p as any).imageUrls[0] 
-                           : (p as any).imageUrl || (p as any).image,
+                  image: ((p as any).imageUrls && (p as any).imageUrls.length > 0)
+                    ? (p as any).imageUrls[0]
+                    : (p as any).imageUrl || (p as any).image,
                   totalCount: (p as any).totalQty ?? (p as any).totalCount ?? 0,
                   remainingCount: (p as any).remainQty ?? (p as any).remainingCount ?? 0,
                   opened: (p as any).opened || []
                 }));
 
                 // Update the collection in our global state to include prizes
-                setAnimeCollections(prev => prev.map(c => 
-                  c.id === id ? { 
-                    ...c, 
+                setAnimeCollections(prev => prev.map(c =>
+                  c.id === id ? {
+                    ...c,
                     prizes: updatedPrizes,
                     totalKuji: updatedPrizes.reduce((sum, p) => sum + p.totalCount, 0),
                     remainingKuji: updatedPrizes.reduce((sum, p) => sum + p.remainingCount, 0)
                   } : c
                 ));
-                
+
                 setEditingCollectionId(id);
                 setScreen("businessProductEdit");
               } catch (error) {

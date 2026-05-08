@@ -34,6 +34,7 @@ export type Prize = {
   totalQty?: number;     // Backend field alignment
   remainQty?: number;    // Backend field alignment
   opened: boolean[];
+  drawHistoryId?: number; // 추가
 };
 
 export type AnimeCollection = {
@@ -50,12 +51,13 @@ export type AnimeCollection = {
 
 export type WinningItem = {
   id: string;
+  drawHistoryId?: number; // Backend alignment
   date: string;
   animeName: string;
   rank: string;
   prizeName: string;
   prizeImage: string;
-  deliveryStatus: "stored" | "preparing" | "shipped" | "delivered";
+  deliveryStatus: "stored" | "preparing" | "shipped" | "delivered" | "SHIP_REQUESTED";
   trackingNumber?: string;
   needsOptionSelection?: boolean;
   selectedOption?: {
@@ -65,6 +67,22 @@ export type WinningItem = {
   };
   isNew?: boolean;
 };
+
+export interface ShippingInfo {
+  id: number;
+  recipientName: string;
+  phone: string;
+  zipcode: string;
+  address: string;
+  detailAddress: string;
+  trackingNumber?: string;
+  status: "PREPARING" | "SHIPPED" | "DELIVERED";
+  courierName?: string;
+  deliveryMessage?: string;
+  createdAt: string;
+  updatedAt: string;
+  items: WinningItem[];
+}
 
 export type PrizeOption = {
   id: string;

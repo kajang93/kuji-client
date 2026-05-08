@@ -21,22 +21,25 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
   const [certificatePopup, setCertificatePopup] = useState<WinningItem | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [showShippingModal, setShowShippingModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [shippingForm, setShippingForm] = useState({
+    recipientName: '',
+    phone: '',
+    zipcode: '',
+    address: '',
+    detailAddress: '',
+    deliveryMessage: ''
+  });
 
   // Auto-trigger option selection for new winnings
   useEffect(() => {
-    const newItemNeedingOption = winningHistory.find(
-      (item) => item.isNew && item.needsOptionSelection
-    );
-
-    if (newItemNeedingOption && onSelectPrizeOption) {
-      const timer = setTimeout(() => {
-        onSelectPrizeOption(newItemNeedingOption.id, newItemNeedingOption.rank);
-      }, 500);
-      return () => clearTimeout(timer);
+    // Fill default shipping info if user exists
+    const token = localStorage.getItem('token');
+    if (token) {
+      // In a real app, you might fetch user's default address here
     }
-  }, [winningHistory, onSelectPrizeOption]);
+  }, []);
 
-  
   // Mock seller info mapping (since it's not in WinningItem yet)
   const getSellerInfo = (animeName: string) => {
     if (animeName.includes('원피스')) return { id: 'seller1', name: '원피스 전문샵' };
@@ -46,27 +49,22 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
 
   // Filter items by tab
   const inventoryItems = winningHistory.filter(item => item.deliveryStatus === 'stored' || !item.deliveryStatus);
-  const shippingItems = winningHistory.filter(item => ['preparing', 'shipped', 'delivered'].includes(item.deliveryStatus));
+  const shippingItems = winningHistory.filter(item => ['preparing', 'shipped', 'delivered', 'SHIP_REQUESTED'].includes(item.deliveryStatus));
 
   const toggleSelection = (id: string) => {
     setSelectedItems(prev => {
       if (prev.includes(id)) return prev.filter(item => item !== id);
       
-      // Same Seller Check logic
       const targetItem = winningHistory.find(w => w.id === id);
       if (!targetItem) return prev;
       
       const targetSeller = getSellerInfo(targetItem.animeName).id;
-      
-      // Check if any existing selection has different seller
       const hasDifferentSeller = prev.some(existingId => {
         const existingItem = winningHistory.find(w => w.id === existingId);
-        if (!existingItem) return false;
-        return getSellerInfo(existingItem.animeName).id !== targetSeller;
+        return existingItem && getSellerInfo(existingItem.animeName).id !== targetSeller;
       });
 
       if (hasDifferentSeller) {
-        // In a real app, show toast here
         alert("같은 판매자의 상품만 묶음 배송이 가능합니다.");
         return prev;
       }
@@ -78,7 +76,6 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
   const handleRequestShipping = () => {
     if (selectedItems.length === 0) return;
     
-    // Check if any item needs option selection
     const needsOption = selectedItems.some(id => {
       const item = winningHistory.find(w => w.id === id);
       return item?.needsOptionSelection;
@@ -92,13 +89,39 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
     setShowShippingModal(true);
   };
 
-  const confirmShipping = () => {
-    if (onRequestShipping) {
-      onRequestShipping(selectedItems);
+  const confirmShipping = async () => {
+    if (!shippingForm.recipientName || !shippingForm.phone || !shippingForm.address) {
+      alert("필수 배송 정보를 모두 입력해주세요.");
+      return;
     }
-    setShowShippingModal(false);
-    setSelectedItems([]);
-    setActiveTab('shipping');
+
+    setIsSubmitting(true);
+    try {
+      const { requestShipping } = await import('../api/shipping');
+      
+      const drawHistoryIds = selectedItems.map(id => {
+        const item = winningHistory.find(w => w.id === id);
+        return item?.drawHistoryId;
+      }).filter(Boolean) as number[];
+
+      await requestShipping({
+        drawHistoryIds,
+        ...shippingForm
+      });
+
+      alert("배송 신청이 완료되었습니다.");
+      setShowShippingModal(false);
+      setSelectedItems([]);
+      setActiveTab('shipping');
+      
+      if (onRequestShipping) {
+        onRequestShipping(selectedItems);
+      }
+    } catch (error: any) {
+      alert(error.message || "배송 신청 중 오류가 발생했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const rankColors = {
@@ -439,37 +462,118 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="bg-slate-900 rounded-3xl p-6 max-w-sm w-full border border-white/10 shadow-2xl"
+              className="bg-slate-900 rounded-3xl p-6 max-w-md w-full border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto"
             >
-              <h3 className="text-xl text-white font-bold mb-4 text-center">배송 신청 확인</h3>
-              <div className="space-y-4 mb-6">
-                <div className="bg-white/5 rounded-xl p-4">
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-white/60">선택 상품</span>
-                    <span className="text-white font-medium">{selectedItems.length}건</span>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl text-white font-bold">배송 신청</h3>
+                <button onClick={() => setShowShippingModal(false)} className="p-2 hover:bg-white/10 rounded-full">
+                  <X className="w-5 h-5 text-white/50" />
+                </button>
+              </div>
+
+              <div className="space-y-4 mb-8">
+                {/* Product Summary */}
+                <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-white/60">신청 상품</span>
+                    <span className="text-white font-bold">{selectedItems.length}건</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-white/60">배송비</span>
-                    <span className="text-green-400 font-medium">무료 (묶음배송)</span>
+                    <span className="text-green-400 font-bold">무료 (묶음배송)</span>
                   </div>
                 </div>
-                <p className="text-center text-white/50 text-xs">
-                  신청 후에는 보관함에서 배송 내역으로 이동됩니다.
-                </p>
+
+                {/* Form Fields */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-white/50 ml-1 mb-1 block">수령인 성함 *</label>
+                    <input 
+                      type="text" 
+                      placeholder="성함을 입력하세요"
+                      value={shippingForm.recipientName}
+                      onChange={e => setShippingForm({...shippingForm, recipientName: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-400 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/50 ml-1 mb-1 block">연락처 *</label>
+                    <input 
+                      type="tel" 
+                      placeholder="010-0000-0000"
+                      value={shippingForm.phone}
+                      onChange={e => setShippingForm({...shippingForm, phone: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-400 transition-colors"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="text-xs text-white/50 ml-1 mb-1 block">우편번호 *</label>
+                      <input 
+                        type="text" 
+                        placeholder="12345"
+                        value={shippingForm.zipcode}
+                        onChange={e => setShippingForm({...shippingForm, zipcode: e.target.value})}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-400 transition-colors"
+                      />
+                    </div>
+                    <button className="self-end px-4 py-3 bg-white/10 text-white rounded-xl text-xs hover:bg-white/20 transition-colors h-[46px]">
+                      주소찾기
+                    </button>
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/50 ml-1 mb-1 block">주소 *</label>
+                    <input 
+                      type="text" 
+                      placeholder="기본 주소를 입력하세요"
+                      value={shippingForm.address}
+                      onChange={e => setShippingForm({...shippingForm, address: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-400 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/50 ml-1 mb-1 block">상세 주소</label>
+                    <input 
+                      type="text" 
+                      placeholder="상세 주소를 입력하세요"
+                      value={shippingForm.detailAddress}
+                      onChange={e => setShippingForm({...shippingForm, detailAddress: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-400 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/50 ml-1 mb-1 block">배송 메시지</label>
+                    <textarea 
+                      placeholder="요청사항을 입력하세요"
+                      value={shippingForm.deliveryMessage}
+                      onChange={e => setShippingForm({...shippingForm, deliveryMessage: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-400 transition-colors h-24 resize-none"
+                    />
+                  </div>
+                </div>
               </div>
               
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowShippingModal(false)}
-                  className="flex-1 py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors font-medium"
+                  disabled={isSubmitting}
+                  className="flex-1 py-4 bg-white/10 text-white rounded-2xl hover:bg-white/20 transition-colors font-medium"
                 >
                   취소
                 </button>
                 <button
                   onClick={confirmShipping}
-                  className="flex-1 py-3 bg-yellow-400 text-slate-900 rounded-xl hover:bg-yellow-300 transition-colors font-bold"
+                  disabled={isSubmitting}
+                  className={`flex-2 px-8 py-4 bg-yellow-400 text-slate-900 rounded-2xl transition-all font-bold flex items-center justify-center gap-2 ${
+                    isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-yellow-300'
+                  }`}
                 >
-                  확정
+                  {isSubmitting ? (
+                    <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Truck className="w-5 h-5" />
+                  )}
+                  {isSubmitting ? '신청 중...' : '신청 확정'}
                 </button>
               </div>
             </motion.div>
