@@ -39,7 +39,7 @@ import { Menu } from "./components/icons";
 import { Toaster, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import BusinessPending from "./components/BusinessPending";
-import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji } from "./api/kuji";
+import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory } from "./api/kuji";
 
 import {
   Prize,
@@ -167,6 +167,9 @@ export default function App() {
       };
 
       setUser(formattedUser);
+      
+      // 사용자 정보 로드 후 당첨 내역도 함께 로드
+      handleFetchWinningHistory();
 
       if (formattedUser.type === "business" && formattedUser.isActive === false) {
         setScreen("businessPending");
@@ -194,6 +197,34 @@ export default function App() {
   const [winningHistory, setWinningHistory] = useState<
     WinningItem[]
   >([]);
+
+  // 서버에서 당첨 내역 가져오기
+  const handleFetchWinningHistory = async () => {
+    try {
+      const histories = await fetchMyDrawHistory();
+      
+      const mappedWinnings: WinningItem[] = histories.map(h => ({
+        id: `W${h.id}`, // 고유 식별자
+        drawHistoryId: h.id,
+        date: h.createdAt?.replace('T', ' ').substring(0, 16) || '',
+        animeName: h.boardTitle,
+        rank: h.grade,
+        prizeName: h.itemName,
+        prizeImage: h.itemImageUrl,
+        deliveryStatus: 
+          h.status === 'DRAWN' ? 'stored' :
+          h.status === 'SHIPPING_REQUESTED' ? 'preparing' :
+          h.status === 'SHIPPING' ? 'shipped' :
+          h.status === 'DELIVERED' ? 'delivered' : 'stored',
+        needsOptionSelection: (h.grade && /^[A-DG]/i.test(h.grade)),
+        isNew: false
+      }));
+
+      setWinningHistory(mappedWinnings);
+    } catch (error) {
+      console.error("Failed to fetch winning history:", error);
+    }
+  };
 
   // Inquiries state
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
@@ -420,6 +451,7 @@ export default function App() {
 
     // Clear NEW badges when viewing winning history
     if (navScreen === "winning") {
+      handleFetchWinningHistory(); // 화면 진입 시 최신 데이터 로드
       setWinningHistory((prev) =>
         prev.map((w) => ({ ...w, isNew: false })),
       );
@@ -545,6 +577,8 @@ export default function App() {
         return w;
       }),
     );
+
+    handleFetchWinningHistory(); // 서버 데이터 갱신
 
     showAlert(
       `총 ${winningIds.length}건의 배송 신청이 완료되었습니다.`,

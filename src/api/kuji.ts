@@ -192,3 +192,16 @@ export const drawKuji = async (boardId: number, count: number): Promise<{ result
   }
   return response.json();
 };
+
+/**
+ * Fetch the user's personal winning history (storage).
+ */
+export const fetchMyDrawHistory = async (): Promise<any[]> => {
+  const response = await fetch(`${API_BASE_URL}/draw-history/me`, {
+    headers: getHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch draw history");
+  }
+  return response.json();
+};
