@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Mail, Building2, Users, Eye, EyeOff, X, Ticket } from './icons';
 import { toast } from 'sonner';
+import { login, fetchMyProfile } from '../api/auth';
 import Signup from './Signup';
 
 // Auth Migration: Login.tsx updated.
@@ -50,33 +51,17 @@ export default function Login({ onLogin, onBack }: LoginProps) {
     if (!userId || !userPw) return;
 
     try {
-      const response = await fetch("/api/members/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: userId, password: userPw }),
-      });
-
-      if (!response.ok) {
-        const errorMsg = await response.text();
-        throw new Error(errorMsg || "로그인에 실패했습니다.");
-      }
-
-      const token = await response.text();
+      const { token } = await login(userId, userPw);
       localStorage.setItem("token", token);
 
       // Fetch user info to get role and status
-      const infoResponse = await fetch("/api/members/me", {
-        headers: { "Authorization": `Bearer ${token}` },
-      });
-
-      if (!infoResponse.ok) throw new Error("사용자 정보를 불러오는데 실패했습니다.");
-
-      const userData = await infoResponse.json();
+      const userData = await fetchMyProfile();
       const userRole = userData.role || "USER";
+      
       onLogin({
         name: userData.nickname || userData.name,
         email: userData.email,
-        type: (userRole === "BIZ" ? "business" : userRole === "ADMIN" ? "admin" : "social") as any,
+        type: (userRole === "ROLE_BUSINESS" || userRole === "BIZ" ? "business" : userRole === "ROLE_ADMIN" || userRole === "ADMIN" ? "admin" : "social") as any,
         points: userData.points || 0,
         isActive: userData.isActive !== undefined ? userData.isActive : true,
         profileImageUrl: userData.profileImageUrl || ""

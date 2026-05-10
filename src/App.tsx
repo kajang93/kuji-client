@@ -40,6 +40,7 @@ import { Toaster, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import BusinessPending from "./components/BusinessPending";
 import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory } from "./api/kuji";
+import { fetchMyProfile } from "./api/auth";
 
 import {
   Prize,
@@ -147,20 +148,12 @@ export default function App() {
 
   const handleFetchUserInfo = async (token: string) => {
     try {
-      const response = await fetch("/api/members/me", {
-        headers: { "Authorization": `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        throw new Error("세션이 만료되었습니다.");
-      }
-
-      const userData = await response.json();
+      const userData = await fetchMyProfile();
       const userRole = userData.role || "USER";
       const formattedUser = {
         name: userData.nickname || userData.name,
         email: userData.email,
-        type: (userRole === "BIZ" ? "business" : userRole === "ADMIN" ? "admin" : "social") as any,
+        type: (userRole === "ROLE_BUSINESS" || userRole === "BIZ" ? "business" : userRole === "ROLE_ADMIN" || userRole === "ADMIN" ? "admin" : "social") as any,
         points: userData.points || 0,
         isActive: userData.isActive !== undefined ? userData.isActive : true,
         profileImageUrl: userData.profileImageUrl || "",

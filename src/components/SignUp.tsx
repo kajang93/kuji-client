@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Check, Upload, X, FileText, Search } from './icons';
 import { toast } from 'sonner';
+import { signup } from '../api/auth';
 
 type SignupProps = {
   userType: 'customer' | 'business';
@@ -344,18 +345,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       isMarketingAgreed: agreeMarketing
     };
 
-    fetch("/api/members/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(signupData),
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const errorMsg = await res.text();
-          throw new Error(errorMsg || "회원가입에 실패했습니다.");
-        }
-        return res.json();
-      })
+    signup(signupData)
       .then(() => {
         if (userType === 'business') {
           toast.success('사업자 등록 신청이 완료되었습니다. 관리자 승인 후 이용 가능합니다.');

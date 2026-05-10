@@ -1,14 +1,8 @@
 import { KujiBoard, BoardStatus, BoardImageType } from "../shared-types";
 
-const API_BASE_URL = "/api/kuji";
+import { getHeaders } from "./client";
 
-const getHeaders = () => {
-  const token = localStorage.getItem("token");
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
+const API_BASE_URL = "/api/kuji";
 
 export const fetchKujiBoards = async (): Promise<KujiBoard[]> => {
   const response = await fetch(API_BASE_URL, {

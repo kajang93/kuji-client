@@ -1,4 +1,5 @@
 import { ShippingInfo } from '../shared-types';
+import { getHeaders } from './client';
 
 const API_BASE_URL = '/api/shipping';
 
@@ -14,13 +15,9 @@ export async function requestShipping(data: {
   detailAddress: string;
   deliveryMessage?: string;
 }) {
-  const token = localStorage.getItem('token');
   const response = await fetch(`${API_BASE_URL}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: getHeaders(),
     body: JSON.stringify(data)
   });
 
@@ -36,11 +33,8 @@ export async function requestShipping(data: {
  * 2. 내 배송 내역 조회 (사용자)
  */
 export async function fetchMyShippingList(): Promise<ShippingInfo[]> {
-  const token = localStorage.getItem('token');
   const response = await fetch(`${API_BASE_URL}/me`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
+    headers: getHeaders()
   });
 
   if (!response.ok) {
@@ -54,11 +48,8 @@ export async function fetchMyShippingList(): Promise<ShippingInfo[]> {
  * 3. 전체 배송 내역 조회 (관리자용)
  */
 export async function fetchAllShippingList(): Promise<ShippingInfo[]> {
-  const token = localStorage.getItem('token');
   const response = await fetch(`${API_BASE_URL}/admin`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
+    headers: getHeaders()
   });
 
   if (!response.ok) {
@@ -75,13 +66,9 @@ export async function updateTrackingInfo(shippingId: number, data: {
   courierName: string;
   trackingNumber: string;
 }) {
-  const token = localStorage.getItem('token');
   const response = await fetch(`${API_BASE_URL}/${shippingId}/tracking`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: getHeaders(),
     body: JSON.stringify(data)
   });
 

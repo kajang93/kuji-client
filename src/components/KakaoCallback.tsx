@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { motion } from "./motion";
 import { Ticket } from "./icons";
+import { loginWithKakao, fetchMyProfile } from "../api/auth";
 
 type KakaoCallbackProps = {
   onLoginSuccess: (token: string, userData: any) => void;
@@ -51,30 +52,12 @@ export default function KakaoCallback({
       const kakaoAccessToken = tokenData.access_token;
 
       // [STEP 2] 프런트엔드 ➡️ 우리 백엔드 : "이 토큰(kakaoAccessToken)으로 로그인시켜줘!"
-      const response = await fetch("/api/members/login/kakao", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ 
-          kakaoAccessToken: kakaoAccessToken 
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("서비스 로그인 요청에 실패했습니다.");
-      }
-
-      const data = await response.json();
+      const data = await loginWithKakao(kakaoAccessToken);
       
-      // 토큰으로 실제 사용자 상세 정보(/api/members/me) 가져오기
-      const infoResponse = await fetch("/api/members/me", {
-        headers: { "Authorization": `Bearer ${data.token}` },
-      });
+      // 토큰으로 실제 사용자 상세 정보 가져오기
+      localStorage.setItem("token", data.token);
+      const userData = await fetchMyProfile();
       
-      if (!infoResponse.ok) throw new Error("사용자 정보를 불러오는데 실패했습니다.");
-      
-      const userData = await infoResponse.json();
       onLoginSuccess(data.token, userData);
     } catch (error: any) {
       console.error("Kakao Login Error:", error);
