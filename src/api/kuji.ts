@@ -199,3 +199,15 @@ export const fetchMyDrawHistory = async (): Promise<any[]> => {
   }
   return response.json();
 };
+
+/**
+ * 전역 최근 당첨 내역 조회 (티커용, 퍼블릭)
+ */
+export const fetchRecentDrawHistory = async (): Promise<any[]> => {
+  const response = await fetch(`${API_BASE_URL}/draw-history/recent`);
+  if (!response.ok) {
+    // 티커는 부가 기능이므로 에러 시 빈 배열 반환하여 메인 로직에 지장 없게 함
+    return [];
+  }
+  return response.json();
+};

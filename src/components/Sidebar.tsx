@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from './motion';
-import { X, User, ShoppingBag, Heart, Settings, LogOut, History, MessageCircle, Users, Gift, ChevronDown, ChevronUp, Bell } from './icons';
+import { X, User, ShoppingBag, Heart, Settings, LogOut, History, MessageCircle, Users, Gift, ChevronDown, ChevronUp, Bell, MessageSquare } from './icons';
 import { useState } from 'react';
 
 type SidebarProps = {
@@ -166,11 +166,21 @@ export default function Sidebar({ isOpen, onClose, user, onLogout, onLogin, onNa
                     <Bell className="w-4 h-4 text-purple-300 transition-colors group-hover:text-amber-400" />
                     <span>공지사항</span>
                   </motion.button>
+                  <motion.button
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: (menuItems.length + 2) * 0.05 }}
+                    onClick={() => handleMenuClick('community')}
+                    className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-colors text-white group mb-2 hover:bg-white/10"
+                  >
+                    <MessageSquare className="w-4 h-4 text-purple-300 transition-colors group-hover:text-amber-400" />
+                    <span>자유게시판</span>
+                  </motion.button>
                   {user && (
                     <motion.button
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: (menuItems.length + 2) * 0.05 }}
+                      transition={{ delay: (menuItems.length + 3) * 0.05 }}
                       onClick={() => handleMenuClick('support')}
                       className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-colors text-white group hover:bg-white/10"
                     >

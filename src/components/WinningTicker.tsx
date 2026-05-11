@@ -11,7 +11,7 @@ interface RecentDraw {
   createdAt: string;
 }
 
-export default function LiveTicker() {
+export default function WinningTicker() {
   const [winnings, setWinnings] = useState<RecentDraw[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -56,13 +56,13 @@ export default function LiveTicker() {
   const current = winnings[currentIndex];
 
   return (
-    <div className="h-10 bg-slate-900/80 backdrop-blur-md border-b border-white/5 overflow-hidden flex items-center px-4 relative w-full z-20">
+    <div className="h-10 bg-slate-900/80 backdrop-blur-md border-b border-white/5 overflow-hidden flex items-center px-4 relative">
       <div className="flex items-center gap-2 text-xs font-bold text-amber-400 shrink-0 mr-4">
         <Zap className="w-3.5 h-3.5 fill-amber-400 animate-pulse" />
-        <span className="hidden sm:inline uppercase tracking-wider">LIVE WINNINGS</span>
+        <span className="uppercase tracking-wider">LIVE WINNINGS</span>
       </div>
 
-      <div className="flex-1 h-full relative overflow-hidden">
+      <div className="flex-1 h-full relative">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
@@ -72,20 +72,21 @@ export default function LiveTicker() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="absolute inset-0 flex items-center"
           >
-            <p className="text-xs sm:text-sm text-slate-300 truncate">
-              <span className="text-white font-medium">{current.maskedNickname}</span>님 
-              <span className="mx-2 text-rose-400 font-bold">{current.grade}</span> 당첨!
-              <span className="mx-1 text-slate-600">|</span>
+            <p className="text-sm text-slate-300 truncate">
+              <span className="text-white font-medium">{current.maskedNickname}</span>님 축하합니다! 
+              <span className="mx-2 text-slate-500">|</span>
+              <span className="text-rose-400 font-bold">{current.grade}</span> 당첨!
+              <span className="mx-2 text-slate-500">|</span>
               <span className="text-indigo-300">{current.boardTitle}</span>
-              <span className="ml-1 text-slate-400 text-[10px] sm:text-xs font-normal">({current.itemName})</span>
+              <span className="ml-2 text-slate-400 text-xs font-normal">({current.itemName})</span>
             </p>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      <div className="flex items-center gap-1 shrink-0 ml-2">
-        <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
-        <span className="text-[10px] text-rose-500 font-bold uppercase hidden xs:inline">Realtime</span>
+      <div className="flex items-center gap-1 shrink-0 ml-4">
+        <div className="w-1 h-1 rounded-full bg-rose-500 animate-ping" />
+        <span className="text-[10px] text-rose-500 font-bold uppercase">Realtime</span>
       </div>
     </div>
   );

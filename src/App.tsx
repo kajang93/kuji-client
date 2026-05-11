@@ -40,6 +40,9 @@ import { Toaster, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import BusinessPending from "./components/BusinessPending";
 import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory } from "./api/kuji";
+import BoardList from "./components/BoardList";
+import BoardDetail from "./components/BoardDetail";
+import BoardWrite from "./components/BoardWrite";
 import { fetchMyProfile } from "./api/auth";
 
 import {
@@ -51,7 +54,10 @@ import {
   Inquiry,
   ScreenType,
   Banner,
-  KujiBoard
+  KujiBoard,
+  Post,
+  PostCategory,
+  ShippingInfo
 } from "./shared-types";
 
 
@@ -141,7 +147,7 @@ export default function App() {
 
     if (urlParams.has("code")) {
       setScreen("kakaoCallback");
-    } else if (token) {
+    } else if (token && token !== "undefined" && token !== "null") {
       handleFetchUserInfo(token);
     }
   }, []);
@@ -168,8 +174,10 @@ export default function App() {
         setScreen("businessPending");
       }
     } catch (error) {
-      // 세션 만료 시 에러 로그를 남기지 않고 조용히 토큰만 정리합니다.
+      console.error("Session expired or invalid token:", error);
       localStorage.removeItem("token");
+      setIsLoggedIn(false);
+      setUser(null);
     }
   };
 
@@ -427,6 +435,18 @@ export default function App() {
 
     setRevealedPrizes([]);
     setSelectedKuji([]);
+  };
+
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+
+  const getSidebarMenuItems = () => {
+    const baseMenu = [
+      { id: "main", label: "홈", icon: <Home className="w-5 h-5" /> },
+      { id: "list", label: "뽑기 목록", icon: <Ticket className="w-5 h-5" /> },
+      { id: "community", label: "커뮤니티", icon: <MessageSquare className="w-5 h-5" /> },
+      { id: "support", label: "고객센터", icon: <Support className="w-5 h-5" /> },
+    ];
+    return baseMenu;
   };
 
   const handleSidebarNavigate = (
@@ -979,7 +999,7 @@ export default function App() {
         screen !== "detail" && <LiveTicker />}
 
       {/* Hamburger Menu Button - Fixed position */}
-      {screen !== "reveal" && screen !== "login" && (
+      {screen !== "reveal" && screen !== "login" && screen !== "communityWrite" && screen !== "communityDetail" && (
         <button
           onClick={() => setIsSidebarOpen(true)}
           className="fixed top-12 right-4 z-30 p-3 bg-rose-500 rounded-full shadow-lg hover:bg-rose-600 transition-colors"
@@ -1135,17 +1155,34 @@ export default function App() {
             onUpdateSettings={setNotificationSettings}
           />
         )}
+        {screen === "community" && (
+          <BoardList 
+            onWrite={() => setScreen("communityWrite")} 
+            onDetail={(id) => {
+              setSelectedPostId(id);
+              setScreen("communityDetail");
+            }} 
+          />
+        )}
+
+        {screen === "communityDetail" && selectedPostId && (
+          <BoardDetail 
+            postId={selectedPostId} 
+            onBack={() => setScreen("community")} 
+          />
+        )}
+
+        {screen === "communityWrite" && (
+          <BoardWrite 
+            onBack={() => setScreen("community")} 
+            onSuccess={() => setScreen("community")} 
+          />
+        )}
+
         {screen === "support" && (
           <CustomerSupport onBack={() => setScreen("main")} />
         )}
-        {screen === "community" && (
-          <Community
-            onBack={() => setScreen("main")}
-            onNavigateToNotice={() => setScreen("notice")}
-            onNavigateToSupport={() => setScreen("support")}
-            user={user}
-          />
-        )}
+
         {screen === "notice" && (
           <Notice onBack={() => setScreen("main")} />
         )}

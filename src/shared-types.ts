@@ -139,6 +139,8 @@ export type ScreenType =
   | "businessShipping"
   | "businessInquiries"
   | "community"
+  | "communityDetail"
+  | "communityWrite"
   | "notice"
   | "events"
   | "adminDashboard"
@@ -157,9 +159,51 @@ export type Banner = {
   subtitle: string;
   imageUrl: string;
   order: number;
-  isActive: boolean;
   link?: string;
   buttonText?: string;
+};
+
+export interface MemberProfileResponse {
+  id: number;
+  email: string;
+  nickname: string;
+  role: string;
+  points: number;
+  isActive: boolean;
+  profileImageUrl?: string;
+}
+
+export type PostCategory = "FREE" | "WINNING" | "QNA" | "NOTICE";
+
+export interface Post {
+  id: number;
+  title: string;
+  content: string;
+  category: PostCategory;
+  viewCount: number;
+  authorName: string;
+  authorEmail: string;
   createdAt: string;
   updatedAt: string;
-};
+}
+
+export interface PostCreateRequest {
+  title: string;
+  content: string;
+  category: PostCategory;
+}
+
+export interface Inquiry {
+  id: string;
+  memberId: number;
+  nickname?: string;
+  title: string;
+  content: string;
+  status: "pending" | "answered" | "resolved";
+  answerContent?: string;
+  inquiryType: string;
+  createdAt: string;
+  updatedAt: string;
+  answeredAt?: string;
+  shippingId?: number;
+}
