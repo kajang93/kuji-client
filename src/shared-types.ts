@@ -193,17 +193,25 @@ export interface PostCreateRequest {
   category: PostCategory;
 }
 
+export type InquiryType = "SHIPPING" | "PRODUCT" | "ACCOUNT" | "ETC";
+export type InquiryStatus = "WAITING" | "COMPLETED";
+
 export interface Inquiry {
-  id: string;
-  memberId: number;
-  nickname?: string;
+  id: number;
+  title: string;
+  content?: string;
+  inquiryType: InquiryType;
+  categoryDescription: string;
+  status: InquiryStatus;
+  statusDescription: string;
+  createdAt: string;
+  answerContent: string | null;
+  answeredAt: string | null;
+}
+
+export interface InquiryCreateRequest {
   title: string;
   content: string;
-  status: "pending" | "answered" | "resolved";
-  answerContent?: string;
-  inquiryType: string;
-  createdAt: string;
-  updatedAt: string;
-  answeredAt?: string;
+  inquiryType: InquiryType;
   shippingId?: number;
 }

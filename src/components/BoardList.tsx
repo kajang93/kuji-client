@@ -5,6 +5,7 @@ import { Post, PostCategory } from '../shared-types';
 import { fetchPosts } from '../api/community';
 
 interface BoardListProps {
+  user: any;
   onWrite: () => void;
   onDetail: (id: number) => void;
 }
@@ -17,7 +18,7 @@ const CATEGORIES: { label: string; value: PostCategory | "ALL" }[] = [
   { label: '공지사항', value: 'NOTICE' },
 ];
 
-export default function BoardList({ onWrite, onDetail }: BoardListProps) {
+export default function BoardList({ user, onWrite, onDetail }: BoardListProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [selectedPostType, setSelectedPostType] = useState<PostCategory | "ALL">('ALL');
   const [isLoading, setIsLoading] = useState(true);
@@ -125,12 +126,14 @@ export default function BoardList({ onWrite, onDetail }: BoardListProps) {
       </div>
 
       {/* Floating Write Button */}
-      <button
-        onClick={onWrite}
-        className="fixed bottom-24 right-6 w-14 h-14 bg-rose-500 rounded-full shadow-2xl shadow-rose-500/40 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all z-10"
-      >
-        <PenLine className="w-6 h-6" />
-      </button>
+      {user && (
+        <button
+          onClick={onWrite}
+          className="fixed bottom-24 right-6 w-14 h-14 bg-rose-500 rounded-full shadow-2xl shadow-rose-500/40 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all z-10"
+        >
+          <PenLine className="w-6 h-6" />
+        </button>
+      )}
     </div>
   );
 }

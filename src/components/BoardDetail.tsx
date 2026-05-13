@@ -1,19 +1,23 @@
 import { useState, useEffect } from 'react';
 import { motion } from './motion';
-import { ChevronLeft, MoreVertical, Trash2, Eye, User, Calendar, Share2 } from './icons';
+import { ChevronLeft, MoreVertical, Trash2, Eye, User, Calendar, Share2, Edit2 } from './icons';
 import { Post } from '../shared-types';
 import { fetchPostDetail, deletePost } from '../api/community';
 import { toast } from 'sonner';
 
 interface BoardDetailProps {
   postId: number;
+  user: any;
   onBack: () => void;
+  onEdit: () => void;
 }
 
-export default function BoardDetail({ postId, onBack }: BoardDetailProps) {
+export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetailProps) {
   const [post, setPost] = useState<Post | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
+
+  const isAuthor = user && post && user.email === post.authorEmail;
 
   useEffect(() => {
     loadPost();
@@ -66,26 +70,36 @@ export default function BoardDetail({ postId, onBack }: BoardDetailProps) {
           <button className="p-2 hover:bg-white/5 rounded-full transition-colors">
             <Share2 className="w-5 h-5 text-slate-400" />
           </button>
-          <div className="relative">
-            <button 
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-2 hover:bg-white/5 rounded-full transition-colors"
-            >
-              <MoreVertical className="w-5 h-5 text-slate-400" />
-            </button>
-            
-            {showMenu && (
-              <div className="absolute right-0 mt-2 w-32 bg-slate-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-20">
-                <button 
-                  onClick={handleDelete}
-                  className="w-full px-4 py-3 flex items-center gap-2 text-rose-400 hover:bg-white/5 text-sm"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  삭제하기
-                </button>
-              </div>
-            )}
-          </div>
+          
+          {isAuthor && (
+            <div className="relative">
+              <button 
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-2 hover:bg-white/5 rounded-full transition-colors"
+              >
+                <MoreVertical className="w-5 h-5 text-slate-400" />
+              </button>
+              
+              {showMenu && (
+                <div className="absolute right-0 mt-2 w-32 bg-slate-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-20">
+                  <button 
+                    onClick={onEdit}
+                    className="w-full px-4 py-3 flex items-center gap-2 text-white hover:bg-white/5 text-sm"
+                  >
+                    <Edit2 className="w-4 h-4 text-cyan-400" />
+                    수정하기
+                  </button>
+                  <button 
+                    onClick={handleDelete}
+                    className="w-full px-4 py-3 flex items-center gap-2 text-rose-400 hover:bg-white/5 text-sm border-t border-white/5"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    삭제하기
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

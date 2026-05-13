@@ -1,27 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Clock, CheckCircle, MessageCircle, X } from './icons';
-
-type SupportTicket = {
-  id: string;
-  category: string;
-  title: string;
-  content: string;
-  status: 'pending' | 'answered';
-  createdAt: string;
-  answer?: string;
-  answeredAt?: string;
-};
+import { fetchMyInquiries } from '../api/inquiry';
+import { Inquiry } from '../shared-types';
+import { toast } from 'sonner';
 
 type SupportHistoryProps = {
   onBack: () => void;
 };
 
 export default function SupportHistory({ onBack }: SupportHistoryProps) {
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<Inquiry | null>(null);
+  const [tickets, setTickets] = useState<Inquiry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock support tickets
-  const tickets: SupportTicket[] = [];
+  useEffect(() => {
+    loadTickets();
+  }, []);
+
+  const loadTickets = async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchMyInquiries();
+      setTickets(data);
+    } catch (error: any) {
+      toast.error(error.message || '문의 내역을 불러오지 못했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -42,7 +49,12 @@ export default function SupportHistory({ onBack }: SupportHistoryProps) {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl mx-auto space-y-4">
-          {tickets.length === 0 ? (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+              <p className="text-white/60">문의 내역을 불러오는 중...</p>
+            </div>
+          ) : tickets.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -64,28 +76,27 @@ export default function SupportHistory({ onBack }: SupportHistoryProps) {
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs px-2 py-1 bg-purple-500/50 text-white rounded">
-                      {ticket.category}
+                      {ticket.categoryDescription}
                     </span>
-                    {ticket.status === 'answered' ? (
+                    {ticket.status === 'COMPLETED' ? (
                       <span className="flex items-center gap-1 text-xs text-green-400">
                         <CheckCircle className="w-3 h-3" />
-                        답변 완료
+                        {ticket.statusDescription}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-xs text-yellow-400">
                         <Clock className="w-3 h-3" />
-                        답변 대기
+                        {ticket.statusDescription}
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-white/60">{ticket.id}</span>
+                  <span className="text-xs text-white/60">#{ticket.id}</span>
                 </div>
 
-                <h3 className="text-white mb-2">{ticket.title}</h3>
-                <p className="text-white/70 text-sm line-clamp-2 mb-2">
-                  {ticket.content}
+                <h3 className="text-white mb-2 font-bold">{ticket.title}</h3>
+                <p className="text-white/50 text-xs">
+                  {new Date(ticket.createdAt).toLocaleString()}
                 </p>
-                <p className="text-white/50 text-xs">{ticket.createdAt}</p>
               </motion.div>
             ))
           )}
@@ -113,17 +124,17 @@ export default function SupportHistory({ onBack }: SupportHistoryProps) {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <span className="text-xs px-2 py-1 bg-purple-500/50 text-white rounded">
-                    {selectedTicket.category}
+                    {selectedTicket.categoryDescription}
                   </span>
-                  {selectedTicket.status === 'answered' ? (
+                  {selectedTicket.status === 'COMPLETED' ? (
                     <span className="flex items-center gap-1 text-xs text-green-400">
                       <CheckCircle className="w-3 h-3" />
-                      답변 완료
+                      {selectedTicket.statusDescription}
                     </span>
                   ) : (
                     <span className="flex items-center gap-1 text-xs text-yellow-400">
                       <Clock className="w-3 h-3" />
-                      답변 대기
+                      {selectedTicket.statusDescription}
                     </span>
                   )}
                 </div>
@@ -140,33 +151,35 @@ export default function SupportHistory({ onBack }: SupportHistoryProps) {
                 {/* Question */}
                 <div className="bg-white/10 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-white">문의 내용</h3>
-                    <span className="text-xs text-white/60">{selectedTicket.createdAt}</span>
+                    <h3 className="text-white text-sm opacity-60">문의 내용</h3>
+                    <span className="text-xs text-white/60">{new Date(selectedTicket.createdAt).toLocaleString()}</span>
                   </div>
-                  <h4 className="text-yellow-400 mb-3">{selectedTicket.title}</h4>
+                  <h4 className="text-yellow-400 font-bold mb-3">{selectedTicket.title}</h4>
                   <p className="text-white/80 whitespace-pre-wrap">{selectedTicket.content}</p>
                 </div>
 
                 {/* Answer */}
-                {selectedTicket.status === 'answered' && selectedTicket.answer && (
+                {selectedTicket.status === 'COMPLETED' && selectedTicket.answerContent && (
                   <div className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border border-green-400/30 rounded-2xl p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-green-400 flex items-center gap-2">
+                      <h3 className="text-green-400 flex items-center gap-2 font-bold">
                         <CheckCircle className="w-5 h-5" />
                         답변
                       </h3>
-                      <span className="text-xs text-white/60">{selectedTicket.answeredAt}</span>
+                      <span className="text-xs text-white/60">
+                        {selectedTicket.answeredAt && new Date(selectedTicket.answeredAt).toLocaleString()}
+                      </span>
                     </div>
-                    <p className="text-white/90 whitespace-pre-wrap">{selectedTicket.answer}</p>
+                    <p className="text-white/90 whitespace-pre-wrap">{selectedTicket.answerContent}</p>
                   </div>
                 )}
 
-                {selectedTicket.status === 'pending' && (
+                {selectedTicket.status === 'WAITING' && (
                   <div className="bg-yellow-900/30 border border-yellow-400/30 rounded-2xl p-4 text-center">
                     <Clock className="w-12 h-12 text-yellow-400 mx-auto mb-2" />
-                    <p className="text-yellow-400">답변 대기 중입니다</p>
+                    <p className="text-yellow-400 font-bold">답변 대기 중입니다</p>
                     <p className="text-white/70 text-sm mt-1">
-                      1~2 영업일 내에 답변 드리겠습니다
+                      접수된 문의는 최대한 빠른 시일 내에 답변 드리겠습니다.
                     </p>
                   </div>
                 )}
@@ -180,9 +193,9 @@ export default function SupportHistory({ onBack }: SupportHistoryProps) {
               {/* Close Button */}
               <button
                 onClick={() => setSelectedTicket(null)}
-                className="mt-4 w-full py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-xl hover:from-yellow-300 hover:to-yellow-400 transition-all"
+                className="mt-4 w-full py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(251,191,36,0.4)] transition-all"
               >
-                <div className="text-center">닫기</div>
+                닫기
               </button>
             </motion.div>
           </motion.div>

@@ -36,7 +36,7 @@ import Events from "./components/Events";
 import AlertModal from "./components/AlertModal";
 import LiveTicker from "./components/LiveTicker";
 import { Menu } from "./components/icons";
-import { Toaster, toast as sonnerToast } from "sonner";
+import { Toaster, toast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import BusinessPending from "./components/BusinessPending";
 import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory } from "./api/kuji";
@@ -1157,7 +1157,16 @@ export default function App() {
         )}
         {screen === "community" && (
           <BoardList 
-            onWrite={() => setScreen("communityWrite")} 
+            user={user}
+            onWrite={() => {
+              if (!user) {
+                toast.error("로그인이 필요한 서비스입니다.");
+                setIsLoginModalOpen(true);
+                return;
+              }
+              setSelectedPostId(null); // 새 글 작성을 위해 ID 초기화
+              setScreen("communityWrite");
+            }} 
             onDetail={(id) => {
               setSelectedPostId(id);
               setScreen("communityDetail");
@@ -1168,14 +1177,17 @@ export default function App() {
         {screen === "communityDetail" && selectedPostId && (
           <BoardDetail 
             postId={selectedPostId} 
+            user={user}
             onBack={() => setScreen("community")} 
+            onEdit={() => setScreen("communityWrite")}
           />
         )}
 
         {screen === "communityWrite" && (
           <BoardWrite 
-            onBack={() => setScreen("community")} 
-            onSuccess={() => setScreen("community")} 
+            postId={selectedPostId || undefined}
+            onBack={() => setScreen(selectedPostId ? "communityDetail" : "community")} 
+            onSuccess={() => setScreen(selectedPostId ? "communityDetail" : "community")} 
           />
         )}
 

@@ -47,6 +47,21 @@ export const createPost = async (data: PostCreateRequest): Promise<number> => {
 };
 
 /**
+ * 게시글 수정
+ */
+export const updatePost = async (id: number, data: PostCreateRequest): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/${id}`, {
+    method: "PUT",
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "게시글 수정에 실패했습니다.");
+  }
+};
+
+/**
  * 게시글 삭제
  */
 export const deletePost = async (id: number): Promise<void> => {

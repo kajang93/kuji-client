@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from './motion';
 import { ChevronLeft, Send, Image as ImageIcon, Check } from './icons';
 import { PostCategory, PostCreateRequest } from '../shared-types';
-import { createPost } from '../api/community';
+import { createPost, fetchPostDetail, updatePost } from '../api/community';
 import { toast } from 'sonner';
 
 interface BoardWriteProps {
+  postId?: number;
   onBack: () => void;
   onSuccess: () => void;
 }
@@ -16,13 +17,37 @@ const CATEGORIES: { label: string; value: PostCategory }[] = [
   { label: 'Q&A', value: 'QNA' },
 ];
 
-export default function BoardWrite({ onBack, onSuccess }: BoardWriteProps) {
+export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProps) {
   const [formData, setFormData] = useState<PostCreateRequest>({
     title: '',
     content: '',
     category: 'FREE'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (postId) {
+      loadOriginalPost();
+    }
+  }, [postId]);
+
+  const loadOriginalPost = async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchPostDetail(postId!);
+      setFormData({
+        title: data.title,
+        content: data.content,
+        category: data.category
+      });
+    } catch (error) {
+      toast.error('기존 내용을 불러올 수 없습니다.');
+      onBack();
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,8 +56,13 @@ export default function BoardWrite({ onBack, onSuccess }: BoardWriteProps) {
 
     setIsSubmitting(true);
     try {
-      await createPost(formData);
-      toast.success('게시글이 등록되었습니다!');
+      if (postId) {
+        await updatePost(postId, formData);
+        toast.success('게시글이 수정되었습니다!');
+      } else {
+        await createPost(formData);
+        toast.success('게시글이 등록되었습니다!');
+      }
       onSuccess();
     } catch (error: any) {
       toast.error(error.message);
@@ -40,6 +70,15 @@ export default function BoardWrite({ onBack, onSuccess }: BoardWriteProps) {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-slate-900">
+        <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-slate-500 text-sm mt-4">내용을 불러오는 중...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-slate-900">
@@ -49,19 +88,19 @@ export default function BoardWrite({ onBack, onSuccess }: BoardWriteProps) {
           <button onClick={onBack} className="p-2 hover:bg-white/5 rounded-full transition-colors">
             <ChevronLeft className="w-6 h-6 text-white" />
           </button>
-          <h2 className="text-white font-bold">글쓰기</h2>
+          <h2 className="text-white font-bold">{postId ? '글 수정하기' : '글쓰기'}</h2>
         </div>
         <button 
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="px-4 py-2 bg-rose-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-rose-600 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+          className="px-4 py-2 bg-rose-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-rose-600 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 shadow-lg shadow-rose-500/20"
         >
           {isSubmitting ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
-            <Send className="w-4 h-4" />
+            <Check className="w-4 h-4" />
           )}
-          등록
+          {postId ? '수정 완료' : '등록'}
         </button>
       </div>
 
