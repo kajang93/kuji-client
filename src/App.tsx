@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import MainScreen from "./components/MainScreen";
-import AnimeList from "./components/AnimeList";
+import AnimeList from "./components/AnimeListFixed";
 import PrizeDetail from "./components/PrizeDetail";
 import KujiSelection from "./components/KujiSelection";
 import KujiReveal from "./components/KujiReveal";
@@ -44,6 +44,7 @@ import BoardList from "./components/BoardList";
 import BoardDetail from "./components/BoardDetail";
 import BoardWrite from "./components/BoardWrite";
 import { fetchMyProfile } from "./api/auth";
+import { toggleWishlist, fetchMyWishlist } from "./api/wishlist";
 
 import {
   Prize,
@@ -122,15 +123,24 @@ export default function App() {
             "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
           totalKuji: board.totalCount || 0,
           remainingKuji: board.remainCount || 0,
-          gradeCount: board.gradeCount || 0, // 추가
+          gradeCount: board.gradeCount || 0,
           boardId: board.id,
+          isWished: board.isWished, // 서버에서 받은 찜 여부 매핑
           operationStatus: board.status === 'ACTIVE' ? 'active' :
             board.status === 'PREPARING' ? 'scheduled' : 'ended',
-          prizes: [] // 상세 정보는 클릭 시점에 불러옵니다.
+          prizes: []
         };
       });
 
       setAnimeCollections(mappedCollections);
+      
+      // 게시판 목록을 가져올 때 사용자의 찜 상태가 포함되어 있다면 wishlist ID 목록도 업데이트
+      const wishedIds = boards
+        .filter((b: KujiBoard) => b.isWished)
+        .map((b: KujiBoard) => b.id.toString());
+      if (wishedIds.length > 0) {
+        setWishlist(wishedIds);
+      }
     } catch (error) {
       console.error("Failed to fetch boards:", error);
     }
@@ -167,7 +177,8 @@ export default function App() {
 
       setUser(formattedUser);
       
-      // 사용자 정보 로드 후 당첨 내역도 함께 로드
+      // 사용자 정보 로드 후 찜 목록 및 당첨 내역도 함께 로드
+      handleFetchWishlist();
       handleFetchWinningHistory();
 
       if (formattedUser.type === "business" && formattedUser.isActive === false) {
@@ -224,6 +235,22 @@ export default function App() {
       setWinningHistory(mappedWinnings);
     } catch (error) {
       console.error("Failed to fetch winning history:", error);
+    }
+  };
+
+  // 서버에서 찜 목록 가져오기
+  const handleFetchWishlist = async () => {
+    try {
+      const myWishlist = await fetchMyWishlist();
+      setWishlist(myWishlist.map(board => board.id.toString()));
+      
+      // 전체 목록에서도 찜 상태 동기화
+      setAnimeCollections(prev => prev.map(anime => ({
+        ...anime,
+        isWished: myWishlist.some(w => w.id.toString() === anime.id)
+      })));
+    } catch (error) {
+      console.error("Failed to fetch wishlist:", error);
     }
   };
 
@@ -526,18 +553,53 @@ export default function App() {
     }
   };
 
-  const handleToggleWishlist = (animeId: string) => {
-    setWishlist((prev) => {
-      if (prev.includes(animeId)) {
-        return prev.filter((id) => id !== animeId);
-      } else {
-        return [...prev, animeId];
-      }
-    });
+  const handleToggleWishlist = async (animeId: string) => {
+    if (!user) {
+      setScreen("login");
+      return;
+    }
+
+    try {
+      // 1. 서버 API 호출
+      const { wished } = await toggleWishlist(Number(animeId));
+      
+      // 2. 로컬 상태 업데이트
+      setWishlist((prev) => {
+        if (wished) {
+          return prev.includes(animeId) ? prev : [...prev, animeId];
+        } else {
+          return prev.filter((id) => id !== animeId);
+        }
+      });
+
+      // 3. 전체 목록 데이터도 업데이트
+      setAnimeCollections(prev => prev.map(anime => 
+        anime.id === animeId ? { ...anime, isWished: wished } : anime
+      ));
+
+      toast.success(wished ? "찜 목록에 추가되었습니다." : "찜 목록에서 제거되었습니다.");
+    } catch (error: any) {
+      console.error("Failed to toggle wishlist:", error);
+      toast.error(error.message || "찜하기 처리에 실패했습니다.");
+    }
   };
 
-  const handleRemoveFromWishlist = (animeId: string) => {
-    setWishlist((prev) => prev.filter((id) => id !== animeId));
+  const handleRemoveFromWishlist = async (animeId: string) => {
+    try {
+      // 찜 해제 API 호출 (토글과 동일한 엔드포인트 사용)
+      const { wished } = await toggleWishlist(Number(animeId));
+      
+      if (!wished) {
+        setWishlist((prev) => prev.filter((id) => id !== animeId));
+        setAnimeCollections(prev => prev.map(anime => 
+          anime.id === animeId ? { ...anime, isWished: false } : anime
+        ));
+        toast.success("찜 목록에서 제거되었습니다.");
+      }
+    } catch (error) {
+      console.error("Failed to remove from wishlist:", error);
+      toast.error("찜 해제에 실패했습니다.");
+    }
   };
 
   const handleSelectPrizeOption = (
@@ -1024,7 +1086,7 @@ export default function App() {
             onSelect={handleAnimeSelect}
             onBack={() => setScreen("main")}
             wishlist={wishlist}
-            onToggleWishlist={handleToggleWishlist}
+            onToggleWishlist={(anime) => handleToggleWishlist(anime.id)}
           />
         )}
         {screen === "detail" && selectedAnime && (
@@ -1510,6 +1572,8 @@ export default function App() {
                 setScreen("businessDashboard");
               } else {
                 setScreen("main");
+                // 찜 목록 로드
+                handleFetchWishlist();
               }
               sonnerToast.success("로그인에 성공했습니다!");
             }}

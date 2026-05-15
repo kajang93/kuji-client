@@ -53,7 +53,6 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
                   alt={anime.name}
                   className="w-full h-full object-cover"
                 />
-                {/* Dark gradient overlay for readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/30" />
               </div>
 
@@ -79,10 +78,8 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
                 onClick={() => onSelect(anime)}
                 className="relative h-full flex flex-col justify-end p-6 cursor-pointer"
               >
-                {/* Series Name */}
                 <h2 className="text-white text-3xl mb-3 drop-shadow-lg" style={{ fontWeight: 800 }}>{anime.name}</h2>
                 
-                {/* Stats */}
                 <div className="flex items-center gap-4 mb-3">
                   <div className="bg-black/40 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
                     <div className="flex items-center gap-2 text-white/90">
@@ -92,6 +89,7 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
                       <span className="text-lg">{anime.totalKuji}</span>
                     </div>
                   </div>
+                  
                   <div className="bg-black/40 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
                     <span className="text-white/90 text-sm">
                       {anime.gradeCount !== undefined 
@@ -101,22 +99,15 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
                   </div>
                 </div>
 
-                {/* Progress Bar */}
-                <div className="mb-2">
-                  <div className="h-2 bg-black/40 backdrop-blur-sm rounded-full overflow-hidden border border-white/20">
-                    <div 
-                      className="h-full bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 shadow-lg"
-                      style={{ width: `${(anime.remainingKuji / anime.totalKuji) * 100}%` }}
-                    />
-                  </div>
-                  <div className="text-white/60 text-xs mt-1 text-right">
-                    {Math.round((anime.remainingKuji / anime.totalKuji) * 100)}% 남음
-                  </div>
+                <div className="h-2 bg-black/40 backdrop-blur-sm rounded-full overflow-hidden border border-white/20">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(anime.remainingKuji / (anime.totalKuji || 1)) * 100}%` }}
+                    className="h-full bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 shadow-lg"
+                  />
                 </div>
-
-                {/* Arrow Indicator */}
-                <div className="absolute bottom-6 right-6 text-white/50 text-5xl">
-                  ›
+                <div className="text-white/60 text-xs mt-1 text-right">
+                  {Math.round((anime.remainingKuji / (anime.totalKuji || 1)) * 100)}% 남음
                 </div>
               </div>
             </motion.div>
@@ -125,17 +116,10 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
       </div>
 
       {/* Info Banner */}
-      <div className="p-6">
+      <div className="p-6 pb-20">
         <div className="bg-yellow-400/20 border border-yellow-400/50 rounded-xl p-4">
-          <p className="text-yellow-200 text-center">
+          <p className="text-yellow-200 text-center text-sm">
             원하는 시리즈를 선택하여 복권을 구매하세요
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-��을 구매하세요
           </p>
         </div>
       </div>

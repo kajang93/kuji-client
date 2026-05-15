@@ -21,6 +21,7 @@ export interface KujiBoard {
   totalCount?: number;
   remainCount?: number;
   gradeCount?: number; // 추가
+  isWished?: boolean; // 추가
   prizes?: Prize[];
 }
 
@@ -47,6 +48,7 @@ export type AnimeCollection = {
   prizes: Prize[];
   operationStatus?: "scheduled" | "active" | "ended";
   boardId?: number; // Backend alignment
+  isWished?: boolean; // 추가
 };
 
 export type WinningItem = {
