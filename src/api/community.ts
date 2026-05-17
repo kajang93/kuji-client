@@ -33,11 +33,14 @@ export const fetchPostDetail = async (id: number): Promise<Post> => {
 /**
  * 게시글 작성
  */
-export const createPost = async (data: PostCreateRequest): Promise<number> => {
+export const createPost = async (formData: FormData): Promise<number> => {
+  const token = localStorage.getItem("token");
   const response = await fetch(API_BASE_URL, {
     method: "POST",
-    headers: getHeaders(),
-    body: JSON.stringify(data),
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
   });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -49,11 +52,14 @@ export const createPost = async (data: PostCreateRequest): Promise<number> => {
 /**
  * 게시글 수정
  */
-export const updatePost = async (id: number, data: PostCreateRequest): Promise<void> => {
+export const updatePost = async (id: number, formData: FormData): Promise<void> => {
+  const token = localStorage.getItem("token");
   const response = await fetch(`${API_BASE_URL}/${id}`, {
     method: "PUT",
-    headers: getHeaders(),
-    body: JSON.stringify(data),
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
   });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));

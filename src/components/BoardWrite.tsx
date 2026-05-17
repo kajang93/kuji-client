@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from './motion';
-import { ChevronLeft, Send, Image as ImageIcon, Check } from './icons';
+import { ChevronLeft, Send, Image as ImageIcon, Check, X } from './icons';
 import { PostCategory, PostCreateRequest } from '../shared-types';
+import { useRef } from 'react';
 import { createPost, fetchPostDetail, updatePost } from '../api/community';
 import { toast } from 'sonner';
 
@@ -25,6 +26,9 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [images, setImages] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (postId) {
@@ -49,6 +53,31 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (images.length + files.length > 3) {
+      toast.error('사진은 최대 3장까지 등록 가능합니다.');
+      return;
+    }
+
+    const newImages = [...images, ...files];
+    setImages(newImages);
+
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+    setPreviews([...previews, ...newPreviews]);
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index);
+    const newPreviews = previews.filter((_, i) => i !== index);
+    
+    // Revoke object URL to prevent memory leak
+    URL.revokeObjectURL(previews[index]);
+    
+    setImages(newImages);
+    setPreviews(newPreviews);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim()) return toast.error('제목을 입력해주세요.');
@@ -56,11 +85,22 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
 
     setIsSubmitting(true);
     try {
+      const formDataObj = new FormData();
+      
+      // JSON data (request)
+      const requestBlob = new Blob([JSON.stringify(formData)], { type: 'application/json' });
+      formDataObj.append('request', requestBlob);
+      
+      // Files
+      images.forEach(image => {
+        formDataObj.append('files', image);
+      });
+
       if (postId) {
-        await updatePost(postId, formData);
+        await updatePost(postId, formDataObj);
         toast.success('게시글이 수정되었습니다!');
       } else {
-        await createPost(formData);
+        await createPost(formDataObj);
         toast.success('게시글이 등록되었습니다!');
       }
       onSuccess();
@@ -149,11 +189,42 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
           />
         </div>
 
-        {/* Action Bar (Mock for image upload) */}
-        <div className="flex items-center gap-4 py-4 border-t border-white/5">
-          <button type="button" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+        {/* Action Bar & Previews */}
+        <div className="space-y-4 py-4 border-t border-white/5">
+          {/* Previews */}
+          {previews.length > 0 && (
+            <div className="flex gap-3">
+              {previews.map((preview, idx) => (
+                <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10">
+                  <img src={preview} alt="preview" className="w-full h-full object-cover" />
+                  <button 
+                    type="button"
+                    onClick={() => removeImage(idx)}
+                    className="absolute top-1 right-1 p-1 bg-black/50 backdrop-blur-md rounded-full hover:bg-black/70 transition-colors"
+                  >
+                    <X className="w-3 h-3 text-white" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <input 
+            type="file" 
+            ref={fileInputRef}
+            onChange={handleImageChange}
+            multiple 
+            accept="image/*"
+            className="hidden"
+          />
+          
+          <button 
+            type="button" 
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+          >
             <ImageIcon className="w-5 h-5" />
-            <span className="text-sm">사진 추가</span>
+            <span className="text-sm">사진 추가 ({images.length}/3)</span>
           </button>
         </div>
       </form>

@@ -134,10 +134,31 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-slate-300 leading-relaxed whitespace-pre-wrap min-h-[300px]"
+          className="text-slate-300 leading-relaxed whitespace-pre-wrap"
         >
           {post.content}
         </motion.div>
+
+        {/* Images */}
+        {post.imageUrls && post.imageUrls.length > 0 && (
+          <div className="mt-8 space-y-4">
+            {post.imageUrls.map((url, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+              >
+                <img 
+                  src={url} 
+                  alt={`Post image ${idx + 1}`} 
+                  className="w-full h-auto object-cover"
+                />
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         {/* Bottom Padding */}
         <div className="h-20" />
