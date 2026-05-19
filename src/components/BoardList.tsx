@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from './motion';
-import { Search, PenLine, ChevronRight, Eye, MessageSquare, Filter } from './icons';
+import { Search, PenLine, ChevronRight, Eye, MessageSquare, Filter, Heart } from './icons';
 import { Post, PostCategory } from '../shared-types';
 import { fetchPosts } from '../api/community';
 
@@ -118,6 +118,18 @@ export default function BoardList({ user, onWrite, onDetail }: BoardListProps) {
                     <Eye className="w-3 h-3" />
                     {post.viewCount}
                   </div>
+                  {post.likeCount !== undefined && (
+                    <div className="flex items-center gap-1 text-[10px] text-rose-400">
+                      <Heart className="w-3 h-3" />
+                      {post.likeCount}
+                    </div>
+                  )}
+                  {post.commentCount !== undefined && (
+                    <div className="flex items-center gap-1 text-[10px] text-cyan-400">
+                      <MessageSquare className="w-3 h-3" />
+                      {post.commentCount}
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>

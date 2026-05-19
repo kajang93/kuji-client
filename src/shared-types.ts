@@ -1,5 +1,14 @@
 export const TYPES_MODULE = true;
 
+export interface PostComment {
+  id: number;
+  content: string;
+  authorName: string;
+  authorEmail: string;
+  profileImageUrl?: string;
+  createdAt: string;
+}
+
 export type BoardStatus = 'PREPARING' | 'ACTIVE' | 'FINISHED';
 export type BoardImageType = 'THUMBNAIL' | 'DETAIL' | 'BANNER';
 
@@ -187,6 +196,11 @@ export interface Post {
   authorEmail: string;
   createdAt: string;
   updatedAt: string;
+  imageUrls?: string[];
+  likeCount?: number;
+  commentCount?: number;
+  isLiked?: boolean;
+  isWished?: boolean;
 }
 
 export interface PostCreateRequest {
