@@ -36,7 +36,7 @@ import Events from "./components/Events";
 import AlertModal from "./components/AlertModal";
 import LiveTicker from "./components/LiveTicker";
 import { Menu } from "./components/icons";
-import { Toaster, toast } from "sonner";
+import { Toaster, toast, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import BusinessPending from "./components/BusinessPending";
 import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory } from "./api/kuji";
@@ -45,6 +45,7 @@ import BoardDetail from "./components/BoardDetail";
 import BoardWrite from "./components/BoardWrite";
 import { fetchMyProfile } from "./api/auth";
 import { toggleWishlist, fetchMyWishlist } from "./api/wishlist";
+import { onForegroundMessage } from "./api/firebase";
 
 import {
   Prize,
@@ -148,6 +149,27 @@ export default function App() {
 
   useEffect(() => {
     handleFetchBoards();
+  }, []);
+
+  // Foreground FCM message handler
+  useEffect(() => {
+    const unsubscribe = onForegroundMessage((payload) => {
+      console.log("Foreground push notification received:", payload);
+      const title = payload.notification?.title || payload.data?.title || "알림";
+      const body = payload.notification?.body || payload.data?.body || "";
+      
+      toast.success(
+        `${title}\n${body}`,
+        {
+          duration: 6000,
+          position: "top-center"
+        }
+      );
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   // Check for existing session or Kakao redirect on mount

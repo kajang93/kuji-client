@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Bell, Vibrate, Volume2, MessageCircle, Truck, ShoppingCart, AlertCircle, Moon, Gift, BellRing, X, ChevronDown } from './icons';
+import { toast } from 'sonner';
+import { requestFirebaseToken } from '../api/firebase';
+import { registerDeviceToken, deleteDeviceToken } from '../api/notification';
 
 export type NotificationSettingsState = {
   pushEnabled: boolean;
@@ -29,11 +32,53 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
 
   const toggleSetting = (key: keyof NotificationSettingsState) => {
     const newSettings = { ...settings, [key]: !settings[key] };
-    
-    // If turning off master marketing toggle, turn off related sub-toggles
-    // But here we treat them individually for more granular control
-    
     onUpdateSettings(newSettings);
+  };
+
+  const handlePushToggle = async () => {
+    const isTurningOn = !settings.pushEnabled;
+    
+    if (isTurningOn) {
+      try {
+        // 브라우저 알림 권한 요청
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          toast.success("알림 권한이 허용되었습니다. 토큰을 발급합니다...");
+          const token = await requestFirebaseToken();
+          
+          if (token) {
+            try {
+              // 백엔드로 토큰 전송
+              await registerDeviceToken(token);
+              localStorage.setItem('fcm_token', token);
+              toast.success("푸시 알림 설정이 완료되었습니다! 🎉");
+              onUpdateSettings({ ...settings, pushEnabled: true });
+            } catch (apiError) {
+              console.error("백엔드 토큰 등록 실패:", apiError);
+              toast.error("서버에 알림 정보를 등록하지 못했습니다. 잠시 후 다시 시도해주세요.");
+            }
+          } else {
+            toast.error("토큰 발급에 실패했습니다.");
+          }
+        } else {
+          toast.error("알림 권한이 차단되어 있습니다. 브라우저 설정에서 허용해주세요.");
+        }
+      } catch (error) {
+        console.error("알림 권한 요청 중 오류:", error);
+        toast.error("알림을 설정하는 중 오류가 발생했습니다.");
+      }
+    } else {
+      // 알림 끄기
+      try {
+        await deleteDeviceToken();
+        localStorage.removeItem('fcm_token');
+        onUpdateSettings({ ...settings, pushEnabled: false });
+        toast.success("앱 푸시 알림을 껐습니다.");
+      } catch (apiError) {
+        console.error("백엔드 토큰 삭제 실패:", apiError);
+        toast.error("알림을 끄는 중 서버 통신 오류가 발생했습니다.");
+      }
+    }
   };
 
   const isBusiness = user?.type === 'business';
@@ -76,7 +121,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                 <div className="text-white/60 text-sm">기기 알림을 받습니다</div>
               </div>
               <button
-                onClick={() => toggleSetting('pushEnabled')}
+                onClick={handlePushToggle}
                 className={`relative w-14 h-8 rounded-full transition-colors ${
                   settings.pushEnabled ? 'bg-indigo-500' : 'bg-white/20'
                 }`}
@@ -90,6 +135,29 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                 />
               </button>
             </div>
+
+            {settings.pushEnabled && (
+              <div className="px-5 pb-5 border-t border-white/10 pt-4 space-y-2">
+                <div className="text-white/40 text-xs font-semibold">디버그용 FCM 토큰 (테스트 시 복사하여 사용):</div>
+                <div className="bg-black/40 border border-white/10 rounded-xl p-3 flex items-center justify-between gap-3">
+                  <div className="text-indigo-200 text-xs font-mono truncate select-all flex-1">
+                    {localStorage.getItem('fcm_token') || '토큰 로딩 중...'}
+                  </div>
+                  <button
+                    onClick={() => {
+                      const token = localStorage.getItem('fcm_token');
+                      if (token) {
+                        navigator.clipboard.writeText(token);
+                        toast.success("FCM 토큰이 클립보드에 복사되었습니다! 📋");
+                      }
+                    }}
+                    className="px-3 py-1 bg-white/10 hover:bg-white/20 active:scale-95 text-white/80 hover:text-white rounded-lg text-xs transition-all flex-shrink-0 font-medium"
+                  >
+                    복사
+                  </button>
+                </div>
+              </div>
+            )}
           </motion.div>
 
           {/* Sound & Vibrate */}
