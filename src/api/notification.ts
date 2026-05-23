@@ -1,6 +1,17 @@
 import { getHeaders } from './client';
 import { v4 as uuidv4 } from 'uuid';
 
+export interface NotificationSettingDto {
+  pushEnabled: boolean;
+  kakaoWinning: boolean;
+  kakaoDelivery: boolean;
+  kakaoInquiry: boolean;
+  marketingOpen: boolean;
+  marketingRestock: boolean;
+  marketingEvent: boolean;
+  nightPush: boolean;
+}
+
 export interface NotificationResponse {
   id: number;
   title: string;
@@ -101,6 +112,31 @@ export const readNotification = async (notificationId: number) => {
  * 5. 알림 전체 읽음 처리
  * - '모두 읽음' 버튼을 눌렀을 때 호출합니다.
  */
+/**
+ * 6. 내 알림 수신 설정 조회
+ * - 설정 화면 진입 시 서버에서 현재 토글 상태를 불러옵니다.
+ */
+export const getNotificationSettings = async (): Promise<NotificationSettingDto> => {
+  const response = await fetch('/api/notifications/settings', {
+    headers: getHeaders(),
+  });
+  if (!response.ok) throw new Error('알림 설정을 불러올 수 없습니다.');
+  return response.json();
+};
+
+/**
+ * 7. 알림 수신 설정 업데이트
+ * - 사용자가 토글을 변경할 때마다 서버에 저장합니다.
+ */
+export const updateNotificationSettings = async (settings: Partial<NotificationSettingDto>): Promise<void> => {
+  const response = await fetch('/api/notifications/settings', {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify(settings),
+  });
+  if (!response.ok) throw new Error('알림 설정 저장에 실패했습니다.');
+};
+
 export const readAllNotifications = async () => {
   const response = await fetch('/api/notifications/read-all', {
     method: 'PATCH',

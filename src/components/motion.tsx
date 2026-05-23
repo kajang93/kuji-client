@@ -49,13 +49,29 @@ const MotionDiv = forwardRef<HTMLDivElement, MotionProps>(({
   const [isHovered, setIsHovered] = React.useState(false);
   const [isTapped, setIsTapped] = React.useState(false);
 
-  // Combine styles with transition
+  // animate prop → CSS transform / opacity 변환
+  const buildAnimateStyle = (animateObj: any): CSSProperties => {
+    if (!animateObj) return {};
+    const transforms: string[] = [];
+    if (animateObj.x !== undefined) transforms.push(`translateX(${animateObj.x}px)`);
+    if (animateObj.y !== undefined) transforms.push(`translateY(${animateObj.y}px)`);
+    if (animateObj.scale !== undefined) transforms.push(`scale(${animateObj.scale})`);
+    if (animateObj.rotate !== undefined) transforms.push(`rotate(${animateObj.rotate}deg)`);
+    const result: CSSProperties = {};
+    if (transforms.length > 0) result.transform = transforms.join(' ');
+    if (animateObj.opacity !== undefined) result.opacity = animateObj.opacity;
+    if (animateObj.height !== undefined) result.height = animateObj.height;
+    if (animateObj.width !== undefined) result.width = animateObj.width;
+    return result;
+  };
+
   const combinedStyle: CSSProperties = {
+    ...buildAnimateStyle(animate),
     ...style,
     transition: 'all 0.3s ease-in-out',
   };
 
-  // Apply hover and tap transforms
+  // Apply hover and tap transforms (override animate if needed)
   if (isHovered && whileHover?.scale) {
     combinedStyle.transform = `scale(${whileHover.scale})`;
   }
@@ -83,6 +99,7 @@ const MotionDiv = forwardRef<HTMLDivElement, MotionProps>(({
 });
 
 MotionDiv.displayName = 'MotionDiv';
+
 
 const MotionButton = forwardRef<HTMLButtonElement, MotionProps>(({ 
   children, 

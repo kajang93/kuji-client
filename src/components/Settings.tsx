@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
-import { ChevronLeft, Bell, Vibrate, Volume2, MessageCircle, Truck, ShoppingCart, AlertCircle, Moon, Gift, BellRing, X, ChevronDown } from './icons';
+import { ChevronLeft, Bell, Vibrate, Volume2, MessageCircle, Truck, AlertCircle, Moon, Gift, BellRing, X, ChevronDown } from './icons';
 import { toast } from 'sonner';
 import { requestFirebaseToken } from '../api/firebase';
-import { registerDeviceToken, deleteDeviceToken } from '../api/notification';
+import { registerDeviceToken, deleteDeviceToken, getNotificationSettings, updateNotificationSettings } from '../api/notification';
 
 export type NotificationSettingsState = {
   pushEnabled: boolean;
@@ -29,10 +29,38 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
   const [showModal, setShowModal] = useState<'privacy' | 'terms' | 'info' | null>(null);
   const [isKakaoExpanded, setIsKakaoExpanded] = useState(true);
   const [isMarketingExpanded, setIsMarketingExpanded] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  const toggleSetting = (key: keyof NotificationSettingsState) => {
+  // 설정 화면 진입 시 서버에서 현재 알림 설정 불러오기
+  useEffect(() => {
+    if (!user) return; // 비로그인 시 스킵
+    getNotificationSettings()
+      .then((serverSettings) => {
+        onUpdateSettings({ ...settings, ...serverSettings });
+      })
+      .catch((err) => {
+        console.warn('알림 설정 로드 실패 (서버 미연결 등):', err);
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // 토글 클릭 → 로컬 즉시 반영 + 백엔드 동기화
+  const toggleSetting = async (key: keyof NotificationSettingsState) => {
     const newSettings = { ...settings, [key]: !settings[key] };
-    onUpdateSettings(newSettings);
+    onUpdateSettings(newSettings); // 즉시 UI 반영 (낙관적 업데이트)
+
+    if (!user) return; // 비로그인 시 API 호출 안 함
+    setIsSyncing(true);
+    try {
+      await updateNotificationSettings({ [key]: newSettings[key] });
+    } catch (err) {
+      console.error('알림 설정 저장 실패:', err);
+      // 실패 시 원래 값으로 롤백
+      onUpdateSettings(settings);
+      toast.error('설정 저장에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const handlePushToggle = async () => {
@@ -50,12 +78,14 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
             try {
               // 백엔드로 토큰 전송
               await registerDeviceToken(token);
+              // notification_setting 테이블에도 pushEnabled=true 동기화
+              await updateNotificationSettings({ pushEnabled: true });
               localStorage.setItem('fcm_token', token);
               toast.success("푸시 알림 설정이 완료되었습니다! 🎉");
               onUpdateSettings({ ...settings, pushEnabled: true });
             } catch (apiError) {
               console.error("백엔드 토큰 등록 실패:", apiError);
-              toast.error("서버에 알림 정보를 등록하지 못했습니다. 잠시 후 다시 시도해주세요.");
+              toast.error("서버에 알림 정보를 등록하지 못했습니다. 다시 로그인 후 시도해주세요.");
             }
           } else {
             toast.error("토큰 발급에 실패했습니다.");
@@ -68,18 +98,21 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
         toast.error("알림을 설정하는 중 오류가 발생했습니다.");
       }
     } else {
-      // 알림 끄기
+      // 알림 끄기 — API 실패해도 로컬 토큰은 반드시 삭제 (best-effort)
+      localStorage.removeItem('fcm_token');
+      onUpdateSettings({ ...settings, pushEnabled: false });
       try {
         await deleteDeviceToken();
-        localStorage.removeItem('fcm_token');
-        onUpdateSettings({ ...settings, pushEnabled: false });
+        await updateNotificationSettings({ pushEnabled: false });
         toast.success("앱 푸시 알림을 껐습니다.");
       } catch (apiError) {
         console.error("백엔드 토큰 삭제 실패:", apiError);
-        toast.error("알림을 끄는 중 서버 통신 오류가 발생했습니다.");
+        // 로컬은 이미 지웠으므로 UI는 꺼진 상태 유지, 서버 오류만 알림
+        toast.error("서버 동기화에 실패했습니다. 다시 로그인 후 확인해주세요.");
       }
     }
   };
+
 
   const isBusiness = user?.type === 'business';
 
@@ -127,7 +160,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                 }`}
               >
                 <motion.div
-                  animate={{ x: settings.pushEnabled ? 24 : 2 }}
+                  animate={{ x: settings.pushEnabled ? 30 : 2 }}
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   className={`absolute top-1 w-6 h-6 rounded-full shadow-lg ${
                     settings.pushEnabled ? 'bg-white' : 'bg-white/60'
@@ -180,7 +213,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                     }`}
                   >
                     <motion.div
-                      animate={{ x: settings.vibrationEnabled ? 18 : 2 }}
+                      animate={{ x: settings.vibrationEnabled ? 22 : 2 }}
                       className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
                     />
                   </button>
@@ -207,7 +240,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                     }`}
                   >
                     <motion.div
-                      animate={{ x: settings.soundEnabled ? 18 : 2 }}
+                      animate={{ x: settings.soundEnabled ? 22 : 2 }}
                       className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
                     />
                   </button>
@@ -276,7 +309,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                         }`}
                       >
                         <motion.div
-                          animate={{ x: settings.kakaoWinning ? 18 : 2 }}
+                          animate={{ x: settings.kakaoWinning ? 22 : 2 }}
                           className={`absolute top-1 w-4 h-4 rounded-full shadow-sm ${
                             settings.kakaoWinning ? 'bg-[#371D1E]' : 'bg-white/60'
                           }`}
@@ -302,7 +335,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                         }`}
                       >
                         <motion.div
-                          animate={{ x: settings.kakaoDelivery ? 18 : 2 }}
+                          animate={{ x: settings.kakaoDelivery ? 22 : 2 }}
                           className={`absolute top-1 w-4 h-4 rounded-full shadow-sm ${
                             settings.kakaoDelivery ? 'bg-[#371D1E]' : 'bg-white/60'
                           }`}
@@ -328,7 +361,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                         }`}
                       >
                         <motion.div
-                          animate={{ x: settings.kakaoInquiry ? 18 : 2 }}
+                          animate={{ x: settings.kakaoInquiry ? 22 : 2 }}
                           className={`absolute top-1 w-4 h-4 rounded-full shadow-sm ${
                             settings.kakaoInquiry ? 'bg-[#371D1E]' : 'bg-white/60'
                           }`}
@@ -400,7 +433,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                         }`}
                       >
                         <motion.div
-                          animate={{ x: settings.marketingOpen ? 18 : 2 }}
+                          animate={{ x: settings.marketingOpen ? 22 : 2 }}
                           className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
                         />
                       </button>
@@ -424,7 +457,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                         }`}
                       >
                         <motion.div
-                          animate={{ x: settings.marketingRestock ? 18 : 2 }}
+                          animate={{ x: settings.marketingRestock ? 22 : 2 }}
                           className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
                         />
                       </button>
@@ -448,7 +481,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                         }`}
                       >
                         <motion.div
-                          animate={{ x: settings.nightPush ? 18 : 2 }}
+                          animate={{ x: settings.nightPush ? 22 : 2 }}
                           className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
                         />
                       </button>
