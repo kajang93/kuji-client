@@ -3,14 +3,15 @@ importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js');
 
 // Initialize the Firebase app in the service worker
+const urlParams = new URLSearchParams(self.location.search);
 const firebaseConfig = {
-  apiKey: "AIzaSyC-bWqDVfHn13mLH3FnHEhOAyxkqjd1RAA",
-  authDomain: "kuji-project-abcc8.firebaseapp.com",
-  projectId: "kuji-project-abcc8",
-  storageBucket: "kuji-project-abcc8.firebasestorage.app",
-  messagingSenderId: "181515760530",
-  appId: "1:181515760530:web:8758ef9702c24c522c874b",
-  measurementId: "G-V62K9SNC1N"
+  apiKey: urlParams.get('apiKey') || '',
+  authDomain: urlParams.get('authDomain') || '',
+  projectId: urlParams.get('projectId') || '',
+  storageBucket: urlParams.get('storageBucket') || '',
+  messagingSenderId: urlParams.get('messagingSenderId') || '',
+  appId: urlParams.get('appId') || '',
+  measurementId: urlParams.get('measurementId') || ''
 };
 
 // Initialize Firebase App
