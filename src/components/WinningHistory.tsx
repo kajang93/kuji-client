@@ -13,10 +13,12 @@ type WinningHistoryProps = {
   winningHistory: WinningItem[];
   onSubmitInquiry?: (sellerId: string, sellerName: string, orderNumber: string, inquiryType: string, subject: string, content: string) => void;
   onRequestShipping?: (winningIds: string[]) => void; // 배송 신청 콜백 추가
+  onConfirmDelivery?: (winningId: string) => void; // 배송 확정 콜백 추가
 };
 
-export default function WinningHistory({ onBack, onSelectPrizeOption, winningHistory, onSubmitInquiry, onRequestShipping }: WinningHistoryProps) {
+export default function WinningHistory({ onBack, onSelectPrizeOption, winningHistory, onSubmitInquiry, onRequestShipping, onConfirmDelivery }: WinningHistoryProps) {
   const [activeTab, setActiveTab] = useState<'inventory' | 'shipping'>('inventory');
+  const [shippingFilter, setShippingFilter] = useState<'all' | 'preparing' | 'shipped' | 'delivered'>('all');
   const [selectedDeliveryItem, setSelectedDeliveryItem] = useState<WinningItem | null>(null);
   const [certificatePopup, setCertificatePopup] = useState<WinningItem | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -50,6 +52,11 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
   // Filter items by tab
   const inventoryItems = winningHistory.filter(item => item.deliveryStatus === 'stored' || !item.deliveryStatus);
   const shippingItems = winningHistory.filter(item => ['preparing', 'shipped', 'delivered', 'SHIP_REQUESTED'].includes(item.deliveryStatus));
+  
+  const filteredShippingItems = shippingItems.filter(item => {
+    if (shippingFilter === 'all') return true;
+    return item.deliveryStatus === shippingFilter;
+  });
 
   const toggleSelection = (id: string) => {
     setSelectedItems(prev => {
@@ -336,13 +343,47 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
               exit={{ opacity: 0, x: -20 }}
               className="space-y-4"
             >
-              {shippingItems.length === 0 ? (
+              {/* Shipping Sub-filters */}
+              {shippingItems.length > 0 && (
+                <div className="flex gap-2 p-1 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+                  {(['all', 'preparing', 'shipped', 'delivered'] as const).map((filter) => {
+                    const label = 
+                      filter === 'all' ? '전체' :
+                      filter === 'preparing' ? '배송준비' :
+                      filter === 'shipped' ? '배송중' : '완료';
+                    
+                    const count = 
+                      filter === 'all' ? shippingItems.length :
+                      shippingItems.filter(item => item.deliveryStatus === filter).length;
+
+                    const isActive = shippingFilter === filter;
+
+                    return (
+                      <button
+                        key={filter}
+                        onClick={() => setShippingFilter(filter)}
+                        className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+                          isActive
+                            ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-md font-bold'
+                            : 'text-white/60 hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        {label} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {filteredShippingItems.length === 0 ? (
                 <div className="text-center py-20">
                   <Truck className="w-16 h-16 text-white/30 mx-auto mb-4" />
-                  <p className="text-white/50">배송 내역이 없습니다</p>
+                  <p className="text-white/50">
+                    {shippingItems.length === 0 ? '배송 내역이 없습니다' : '해당 배송 상태의 상품이 없습니다'}
+                  </p>
                 </div>
               ) : (
-                shippingItems.map((winning, index) => {
+                filteredShippingItems.map((winning, index) => {
                   const bgGradient = rankColors[winning.rank as keyof typeof rankColors] || 'from-gray-600 to-gray-700';
                   
                   return (
@@ -399,6 +440,19 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                               <Trophy className="w-3 h-3" /> 당첨증서
                             </button>
                           </div>
+                          {winning.deliveryStatus === 'shipped' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm("상품을 수령하셨습니까? 배송 확정을 진행합니다.")) {
+                                  onConfirmDelivery?.(winning.id);
+                                }
+                              }}
+                              className="w-full mt-2 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 rounded-lg text-white text-xs font-bold transition-all flex items-center justify-center gap-1"
+                            >
+                              <CheckCircle className="w-3.5 h-3.5" /> 배송 확정
+                            </button>
+                          )}
                         </div>
                       </div>
                     </motion.div>

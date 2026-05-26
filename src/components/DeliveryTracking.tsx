@@ -55,67 +55,77 @@ export default function DeliveryTracking({
   const finalSellerName = sellerName;
   const finalSellerId = sellerId;
 
-  // Mock delivery tracking data - in production, fetch from courier API
-  const deliveryHistory: DeliveryStatus[] = [
-    {
-      date: '2024-11-19',
-      time: '14:30',
-      location: '서울 강남구 배송센터',
-      status: '배송 출발',
-      isCompleted: true,
-    },
-    {
-      date: '2024-11-19',
-      time: '09:15',
-      location: '서울 강남구 물류센터',
-      status: '배송 준비중',
-      isCompleted: true,
-    },
-    {
-      date: '2024-11-18',
-      time: '22:45',
-      location: '경기 광주 터미널',
-      status: '간선 상차',
-      isCompleted: true,
-    },
-    {
-      date: '2024-11-18',
-      time: '20:10',
-      location: '경기 광주 터미널',
-      status: '간선 도착',
-      isCompleted: true,
-    },
-    {
-      date: '2024-11-18',
-      time: '16:30',
-      location: '부산 해운대구 터미널',
-      status: '간선 상차',
-      isCompleted: true,
-    },
-    {
-      date: '2024-11-18',
-      time: '14:20',
-      location: '부산 해운대구 터미널',
-      status: '간선 하차',
-      isCompleted: true,
-    },
-    {
-      date: '2024-11-18',
+  // Generate delivery history based on the actual delivery status
+  const getDynamicHistory = (): DeliveryStatus[] => {
+    const status = winning?.deliveryStatus || 'preparing';
+    const datePrefix = winning?.date ? winning.date.split(' ')[0] : '2026-05-25';
+    
+    // Helper to format dates relative to the base date
+    const getOffsetDateStr = (daysOffset: number): string => {
+      try {
+        const baseDate = new Date(datePrefix);
+        baseDate.setDate(baseDate.getDate() + daysOffset);
+        return baseDate.toISOString().substring(0, 10);
+      } catch (e) {
+        return datePrefix;
+      }
+    };
+
+    const history: DeliveryStatus[] = [];
+
+    if (status === 'delivered') {
+      history.push({
+        date: getOffsetDateStr(2),
+        time: '14:30',
+        location: finalRecipientAddress,
+        status: '배송 완료',
+        isCompleted: true,
+      });
+    }
+
+    if (status === 'shipped' || status === 'delivered') {
+      history.push({
+        date: getOffsetDateStr(2),
+        time: '09:15',
+        location: '서울 강남구 물류센터',
+        status: '배송 출발 (배송원: 홍길동 010-1234-5678)',
+        isCompleted: true,
+      });
+      history.push({
+        date: getOffsetDateStr(1),
+        time: '22:45',
+        location: '경기 광주 터미널',
+        status: '간선 상차',
+        isCompleted: true,
+      });
+      history.push({
+        date: getOffsetDateStr(1),
+        time: '20:10',
+        location: '경기 광주 터미널',
+        status: '간선 도착',
+        isCompleted: true,
+      });
+    }
+
+    history.push({
+      date: getOffsetDateStr(0),
       time: '10:00',
       location: '부산 사상구 물류센터',
-      status: '집하 완료',
+      status: '배송 준비중 (집하 완료)',
       isCompleted: true,
-    },
-  ];
+    });
+
+    return history;
+  };
+
+  const deliveryHistory = getDynamicHistory();
 
   // Current delivery stage
   const getCurrentStage = () => {
-    const latestStatus = deliveryHistory[0]?.status || '';
-    if (latestStatus.includes('배송 완료')) return 4;
-    if (latestStatus.includes('배송 출발') || latestStatus.includes('배송 준비')) return 3;
-    if (latestStatus.includes('간선') || latestStatus.includes('터미널')) return 2;
-    if (latestStatus.includes('집하')) return 1;
-    return 0;
+    const status = winning?.deliveryStatus || 'preparing';
+    if (status === 'delivered') return 4;
+    if (status === 'shipped') return 3;
+    return 1;
   };
 
   const currentStage = getCurrentStage();

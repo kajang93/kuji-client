@@ -76,6 +76,34 @@ export async function updateTrackingInfo(shippingId: number, data: {
     const error = await response.text();
     throw new Error(error || '운송장 정보 등록에 실패했습니다.');
   }
+}
+
+/**
+ * 5. 사업자용 배송 목록 조회 (판매자용)
+ */
+export async function fetchSellerShippingList(): Promise<ShippingInfo[]> {
+  const response = await fetch(`${API_BASE_URL}/seller`, {
+    headers: getHeaders()
+  });
+
+  if (!response.ok) {
+    throw new Error('사업자 배송 내역을 불러오는 데 실패했습니다.');
+  }
 
   return response.json();
+}
+
+/**
+ * 6. 배송 완료 처리 (판매자용)
+ */
+export async function completeShipping(shippingId: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/${shippingId}/complete`, {
+    method: 'PATCH',
+    headers: getHeaders()
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(error || '배송 완료 처리에 실패했습니다.');
+  }
 }

@@ -65,7 +65,9 @@ export default function BusinessShippingManagement({
   };
 
   const handleUpdateStatus = (winningId: string, newStatus: 'preparing' | 'shipped' | 'delivered') => {
-    const trackingNum = trackingNumbers[winningId]?.trim();
+    const winning = winningHistory.find(w => w.id === winningId);
+    const existingTracking = winning?.trackingNumber;
+    const trackingNum = (trackingNumbers[winningId] !== undefined ? trackingNumbers[winningId] : (existingTracking || '')).trim();
     
     if (newStatus === 'shipped' && !trackingNum) {
       alert('운송장 번호를 입력해주세요');
@@ -75,13 +77,11 @@ export default function BusinessShippingManagement({
     onUpdateShipping?.(winningId, newStatus, trackingNum || undefined);
     
     // Clear tracking number after update
-    if (trackingNum) {
-      setTrackingNumbers(prev => {
-        const newState = { ...prev };
-        delete newState[winningId];
-        return newState;
-      });
-    }
+    setTrackingNumbers(prev => {
+      const newState = { ...prev };
+      delete newState[winningId];
+      return newState;
+    });
   };
 
   const seriesNames = Object.keys(groupedWinnings);
@@ -158,7 +158,7 @@ export default function BusinessShippingManagement({
                         <label className="text-white/70 text-sm block mb-2">운송장 번호</label>
                         <input
                           type="text"
-                          value={trackingNumbers[winning.id] || winning.trackingNumber || ''}
+                          value={trackingNumbers[winning.id] !== undefined ? trackingNumbers[winning.id] : (winning.trackingNumber || '')}
                           onChange={(e) => handleTrackingNumberChange(winning.id, e.target.value)}
                           placeholder="운송장 번호 입력"
                           className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-teal-400"
@@ -183,15 +183,6 @@ export default function BusinessShippingManagement({
                         >
                           <Truck className="w-4 h-4" />
                           배송 시작
-                        </button>
-                      )}
-                      {winning.deliveryStatus === 'shipped' && (
-                        <button
-                          onClick={() => handleUpdateStatus(winning.id, 'delivered')}
-                          className="flex-1 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 rounded-lg text-white text-sm transition-all flex items-center justify-center gap-2"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          배송 완료
                         </button>
                       )}
                     </div>

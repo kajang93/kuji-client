@@ -46,6 +46,7 @@ import BoardWrite from "./components/BoardWrite";
 import { fetchMyProfile } from "./api/auth";
 import { toggleWishlist, fetchMyWishlist } from "./api/wishlist";
 import { onForegroundMessage } from "./api/firebase";
+import { fetchSellerShippingList, completeShipping, updateTrackingInfo } from "./api/shipping";
 
 import {
   Prize,
@@ -201,7 +202,7 @@ export default function App() {
       
       // 사용자 정보 로드 후 찜 목록 및 당첨 내역도 함께 로드
       handleFetchWishlist();
-      handleFetchWinningHistory();
+      handleFetchWinningHistory(formattedUser.type);
 
       if (formattedUser.type === "business" && formattedUser.isActive === false) {
         setScreen("businessPending");
@@ -233,28 +234,58 @@ export default function App() {
   >([]);
 
   // 서버에서 당첨 내역 가져오기
-  const handleFetchWinningHistory = async () => {
+  const handleFetchWinningHistory = async (overrideUserType?: "social" | "business" | "admin") => {
+    const activeUserType = overrideUserType || user?.type;
     try {
-      const histories = await fetchMyDrawHistory();
-      
-      const mappedWinnings: WinningItem[] = histories.map(h => ({
-        id: `W${h.id}`, // 고유 식별자
-        drawHistoryId: h.id,
-        date: h.createdAt?.replace('T', ' ').substring(0, 16) || '',
-        animeName: h.boardTitle,
-        rank: h.grade,
-        prizeName: h.itemName,
-        prizeImage: h.itemImageUrl,
-        deliveryStatus: 
-          h.status === 'DRAWN' ? 'stored' :
-          h.status === 'SHIPPING_REQUESTED' ? 'preparing' :
-          h.status === 'SHIPPING' ? 'shipped' :
-          h.status === 'DELIVERED' ? 'delivered' : 'stored',
-        needsOptionSelection: (h.grade && /^[A-DG]/i.test(h.grade)),
-        isNew: false
-      }));
+      if (activeUserType === "business") {
+        const shippings = await fetchSellerShippingList();
+        const mappedWinnings: WinningItem[] = [];
+        shippings.forEach(s => {
+          if (s.items) {
+            s.items.forEach((item: any) => {
+              mappedWinnings.push({
+                id: `${s.id}-${item.drawHistoryId}`,
+                drawHistoryId: item.drawHistoryId,
+                date: s.createdAt?.replace('T', ' ').substring(0, 16) || '',
+                animeName: item.kujiName || '',
+                rank: item.grade || '',
+                prizeName: item.itemName || '',
+                prizeImage: item.itemImage || '',
+                deliveryStatus: 
+                  s.status === 'PREPARING' ? 'preparing' :
+                  s.status === 'SHIPPING' ? 'shipped' :
+                  s.status === 'DELIVERED' ? 'delivered' : 'preparing',
+                trackingNumber: s.trackingNumber,
+                needsOptionSelection: false,
+                isNew: false
+              });
+            });
+          }
+        });
+        setWinningHistory(mappedWinnings);
+      } else {
+        const histories = await fetchMyDrawHistory();
+        
+        const mappedWinnings: WinningItem[] = histories.map(h => ({
+          id: `W${h.id}`, // 고유 식별자
+          drawHistoryId: h.id,
+          date: h.createdAt?.replace('T', ' ').substring(0, 16) || '',
+          animeName: h.boardTitle,
+          rank: h.grade,
+          prizeName: h.itemName,
+          prizeImage: h.itemImageUrl,
+          deliveryStatus: 
+            h.status === 'DRAWN' ? 'stored' :
+            h.status === 'SHIPPING_REQUESTED' ? 'preparing' :
+            h.status === 'SHIPPING' ? 'shipped' :
+            h.status === 'DELIVERED' ? 'delivered' : 'stored',
+          needsOptionSelection: (h.grade && /^[A-DG]/i.test(h.grade)),
+          isNew: false,
+          shippingId: h.shippingId
+        }));
 
-      setWinningHistory(mappedWinnings);
+        setWinningHistory(mappedWinnings);
+      }
     } catch (error) {
       console.error("Failed to fetch winning history:", error);
     }
@@ -354,6 +385,9 @@ export default function App() {
   }) => {
     setUser(userData);
     setIsSidebarOpen(false);
+
+    handleFetchWinningHistory(userData.type);
+    handleFetchWishlist();
 
     // Business users go to dashboard (if active) or pending screen
     if (userData.type === "business") {
@@ -531,6 +565,9 @@ export default function App() {
       | "businessInquiries",
   ) => {
     setScreen(navScreen);
+    if (navScreen === "businessShipping") {
+      handleFetchWinningHistory();
+    }
   };
 
   const handleAdminSidebarNavigate = (
@@ -546,24 +583,58 @@ export default function App() {
     setScreen(navScreen);
   };
 
-  const handleUpdateShipping = (
+  const handleUpdateShipping = async (
     winningId: string,
     status: "preparing" | "shipped" | "delivered",
     trackingNumber?: string,
   ) => {
-    setWinningHistory((prev) =>
-      prev.map((winning) => {
-        if (winning.id === winningId) {
-          return {
-            ...winning,
-            deliveryStatus: status,
-            trackingNumber:
-              trackingNumber || winning.trackingNumber,
-          };
+    // winningId is structured as "shippingId-drawHistoryId"
+    const parts = winningId.split('-');
+    const shippingId = Number(parts[0]);
+    if (isNaN(shippingId)) {
+      toast.error("올바르지 않은 배송 ID입니다.");
+      return;
+    }
+
+    try {
+      if (status === "shipped") {
+        if (!trackingNumber) {
+          toast.error("운송장 번호를 입력해주세요.");
+          return;
         }
-        return winning;
-      }),
-    );
+        await updateTrackingInfo(shippingId, {
+          courierName: "대한통운",
+          trackingNumber: trackingNumber
+        });
+        toast.success("운송장이 등록되고 배송이 시작되었습니다.");
+      } else if (status === "delivered") {
+        await completeShipping(shippingId);
+        toast.success("배송 완료 처리가 완료되었습니다.");
+      }
+
+      // 서버에서 최신 데이터 다시 불러오기
+      await handleFetchWinningHistory();
+    } catch (error: any) {
+      console.error("Failed to update shipping:", error);
+      toast.error(error.message || "배송 상태 업데이트에 실패했습니다.");
+    }
+  };
+
+  const handleConfirmDelivery = async (winningId: string) => {
+    const winning = winningHistory.find((w) => w.id === winningId);
+    if (!winning || !winning.shippingId) {
+      toast.error("올바르지 않은 배송 정보입니다.");
+      return;
+    }
+
+    try {
+      await completeShipping(winning.shippingId);
+      toast.success("배송이 확정되었습니다. 이용해 주셔서 감사합니다!");
+      await handleFetchWinningHistory();
+    } catch (error: any) {
+      console.error("Failed to confirm delivery:", error);
+      toast.error(error.message || "배송 확정에 실패했습니다.");
+    }
   };
 
   const handleWishlistSelect = (animeId: string) => {
@@ -1171,6 +1242,7 @@ export default function App() {
             }}
             onSelectPrizeOption={handleSelectPrizeOption}
             winningHistory={winningHistory}
+            onConfirmDelivery={handleConfirmDelivery}
             onRequestShipping={handleRequestShipping}
             onSubmitInquiry={(
               sellerId,
@@ -1296,8 +1368,10 @@ export default function App() {
                 setScreen("businessProducts");
               else if (screen === "productRegister")
                 setScreen("businessRegister");
-              else if (screen === "shipping")
+              else if (screen === "shipping") {
+                handleFetchWinningHistory();
                 setScreen("businessShipping");
+              }
               else if (screen === "inquiries")
                 setScreen("businessInquiries");
             }}

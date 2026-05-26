@@ -77,6 +77,7 @@ export type WinningItem = {
     image: string;
   };
   isNew?: boolean;
+  shippingId?: number; // 추가
 };
 
 export interface ShippingInfo {
