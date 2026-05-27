@@ -62,6 +62,26 @@ export const fetchMyProfile = async (): Promise<MemberProfileResponse> => {
 };
 
 /**
+ * 내 정보 수정
+ */
+export const updateMyProfile = async (formData: FormData): Promise<MemberProfileResponse> => {
+  const headers = getHeaders();
+  // Content-Type: multipart/form-data는 브라우저가 자동 설정하도록 제거
+  delete headers["Content-Type"];
+
+  const response = await fetch(`${API_BASE_URL}/me`, {
+    method: "PATCH",
+    headers,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error("프로필 정보 수정에 실패했습니다.");
+  }
+  return response.json();
+};
+
+/**
  * 회원가입 요청
  */
 export const signup = async (data: any): Promise<void> => {

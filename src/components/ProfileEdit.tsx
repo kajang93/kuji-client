@@ -1,9 +1,11 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, User, Mail, Phone, MapPin, Calendar, Save, Search, Camera, ImageIcon, X } from './icons';
+import AddressSearchModal from './AddressSearchModal';
+import { updateMyProfile } from '../api/auth';
 
 type ProfileEditProps = {
-  user: { name: string; email: string; type: 'social' | 'business'; phone?: string; address?: string; birthdate?: string };
+  user: { name: string; email: string; type: 'social' | 'business'; phone?: string; address?: string; addressDetail?: string; birthdate?: string };
   onBack: () => void;
   onSave: (userData: UserData) => void;
 };
@@ -13,7 +15,9 @@ type UserData = {
   email: string;
   phone: string;
   address: string;
+  addressDetail?: string;
   birthdate: string;
+  profileImage?: string;
 };
 
 export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) {
@@ -21,50 +25,16 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
   const [email, setEmail] = useState(user.email);
   const [phone, setPhone] = useState(user.phone || '010-1234-5678');
   const [address, setAddress] = useState(user.address || '서울특별시 강남구 테헤란로 123');
+  const [addressDetail, setAddressDetail] = useState(user.addressDetail || '');
+  const [zonecode, setZonecode] = useState('');
   const [birthdate, setBirthdate] = useState(user.birthdate || '1990-01-01');
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showAddressSearch, setShowAddressSearch] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [showImagePicker, setShowImagePicker] = useState(false);
-  const [addressSearchTerm, setAddressSearchTerm] = useState('');
-  const [addressSearchResults, setAddressSearchResults] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleAddressSearch = () => {
-    // Mock address search - in real app, use Daum/Kakao Address API
-    const mockResults = [
-      '서울특별시 강남구 테헤란로 123 (역삼동)',
-      '서울특별시 강남구 강남대로 456 (논현동)',
-      '서울특별시 서초구 서초대로 789 (서초동)',
-      '서울특별시 송파구 올림픽로 100 (잠실동)',
-      '서울특별시 마포구 월드컵북로 200 (상암동)',
-      '경기도 성남시 분당구 판교역로 300 (삼평동)',
-      '경기도 수원시 영통구 광교중앙로 400 (하동)',
-      '인천광역시 연수구 센트럴로 500 (송도동)',
-      '부산광역시 해운대구 센텀중앙로 600 (우동)',
-      '대구광역시 수성구 동대구로 700 (범어동)',
-      '광주광역시 서구 상무대로 800 (치평동)',
-      '대전광역시 유성구 대학로 900 (궁동)',
-      '울산광역시 남구 삼산로 1000 (삼산동)',
-      '제주특별자치도 제주시 노형로 1100 (노형동)',
-      '서울특별시 종로구 세종대로 1200 (세종로)',
-      '서울특별시 중구 을지로 1300 (을지로동)',
-      '서울특별시 용산구 이태원로 1400 (이태원동)',
-      '서울특별시 성동구 왕십리로 1500 (행당동)',
-      '서울특별시 광진구 능동로 1600 (자양동)',
-      '서울특별시 동대��구 왕산로 1700 (용두동)',
-      '서울특별시 강남구 테헤란로 152',
-      '서울특별시 강남구 역삼동 123-45',
-    ].filter(addr => addr.toLowerCase().includes(addressSearchTerm.toLowerCase()));
-    
-    setAddressSearchResults(mockResults);
-  };
-
-  const handleSelectAddress = (selectedAddress: string) => {
-    setAddress(selectedAddress);
-    setShowAddressSearch(false);
-    setAddressSearchTerm('');
-    setAddressSearchResults([]);
-  };
 
   const handleImageSelect = (type: 'gallery' | 'camera') => {
     setShowImagePicker(false);
@@ -80,7 +50,7 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) {
       alert('이름을 입력해주세요');
       return;
@@ -90,13 +60,42 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
       return;
     }
 
-    onSave({ name, email, phone, address, birthdate });
-    onBack();
+    try {
+      setIsSaving(true);
+      const formData = new FormData();
+      const requestData = { nickname: name };
+      formData.append(
+        "request", 
+        new Blob([JSON.stringify(requestData)], { type: "application/json" })
+      );
+      
+      if (selectedFile) {
+        formData.append("profileImage", selectedFile);
+      }
+      
+      const response = await updateMyProfile(formData);
+      
+      onSave({ 
+        name, 
+        email, 
+        phone, 
+        address, 
+        addressDetail,
+        birthdate, 
+        profileImage: response.profileImageUrl 
+      });
+      onBack();
+    } catch (error: any) {
+      alert(error.message || '프로필 수정에 실패했습니다.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSelectedFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfileImage(reader.result as string);
@@ -228,18 +227,34 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
               <div className="flex gap-2">
                 <input
                   type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-pink-400"
-                  placeholder="주소를 검색하세요"
+                  value={zonecode}
+                  readOnly
+                  onClick={() => setShowAddressSearch(true)}
+                  className="w-32 px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-pink-400 cursor-pointer"
+                  placeholder="우편번호"
                 />
                 <button
                   onClick={() => setShowAddressSearch(true)}
-                  className="px-4 py-3 bg-blue-500 hover:bg-blue-600 rounded-lg text-white transition-colors flex items-center justify-center shrink-0"
+                  className="px-4 py-3 bg-blue-500 hover:bg-blue-600 rounded-lg text-white transition-colors whitespace-nowrap"
                 >
-                  <Search className="w-5 h-5" />
+                  우편번호 검색
                 </button>
               </div>
+              <input
+                type="text"
+                value={address}
+                readOnly
+                onClick={() => setShowAddressSearch(true)}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-pink-400 cursor-pointer"
+                placeholder="기본 주소"
+              />
+              <input
+                type="text"
+                value={addressDetail}
+                onChange={(e) => setAddressDetail(e.target.value)}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-pink-400"
+                placeholder="상세주소를 입력하세요"
+              />
             </div>
           </div>
 
@@ -268,82 +283,27 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleSave}
-          className="w-full mt-6 py-4 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-full shadow-xl flex items-center justify-center gap-2"
+          disabled={isSaving}
+          className={`w-full mt-6 py-4 text-white rounded-full shadow-xl flex items-center justify-center gap-2 ${
+            isSaving ? 'bg-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-pink-500 to-purple-500'
+          }`}
         >
           <Save className="w-5 h-5" />
-          <div className="text-lg">저장하기</div>
+          <div className="text-lg">{isSaving ? '저장 중...' : '저장하기'}</div>
         </motion.button>
       </div>
 
       {/* Address Search Modal */}
-      <AnimatePresence>
-        {showAddressSearch && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => {
-              setShowAddressSearch(false);
-              setAddressSearchTerm('');
-              setAddressSearchResults([]);
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gradient-to-br from-purple-900 to-blue-900 rounded-2xl p-6 max-w-lg w-full max-h-[80vh] flex flex-col border border-white/20 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-white text-xl">주소 검색</h2>
-                <button
-                  onClick={() => {
-                    setShowAddressSearch(false);
-                    setAddressSearchTerm('');
-                    setAddressSearchResults([]);
-                  }}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5 text-white" />
-                </button>
-              </div>
-              
-              {/* Search Input */}
-              <div className="mb-4">
-                <input
-                  type="text"
-                  value={addressSearchTerm}
-                  onChange={(e) => setAddressSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddressSearch()}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-pink-400"
-                  placeholder="도로명 또는 지번 입력 후 Enter"
-                />
-              </div>
-
-              {/* Search Results */}
-              <div className="flex-1 overflow-y-auto space-y-2">
-                {addressSearchResults.length === 0 ? (
-                  <div className="text-white/60 text-center py-8">
-                    {addressSearchTerm ? '검색 결과가 없습니다' : '주소를 입력하고 Enter를 눌러주세요'}
-                  </div>
-                ) : (
-                  addressSearchResults.map((addr, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSelectAddress(addr)}
-                      className="w-full text-left px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-white transition-colors border border-white/10"
-                    >
-                      {addr}
-                    </button>
-                  ))
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AddressSearchModal
+        isOpen={showAddressSearch}
+        onClose={() => setShowAddressSearch(false)}
+        title="주소 검색"
+        description="검색할 도로명 또는 지번 주소를 입력하세요"
+        onComplete={(result) => {
+          setAddress(result.address);
+          setZonecode(result.zonecode);
+        }}
+      />
 
       {/* Image Picker Modal */}
       <AnimatePresence>

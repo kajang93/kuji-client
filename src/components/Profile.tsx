@@ -3,7 +3,7 @@ import { ChevronLeft, User, Mail, Phone, MapPin, Calendar, Camera, ImageIcon } f
 import { useState, useRef, useEffect } from 'react';
 
 type ProfileProps = {
-  user: { name: string; email: string; type: 'social' | 'business' | 'admin'; points?: number; profileImageUrl?: string };
+  user: { name: string; email: string; type: 'social' | 'business' | 'admin'; points?: number; profileImageUrl?: string; phone?: string; address?: string; addressDetail?: string; birthdate?: string };
   onBack: () => void;
   onEdit: () => void;
 };
@@ -19,24 +19,26 @@ export default function Profile({ user, onBack, onEdit }: ProfileProps) {
   }, []);
 
   useEffect(() => {
-    if (user.profileImageUrl || user.email || user.name) {
-      setProfileImage(user.profileImageUrl || null);
+    setProfileImage(user.profileImageUrl || null);
+    setUserDetails(prev => ({
+      ...prev,
+      name: user.name,
+      email: user.email,
+      phone: user.phone || prev.phone,
+      address: user.address || prev.address,
+      addressDetail: user.addressDetail || prev.addressDetail,
+      birthdate: user.birthdate || prev.birthdate,
+    }));
+  }, [user]);
 
-      setUserDetails(prev => ({
-        ...prev,
-        name: user.name,
-        email: user.email
-      }));
-    }
-  }, [user.profileImageUrl]);
-
-  // Mock user data
+  // Mock user data as fallback
   const [userDetails, setUserDetails] = useState({
     name: user.name,
     email: user.email,
-    phone: '010-1234-5678',
-    address: '서울특별시 강남구 테헤란로 123',
-    birthdate: '1990-01-01',
+    phone: user.phone || '010-1234-5678',
+    address: user.address || '서울특별시 강남구 테헤란로 123',
+    addressDetail: user.addressDetail || '',
+    birthdate: user.birthdate || '1990-01-01',
     joinDate: '2024-01-15',
     type: user.type === 'business' ? '사업자' : '일반 고객',
   });
@@ -160,7 +162,9 @@ export default function Profile({ user, onBack, onEdit }: ProfileProps) {
               </div>
               <div className="flex-1">
                 <div className="text-white/60 text-sm">주소</div>
-                <div className="text-white">{userDetails.address}</div>
+                <div className="text-white">
+                  {userDetails.address} {userDetails.addressDetail}
+                </div>
               </div>
             </div>
           </div>

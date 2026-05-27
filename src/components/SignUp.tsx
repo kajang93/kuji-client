@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Check, Upload, X, FileText, Search } from './icons';
 import { toast } from 'sonner';
 import { signup } from '../api/auth';
+import AddressSearchModal from './AddressSearchModal';
 
 type SignupProps = {
   userType: 'customer' | 'business';
@@ -32,12 +33,14 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
     verificationCode: '',
     address: '',
     addressDetail: '',
+    zonecode: '',
     birthdate: today,
     businessNumber: '',
     businessName: '',
     managerName: '',
     shippingAddress: '',
     shippingAddressDetail: '',
+    shippingZonecode: '',
     businessFile: null as File | null,
   });
 
@@ -54,10 +57,6 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showShippingAddressModal, setShowShippingAddressModal] = useState(false);
   const [passwordChecked, setPasswordChecked] = useState(false);
-  const [addressSearchTerm, setAddressSearchTerm] = useState('');
-  const [addressSearchResults, setAddressSearchResults] = useState<string[]>([]);
-  const [shippingSearchTerm, setShippingSearchTerm] = useState('');
-  const [shippingSearchResults, setShippingSearchResults] = useState<string[]>([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -189,61 +188,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
     }
   };
 
-  const handleAddressSearch = () => {
-    // Mock address search - in real app, use Daum/Kakao Address API
-    const allAddresses = [
-      '서울특별시 강남구 테헤란로 123',
-      '서울특별시 강남구 테헤란로 152',
-      '서울특별시 강남구 역삼동 123-45',
-      '서울특별시 강남구 삼성동 456-78',
-      '서울특별시 종로구 종로 456',
-      '경기도 성남시 분당구 정자동 789',
-      '부산광역시 해운대구 해운대로 101',
-      '인천광역시 남동구 논현동 202',
-      '대전광역시 서구 둔산동 303',
-    ];
-    
-    const results = addressSearchTerm
-      ? allAddresses.filter(addr => addr.includes(addressSearchTerm))
-      : [];
-    
-    setAddressSearchResults(results);
-  };
 
-  const handleShippingAddressSearch = () => {
-    // Mock address search - in real app, use Daum/Kakao Address API
-    const allAddresses = [
-      '서울특별시 강남구 테헤란로 123',
-      '서울특별시 강남구 테헤란로 152',
-      '서울특별시 강남구 역삼동 123-45',
-      '서울특별시 강남구 삼성동 456-78',
-      '서울특별시 종로구 종로 456',
-      '경기도 성남시 분당구 정자동 789',
-      '부산광역시 해운대구 해운대로 101',
-      '인천광역시 남동구 논현동 202',
-      '대전광역시 서구 둔산동 303',
-    ];
-    
-    const results = shippingSearchTerm
-      ? allAddresses.filter(addr => addr.includes(shippingSearchTerm))
-      : [];
-    
-    setShippingSearchResults(results);
-  };
-
-  const handleAddressSelect = (address: string) => {
-    setFormData({ ...formData, address });
-    setShowAddressModal(false);
-    setAddressSearchTerm('');
-    setAddressSearchResults([]);
-  };
-
-  const handleShippingAddressSelect = (address: string) => {
-    setFormData({ ...formData, shippingAddress: address });
-    setShowShippingAddressModal(false);
-    setShippingSearchTerm('');
-    setShippingSearchResults([]);
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -708,21 +653,30 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
               <div className="flex gap-2 mb-2">
                 <input
                   type="text"
-                  value={formData.address}
+                  value={formData.zonecode}
                   readOnly
-                  placeholder="주소 검색 버튼을 클릭하세요"
-                  className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400 cursor-pointer"
+                  placeholder="우편번호"
+                  className="w-32 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none cursor-pointer"
                   onClick={() => setShowAddressModal(true)}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowAddressModal(true)}
-                  className="px-3 py-3 bg-amber-500 text-slate-900 rounded-xl hover:bg-amber-400 whitespace-nowrap flex items-center justify-center shrink-0"
+                  className="px-4 py-3 bg-amber-500 text-slate-900 rounded-xl hover:bg-amber-400 font-medium whitespace-nowrap"
                 >
-                  <Search className="w-4 h-4" />
+                  우편번호 검색
                 </button>
               </div>
+              <input
+                type="text"
+                value={formData.address}
+                readOnly
+                placeholder="기본 주소"
+                className="w-full px-4 py-3 mb-2 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none cursor-pointer"
+                onClick={() => setShowAddressModal(true)}
+                required
+              />
               <input
                 type="text"
                 value={formData.addressDetail}
@@ -767,21 +721,30 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
               <div className="flex gap-2 mb-2">
                 <input
                   type="text"
-                  value={formData.shippingAddress}
+                  value={formData.shippingZonecode}
                   readOnly
-                  placeholder="주소 검색 버튼을 클릭하세요"
-                  className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400 cursor-pointer"
+                  placeholder="우편번호"
+                  className="w-32 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none cursor-pointer"
                   onClick={() => setShowShippingAddressModal(true)}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowShippingAddressModal(true)}
-                  className="px-3 py-3 bg-amber-500 text-slate-900 rounded-xl hover:bg-amber-400 whitespace-nowrap flex items-center justify-center shrink-0"
+                  className="px-4 py-3 bg-amber-500 text-slate-900 rounded-xl hover:bg-amber-400 font-medium whitespace-nowrap"
                 >
-                  <Search className="w-4 h-4" />
+                  우편번호 검색
                 </button>
               </div>
+              <input
+                type="text"
+                value={formData.shippingAddress}
+                readOnly
+                placeholder="기본 출고지 주소"
+                className="w-full px-4 py-3 mb-2 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none cursor-pointer"
+                onClick={() => setShowShippingAddressModal(true)}
+                required
+              />
               <input
                 type="text"
                 value={formData.shippingAddressDetail}
@@ -991,144 +954,34 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       </AnimatePresence>
 
       {/* Address Search Modal */}
-      <AnimatePresence>
-        {showAddressModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowAddressModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gradient-to-br from-purple-900 to-blue-900 rounded-3xl p-6 max-w-md w-full border-2 border-cyan-400/50"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-white text-xl">주소 검색</h2>
-                <button
-                  onClick={() => {
-                    setShowAddressModal(false);
-                    setAddressSearchTerm('');
-                    setAddressSearchResults([]);
-                  }}
-                  className="p-2 bg-pink-500 rounded-full hover:bg-pink-600 transition-colors"
-                >
-                  <X className="w-5 h-5 text-white" />
-                </button>
-              </div>
-
-              <p className="text-white/70 text-sm mb-4">배송받을 주소를 검색해주세요</p>
-
-              {/* Search Input */}
-              <div className="mb-4">
-                <input
-                  type="text"
-                  value={addressSearchTerm}
-                  onChange={(e) => setAddressSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddressSearch()}
-                  placeholder="도로명 또는 지번 입력 후 Enter"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
-                />
-              </div>
-
-              {/* Search Results */}
-              <div className="space-y-2 max-h-80 overflow-y-auto">
-                {addressSearchResults.length === 0 ? (
-                  <div className="text-white/60 text-center py-8">
-                    {addressSearchTerm ? '검색 결과가 없습니다' : '주소를 입력하고 Enter를 눌러주세요'}
-                  </div>
-                ) : (
-                  addressSearchResults.map((address, idx) => (
-                    <motion.button
-                      key={idx}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleAddressSelect(address)}
-                      className="w-full p-4 bg-white/10 hover:bg-white/20 rounded-xl text-white text-left transition-colors border border-white/20"
-                    >
-                      {address}
-                    </motion.button>
-                  ))
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AddressSearchModal
+        isOpen={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        title="배송주소 검색"
+        description="배송받을 주소를 검색해주세요"
+        onComplete={(result) => {
+          setFormData((prev) => ({
+            ...prev,
+            address: result.address,
+            zonecode: result.zonecode,
+          }));
+        }}
+      />
 
       {/* Shipping Address Search Modal */}
-      <AnimatePresence>
-        {showShippingAddressModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowShippingAddressModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gradient-to-br from-purple-900 to-blue-900 rounded-3xl p-6 max-w-md w-full border-2 border-cyan-400/50"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-white text-xl">출고지 주소 검색</h2>
-                <button
-                  onClick={() => {
-                    setShowShippingAddressModal(false);
-                    setShippingSearchTerm('');
-                    setShippingSearchResults([]);
-                  }}
-                  className="p-2 bg-pink-500 rounded-full hover:bg-pink-600 transition-colors"
-                >
-                  <X className="w-5 h-5 text-white" />
-                </button>
-              </div>
-
-              <p className="text-white/70 text-sm mb-4">출고지 주소를 검색해주세요</p>
-
-              {/* Search Input */}
-              <div className="mb-4">
-                <input
-                  type="text"
-                  value={shippingSearchTerm}
-                  onChange={(e) => setShippingSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleShippingAddressSearch()}
-                  placeholder="도로명 또는 지번 입력 후 Enter"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
-                />
-              </div>
-
-              {/* Search Results */}
-              <div className="space-y-2 max-h-80 overflow-y-auto">
-                {shippingSearchResults.length === 0 ? (
-                  <div className="text-white/60 text-center py-8">
-                    {shippingSearchTerm ? '검색 결과가 없습니다' : '주소를 입력하고 Enter를 눌러주세요'}
-                  </div>
-                ) : (
-                  shippingSearchResults.map((address, idx) => (
-                    <motion.button
-                      key={idx}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleShippingAddressSelect(address)}
-                      className="w-full p-4 bg-white/10 hover:bg-white/20 rounded-xl text-white text-left transition-colors border border-white/20"
-                    >
-                      {address}
-                    </motion.button>
-                  ))
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AddressSearchModal
+        isOpen={showShippingAddressModal}
+        onClose={() => setShowShippingAddressModal(false)}
+        title="출고지 주소 검색"
+        description="출고지 주소를 검색해주세요"
+        onComplete={(result) => {
+          setFormData((prev) => ({
+            ...prev,
+            shippingAddress: result.address,
+            shippingZonecode: result.zonecode,
+          }));
+        }}
+      />
     </div>
   );
 }
