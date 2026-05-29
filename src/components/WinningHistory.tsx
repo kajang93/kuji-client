@@ -4,6 +4,7 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 import type { WinningItem } from '@/shared-types';
 import { useState, useEffect } from 'react';
 import DeliveryTracking from './DeliveryTracking';
+import AddressSearchModal from './AddressSearchModal';
 
 // Type Migration: WinningHistory updated.
 
@@ -23,6 +24,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
   const [certificatePopup, setCertificatePopup] = useState<WinningItem | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [showShippingModal, setShowShippingModal] = useState(false);
+  const [showAddressSearch, setShowAddressSearch] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shippingForm, setShippingForm] = useState({
     recipientName: '',
@@ -313,6 +315,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                                 <Sparkles className="w-3 h-3" /> NEW
                               </span>
                             )}
+                            <span className="text-[10px] text-white/40">{winning.date}</span>
                           </div>
                           <h3 className="text-white font-medium truncate">{winning.prizeName}</h3>
                           <p className="text-white/50 text-xs truncate">{winning.animeName}</p>
@@ -422,6 +425,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                             <span className="px-2 py-0.5 rounded bg-white/10 text-[10px] text-white/60 border border-white/10">
                               {getSellerInfo(winning.animeName).name}
                             </span>
+                            <span className="text-[10px] text-white/40">{winning.date}</span>
                           </div>
                           <h3 className="text-white font-medium truncate">{winning.prizeName}</h3>
                           <p className="text-white/50 text-xs truncate mb-3">{winning.animeName}</p>
@@ -571,7 +575,13 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-400 transition-colors"
                       />
                     </div>
-                    <button className="self-end px-4 py-3 bg-white/10 text-white rounded-xl text-xs hover:bg-white/20 transition-colors h-[46px]">
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowAddressSearch(true);
+                      }}
+                      className="self-end px-4 py-3 bg-white/10 text-white rounded-xl text-xs hover:bg-white/20 transition-colors h-[46px]"
+                    >
                       주소찾기
                     </button>
                   </div>
@@ -723,6 +733,23 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
           );
         })()}
       </AnimatePresence>
+
+      {/* Address Search Modal */}
+      <AddressSearchModal
+        isOpen={showAddressSearch}
+        onClose={() => setShowAddressSearch(false)}
+        onComplete={(result) => {
+          setShippingForm({
+            ...shippingForm,
+            zipcode: result.zonecode,
+            address: result.address,
+            // Keep detailAddress as is or clear it depending on preference
+          });
+          setShowAddressSearch(false);
+        }}
+        title="배송지 주소 검색"
+        description="상품을 배송받으실 도로명 또는 지번 주소를 입력하세요"
+      />
     </div>
   );
 }

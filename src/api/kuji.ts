@@ -171,14 +171,54 @@ export const deleteKujiItem = async (itemId: number): Promise<void> => {
     throw new Error("Failed to delete kuji item");
   }
 };
+export interface PreparePaymentRequest {
+  count: number;
+  metadata?: string;
+}
+
+export interface PreparePaymentResponse {
+  orderId: string;
+  amount: number;
+  boardTitle: string;
+}
+
 /**
- * Execute a random kuji draw.
+ * 결제 준비 API (PG 결제 전 고유 orderId 발급)
  */
-export const drawKuji = async (boardId: number, count: number): Promise<{ results: any[], totalRemaining: number }> => {
+export const prepareKujiPayment = async (
+  boardId: number,
+  data: PreparePaymentRequest
+): Promise<PreparePaymentResponse> => {
+  const response = await fetch(`${API_BASE_URL}/${boardId}/payment/prepare`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to prepare kuji payment");
+  }
+  return response.json();
+};
+
+export interface DrawKujiRequest {
+  count: number;
+  paymentType: "POINT" | "PG";
+  paymentKey?: string;
+  orderId?: string;
+  amount?: number;
+}
+
+/**
+ * Execute a kuji draw (POINT or PG completion).
+ */
+export const drawKuji = async (
+  boardId: number,
+  request: DrawKujiRequest
+): Promise<{ results: any[]; totalRemaining: number }> => {
   const response = await fetch(`${API_BASE_URL}/${boardId}/draw`, {
     method: "POST",
     headers: getHeaders(),
-    body: JSON.stringify({ count }),
+    body: JSON.stringify(request),
   });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ message: "Failed to draw kuji" }));

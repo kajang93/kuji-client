@@ -17,7 +17,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
   const [pointsToUse, setPointsToUse] = useState(0);
   const [currentImageIndexes, setCurrentImageIndexes] = useState<{ [key: string]: number }>({});
   const [imagePopup, setImagePopup] = useState<{ images: string[]; currentIndex: number; prizeName: string } | null>(null);
-  const pricePerKuji = 650; // 1장당 650원
+  const pricePerKuji = anime.pricePerDraw || 15000; // 1장당 가격 (백엔드 기본값 매핑)
 
   useEffect(() => {
     window.scrollTo(0, 0);

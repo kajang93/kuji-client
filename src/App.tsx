@@ -71,14 +71,11 @@ export default function App() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [selectedAnime, setSelectedAnime] =
     useState<AnimeCollection | null>(null);
-  const [selectedKuji, setSelectedKuji] = useState<number[]>(
-    [],
-  );
-  const [revealedPrizes, setRevealedPrizes] = useState<Prize[]>(
-    [],
-  );
-  const [purchaseCount, setPurchaseCount] = useState(1);
   const [kujiStatus, setKujiStatus] = useState<boolean[]>([]);
+  const [revealedPrizes, setRevealedPrizes] = useState<Prize[]>([]);
+  const [purchaseCount, setPurchaseCount] = useState(1);
+  const [pointsToUse, setPointsToUse] = useState(0);
+  const [selectedKuji, setSelectedKuji] = useState<number[]>([]);
   const [user, setUser] = useState<{
     name: string;
     email: string;
@@ -130,6 +127,7 @@ export default function App() {
           isWished: board.isWished, // 서버에서 받은 찜 여부 매핑
           operationStatus: board.status === 'ACTIVE' ? 'active' :
             board.status === 'PREPARING' ? 'scheduled' : 'ended',
+          pricePerDraw: board.pricePerDraw || 15000, // Added price mapping
           prizes: []
         };
       });
@@ -177,13 +175,72 @@ export default function App() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const urlParams = new URLSearchParams(window.location.search);
+    
+    // Toss Payment Redirect Handling
+    const payment = urlParams.get("payment");
+    const paymentKey = urlParams.get("paymentKey");
+    const orderId = urlParams.get("orderId");
+    const amount = urlParams.get("amount");
 
-    if (urlParams.has("code")) {
+    if (payment === "success" && paymentKey && orderId && amount) {
+      handlePGPaymentCompletion(paymentKey, orderId, amount);
+    } else if (payment === "fail") {
+      const failMessage = urlParams.get("message") || "결제가 취소되었거나 실패했습니다.";
+      localStorage.removeItem("kuji_pending_payment");
+      alert(decodeURIComponent(failMessage));
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (urlParams.has("code")) {
       setScreen("kakaoCallback");
     } else if (token && token !== "undefined" && token !== "null") {
       handleFetchUserInfo(token);
     }
   }, []);
+
+  const handlePGPaymentCompletion = async (paymentKey: string, orderId: string, amount: string) => {
+    try {
+      const pendingData = localStorage.getItem("kuji_pending_payment");
+      if (!pendingData) {
+        alert("결제 대기 정보를 찾을 수 없습니다.");
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+      
+      const { boardId, count } = JSON.parse(pendingData);
+      
+      // Cleanup URL immediately
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      const result = await drawKuji(boardId, {
+        count,
+        paymentType: "PG",
+        paymentKey,
+        orderId,
+        amount: Number(amount)
+      });
+      
+      const prizes: Prize[] = result.results.map((p: any) => ({
+        ...p,
+        id: p.id?.toString() || Math.random().toString(),
+        rank: p.grade || p.rank,
+        image: (p.imageUrls && p.imageUrls.length > 0)
+          ? p.imageUrls[0]
+          : p.imageUrl || p.image,
+        totalCount: p.totalQty ?? p.totalCount ?? 0,
+        remainingCount: p.remainQty ?? p.remainingCount ?? 0,
+        opened: p.opened || [],
+        drawHistoryId: p.drawHistoryId
+      }));
+
+      localStorage.removeItem("kuji_pending_payment");
+      setRevealedPrizes(prizes);
+      setScreen("reveal");
+      
+    } catch (error) {
+      console.error("결제 승인 처리 중 오류:", error);
+      alert("결제 승인 후 뽑기 처리에 실패했습니다. 관리자에게 문의해주세요.");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  };
 
   const handleFetchUserInfo = async (token: string) => {
     try {
@@ -364,15 +421,17 @@ export default function App() {
     }
   };
 
-  const handlePurchase = (count: number) => {
+  const handlePurchase = (count: number, pointsUsed = 0) => {
     if (!user) {
       // Not logged in - go to login screen
       setPurchaseCount(count);
+      setPointsToUse(pointsUsed);
       setReturnToScreen("detail");
       setScreen("login");
     } else {
       // Already logged in - proceed to selection
       setPurchaseCount(count);
+      setPointsToUse(pointsUsed);
       setSelectedKuji([]);
       setScreen("selection");
     }
@@ -416,8 +475,11 @@ export default function App() {
     if (!selectedAnime || !user) return;
 
     try {
-      // 1. Call the real draw API
-      const response = await drawKuji(selectedAnime.boardId, kujiIndices.length);
+      // 1. Call the real draw API with POINT payment type
+      const response = await drawKuji(selectedAnime.id || (selectedAnime as any).boardId, {
+        count: kujiIndices.length,
+        paymentType: "POINT"
+      });
 
       // 2. Map backend results (KujiItemResponse) to frontend prizes structure
       const prizes: Prize[] = response.results.map((p: any) => ({
@@ -1198,8 +1260,11 @@ export default function App() {
         )}
         {screen === "selection" && selectedAnime && (
           <KujiSelection
+            boardId={selectedAnime.id}
             totalKuji={selectedAnime.totalKuji}
             purchaseCount={purchaseCount}
+            pointsToUse={pointsToUse}
+            pricePerKuji={selectedAnime.pricePerDraw || 15000}
             kujiStatus={kujiStatus}
             onConfirm={handleKujiReveal}
             onBack={() => setScreen("detail")}

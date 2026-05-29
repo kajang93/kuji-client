@@ -2,16 +2,25 @@ import { useState, useEffect } from 'react';
 import { motion } from './motion';
 import { ChevronLeft, Sparkles } from './icons';
 
+import { prepareKujiPayment } from '../api/kuji';
+import { loadTossPayments } from '@tosspayments/payment-sdk';
+
 type KujiSelectionProps = {
+  boardId: number;
   totalKuji: number;
   purchaseCount: number;
+  pointsToUse: number;
+  pricePerKuji: number;
   kujiStatus: boolean[];
   onConfirm: (selectedIndices: number[]) => void;
   onBack: () => void;
 };
 
-export default function KujiSelection({ totalKuji, purchaseCount, kujiStatus, onConfirm, onBack }: KujiSelectionProps) {
+export default function KujiSelection({ boardId, totalKuji, purchaseCount, pointsToUse, pricePerKuji, kujiStatus, onConfirm, onBack }: KujiSelectionProps) {
   const [selectedKuji, setSelectedKuji] = useState<number[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const finalPrice = Math.max(0, purchaseCount * pricePerKuji - pointsToUse);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -24,7 +33,7 @@ export default function KujiSelection({ totalKuji, purchaseCount, kujiStatus, on
 
   const toggleKuji = (index: number) => {
     if (kujiStatus[index]) return; // Can't select opened kuji
-    
+
     if (selectedKuji.includes(index)) {
       setSelectedKuji(selectedKuji.filter(i => i !== index));
     } else {
@@ -40,7 +49,7 @@ export default function KujiSelection({ totalKuji, purchaseCount, kujiStatus, on
       .map((isOpened, index) => ({ index, isOpened }))
       .filter(k => !k.isOpened)
       .map(k => k.index);
-    
+
     if (availableKuji.length > 0) {
       // Select random kujis up to purchaseCount
       const shuffled = availableKuji.sort(() => Math.random() - 0.5);
@@ -49,8 +58,44 @@ export default function KujiSelection({ totalKuji, purchaseCount, kujiStatus, on
     }
   };
 
-  const handleConfirm = () => {
-    if (selectedKuji.length === purchaseCount) {
+  const handleConfirm = async () => {
+    if (selectedKuji.length !== purchaseCount || isProcessing) return;
+
+    if (finalPrice > 0) {
+      try {
+        setIsProcessing(true);
+        // 1. Prepare payment via Backend
+        const prepareRes = await prepareKujiPayment(boardId, {
+          count: purchaseCount,
+          metadata: JSON.stringify({ pointsUsed: pointsToUse }) // Save extra info if needed
+        });
+
+        // 2. Save session locally to recover after redirect
+        localStorage.setItem("kuji_pending_payment", JSON.stringify({
+          boardId,
+          count: purchaseCount,
+          orderId: prepareRes.orderId
+        }));
+
+        // 3. Load Toss SDK & Request Payment
+        const clientKey = "test_ck_yL0qZ4G1VOKP7BNe20MBVoWb2MQY";
+        const tossPayments = await loadTossPayments(clientKey);
+
+        await tossPayments.requestPayment("카드", {
+          amount: prepareRes.amount,
+          orderId: prepareRes.orderId,
+          orderName: prepareRes.boardTitle || "쿠지 뽑기",
+          customerName: "쿠지 유저",
+          successUrl: `${window.location.origin}/?payment=success`,
+          failUrl: `${window.location.origin}/?payment=fail`
+        });
+      } catch (error) {
+        console.error("Payment error:", error);
+        alert("결제 준비 중 오류가 발생했습니다.");
+        setIsProcessing(false);
+      }
+    } else {
+      // Point only payment
       onConfirm(selectedKuji);
     }
   };
@@ -67,16 +112,16 @@ export default function KujiSelection({ totalKuji, purchaseCount, kujiStatus, on
     const toothWidth = 4;
     const toothHeight = 3;
     const numTeeth = Math.floor(width / toothWidth);
-    
+
     let path = `M 0,${toothHeight} `;
-    
+
     for (let i = 0; i < numTeeth; i++) {
       const x = i * toothWidth;
       path += `L ${x + toothWidth / 2},0 L ${x + toothWidth},${toothHeight} `;
     }
-    
+
     path += `L ${width},${toothHeight} L ${width},${height} L 0,${height} Z`;
-    
+
     return path;
   };
 
@@ -132,44 +177,43 @@ export default function KujiSelection({ totalKuji, purchaseCount, kujiStatus, on
         <div className="grid grid-cols-6 gap-3">
           {kujiStatus.map((isOpened, index) => {
             const isSelected = selectedKuji.includes(index);
-            
+
             return (
               <motion.button
                 key={index}
                 whileHover={!isOpened ? { scale: 1.05, zIndex: 20 } : {}}
                 whileTap={!isOpened ? { scale: 0.95 } : {}}
-                animate={isSelected ? { 
-                  scale: 1.15, 
+                animate={isSelected ? {
+                  scale: 1.15,
                   y: -5,
                   rotate: [0, -1, 1, 0],
                   zIndex: 10,
                   filter: "drop-shadow(0 0 10px rgba(34, 211, 238, 0.6))" // Cyan glow matching selection
-                } : { 
-                  scale: 1, 
-                  y: 0, 
-                  rotate: 0, 
+                } : {
+                  scale: 1,
+                  y: 0,
+                  rotate: 0,
                   zIndex: 0,
                   filter: "none"
                 }}
                 onClick={() => toggleKuji(index)}
                 disabled={isOpened}
-                className={`relative transition-colors duration-300 ${
-                  isOpened ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
-                }`}
+                className={`relative transition-colors duration-300 ${isOpened ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                  }`}
                 style={{ aspectRatio: '3/4' }}
               >
                 {/* Selected Glow Background */}
                 {isSelected && (
-                   <motion.div
-                     className="absolute -inset-2 bg-cyan-400/30 rounded-lg blur-md -z-10"
-                     initial={{ opacity: 0 }}
-                     animate={{ opacity: 1 }}
-                     exit={{ opacity: 0 }}
-                   />
+                  <motion.div
+                    className="absolute -inset-2 bg-cyan-400/30 rounded-lg blur-md -z-10"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  />
                 )}
 
-                <svg 
-                  viewBox="0 0 60 80" 
+                <svg
+                  viewBox="0 0 60 80"
                   className="w-full h-full drop-shadow-lg relative z-10"
                 >
                   <defs>
@@ -204,39 +248,39 @@ export default function KujiSelection({ totalKuji, purchaseCount, kujiStatus, on
                       <circle cx="2" cy="2" r="0.5" fill="white" opacity="0.2" />
                     </pattern>
                   </defs>
-                  
+
                   <g clipPath={`url(#kuji-clip-${index})`}>
                     {/* Background */}
                     <rect width="60" height="80" fill={`url(#gradient-${index})`} />
                     <rect width="60" height="80" fill={`url(#dots-${index})`} />
-                    
+
                     {!isOpened && (
                       <>
                         {/* Top bar */}
                         <rect width="60" height="10" fill="rgba(255, 255, 255, 0.15)" />
-                        <text 
-                          x="30" 
-                          y="7" 
-                          textAnchor="middle" 
-                          fill="white" 
+                        <text
+                          x="30"
+                          y="7"
+                          textAnchor="middle"
+                          fill="white"
                           fontSize="3.5"
                           fontWeight="bold"
                         >
                           ★ 一番く지 ★
                         </text>
-                        
+
                         {/* Border with dashed style - matching main kuji */}
                         <rect x="5" y="5" width="50" height="70" fill="none" stroke="white" strokeWidth="0.5" strokeDasharray="1.5,1" opacity="0.8" rx="2" />
-                        
+
                         {/* Center Logo Area - matching main kuji */}
                         <rect x="12" y="20" width="36" height="38" rx="2" ry="2" fill="rgba(0, 0, 0, 0.3)" />
                         <rect x="13" y="21" width="34" height="36" rx="1.5" ry="1.5" fill="none" stroke="white" strokeWidth="0.3" opacity="0.6" />
-                        
-                        <text 
-                          x="30" 
-                          y="40" 
-                          textAnchor="middle" 
-                          fill="white" 
+
+                        <text
+                          x="30"
+                          y="40"
+                          textAnchor="middle"
+                          fill="white"
                           fontSize="7"
                           fontWeight="bold"
                           opacity="0.95"
@@ -244,43 +288,43 @@ export default function KujiSelection({ totalKuji, purchaseCount, kujiStatus, on
                           KUJI
                         </text>
                         <line x1="17" y1="44" x2="43" y2="44" stroke="#a855f7" strokeWidth="0.6" />
-                        <text 
-                          x="30" 
-                          y="52" 
-                          textAnchor="middle" 
-                          fill="white" 
+                        <text
+                          x="30"
+                          y="52"
+                          textAnchor="middle"
+                          fill="white"
                           fontSize="2.5"
                           opacity="0.8"
                         >
                           www.kuji.com
                         </text>
-                        
+
                         {/* Bottom text */}
-                        <text 
-                          x="30" 
-                          y="72" 
-                          textAnchor="middle" 
-                          fill="white" 
+                        <text
+                          x="30"
+                          y="72"
+                          textAnchor="middle"
+                          fill="white"
                           fontSize="3.5"
                           opacity="0.8"
                         >
                           何가当타る？
                         </text>
-                        
+
                         {/* Star decorations */}
                         <text x="8" y="40" fill="white" fontSize="4" opacity="0.4">★</text>
                         <text x="52" y="40" fill="white" fontSize="4" opacity="0.4">★</text>
                       </>
                     )}
-                    
+
                     {isOpened && (
                       <>
                         {/* Opened indicator */}
-                        <text 
-                          x="30" 
-                          y="45" 
-                          textAnchor="middle" 
-                          fill="#64748b" 
+                        <text
+                          x="30"
+                          y="45"
+                          textAnchor="middle"
+                          fill="#64748b"
                           fontSize="12"
                         >
                           오픈됨
@@ -288,7 +332,7 @@ export default function KujiSelection({ totalKuji, purchaseCount, kujiStatus, on
                       </>
                     )}
                   </g>
-                  
+
                   {/* Selection indicator */}
                   {isSelected && !isOpened && (
                     <g>
@@ -309,22 +353,22 @@ export default function KujiSelection({ totalKuji, purchaseCount, kujiStatus, on
       <div className="fixed bottom-0 left-0 right-0 px-6 pt-6 pb-[calc(env(safe-area-inset-bottom)+2rem)] z-40 bg-gradient-to-t from-purple-900 via-purple-900/95 to-transparent pointer-events-none">
         <div className="pointer-events-auto">
           <motion.button
-          whileHover={{ scale: selectedKuji.length === purchaseCount ? 1.02 : 1 }}
-          whileTap={{ scale: selectedKuji.length === purchaseCount ? 0.98 : 1 }}
-          onClick={handleConfirm}
-          disabled={selectedKuji.length !== purchaseCount}
-          className={`w-full py-5 rounded-full text-xl shadow-2xl transition-all ${
-            selectedKuji.length === purchaseCount
-              ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 hover:shadow-yellow-400/50'
-              : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
-          }`}
-        >
-          <div className="text-center">
-            {selectedKuji.length === purchaseCount
-              ? `복권 열기 (${purchaseCount}장)`
-              : `${purchaseCount - selectedKuji.length}개 더 선택하세요`}
-          </div>
-        </motion.button>
+            whileHover={{ scale: selectedKuji.length === purchaseCount && !isProcessing ? 1.02 : 1 }}
+            whileTap={{ scale: selectedKuji.length === purchaseCount && !isProcessing ? 0.98 : 1 }}
+            onClick={handleConfirm}
+            disabled={selectedKuji.length !== purchaseCount || isProcessing}
+            className={`w-full py-5 rounded-full text-xl shadow-2xl transition-all ${selectedKuji.length === purchaseCount && !isProcessing
+                ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 hover:shadow-yellow-400/50'
+                : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
+              }`}
+          >
+            <div className="text-center font-bold">
+              {isProcessing ? "처리 중..." :
+                selectedKuji.length === purchaseCount
+                  ? (finalPrice > 0 ? `결제하기(PG) ₩${finalPrice.toLocaleString()}` : `포인트로 뽑기 (${purchaseCount}장)`)
+                  : `${purchaseCount - selectedKuji.length}개 더 선택하세요`}
+            </div>
+          </motion.button>
         </div>
       </div>
     </div>
