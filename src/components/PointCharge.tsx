@@ -68,16 +68,21 @@ export default function PointCharge({ currentPoints, onBack, onChargeComplete }:
       localStorage.setItem('point_charge_pending', JSON.stringify({
         amount: prepareRes.amount,
         orderId: prepareRes.orderId,
+        bonusPoints: prepareRes.bonusPoints,
       }));
 
       // 3. 토스페이먼츠 결제창 호출
       const clientKey = 'test_ck_yL0qZ4G1VOKP7BNe20MBVoWb2MQY';
       const tossPayments = await loadTossPayments(clientKey);
 
+      const orderName = prepareRes.bonusPoints > 0
+        ? `쿠지 포인트 ${prepareRes.amount.toLocaleString()}P 충전 (+${prepareRes.bonusPoints.toLocaleString()}P 보너스)`
+        : `쿠지 포인트 ${prepareRes.amount.toLocaleString()}P 충전`;
+
       await tossPayments.requestPayment('카드', {
         amount: prepareRes.amount,
         orderId: prepareRes.orderId,
-        orderName: `쿠지 포인트 ${prepareRes.amount.toLocaleString()}P 충전`,
+        orderName,
         customerName: '쿠지 유저',
         successUrl: `${window.location.origin}/?pointCharge=success`,
         failUrl: `${window.location.origin}/?pointCharge=fail`,

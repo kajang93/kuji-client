@@ -271,7 +271,11 @@ export default function App() {
       });
       
       localStorage.removeItem("point_charge_pending");
-      alert(`충전 완료! 🎉\n총 보유 포인트: ${result.totalPoints.toLocaleString()}P`);
+
+      const bonusMsg = result.bonusPoints > 0
+        ? `\n🎁 보너스 ${result.bonusPoints.toLocaleString()}P 추가 적립!`
+        : '';
+      alert(`충전 완료! 🎉${bonusMsg}\n총 보유 포인트: ${result.totalPoints.toLocaleString()}P`);
       
       // Refresh user info
       const token = localStorage.getItem("token");

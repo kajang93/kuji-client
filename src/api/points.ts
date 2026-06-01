@@ -14,6 +14,7 @@ export interface PrepareChargeRequest {
 export interface PrepareChargeResponse {
   orderId: string;
   amount: number;
+  bonusPoints: number;
 }
 
 export interface ConfirmChargeRequest {
@@ -24,6 +25,7 @@ export interface ConfirmChargeRequest {
 
 export interface ConfirmChargeResponse {
   pointsCharged: number;
+  bonusPoints: number;
   totalPoints: number;
 }
 
