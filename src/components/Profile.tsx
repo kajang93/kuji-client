@@ -6,9 +6,10 @@ type ProfileProps = {
   user: { name: string; email: string; type: 'social' | 'business' | 'admin'; points?: number; profileImageUrl?: string; phone?: string; address?: string; addressDetail?: string; birthdate?: string };
   onBack: () => void;
   onEdit: () => void;
+  onChargePoints?: () => void;
 };
 
-export default function Profile({ user, onBack, onEdit }: ProfileProps) {
+export default function Profile({ user, onBack, onEdit, onChargePoints }: ProfileProps) {
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(user.profileImageUrl || null);
   const [isEditing, setIsEditing] = useState(false);
@@ -180,6 +181,14 @@ export default function Profile({ user, onBack, onEdit }: ProfileProps) {
                   <div className="text-green-200 text-sm">보유 포인트</div>
                   <div className="text-white text-xl" style={{ fontWeight: 700 }}>{user.points.toLocaleString()}P</div>
                 </div>
+                {onChargePoints && (
+                  <button 
+                    onClick={onChargePoints}
+                    className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-amber-500 text-purple-900 font-bold rounded-lg shadow-md hover:shadow-yellow-400/20 transition-all text-sm flex-shrink-0"
+                  >
+                    충전하기
+                  </button>
+                )}
               </div>
               <div className="mt-3 pt-3 border-t border-green-400/30">
                 <div className="text-green-200 text-xs">

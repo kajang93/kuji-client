@@ -358,8 +358,8 @@ export default function KujiSelection({ boardId, totalKuji, purchaseCount, point
             onClick={handleConfirm}
             disabled={selectedKuji.length !== purchaseCount || isProcessing}
             className={`w-full py-5 rounded-full text-xl shadow-2xl transition-all ${selectedKuji.length === purchaseCount && !isProcessing
-                ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 hover:shadow-yellow-400/50'
-                : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
+              ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 hover:shadow-yellow-400/50'
+              : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
               }`}
           >
             <div className="text-center font-bold">

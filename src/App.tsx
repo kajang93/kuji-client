@@ -39,6 +39,7 @@ import { Menu } from "./components/icons";
 import { Toaster, toast, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import BusinessPending from "./components/BusinessPending";
+import PointCharge from "./components/PointCharge";
 import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory } from "./api/kuji";
 import BoardList from "./components/BoardList";
 import BoardDetail from "./components/BoardDetail";
@@ -47,6 +48,7 @@ import { fetchMyProfile } from "./api/auth";
 import { toggleWishlist, fetchMyWishlist } from "./api/wishlist";
 import { onForegroundMessage } from "./api/firebase";
 import { fetchSellerShippingList, completeShipping, updateTrackingInfo } from "./api/shipping";
+import { confirmPointCharge } from "./api/points";
 
 import {
   Prize,
@@ -178,6 +180,7 @@ export default function App() {
     
     // Toss Payment Redirect Handling
     const payment = urlParams.get("payment");
+    const pointCharge = urlParams.get("pointCharge");
     const paymentKey = urlParams.get("paymentKey");
     const orderId = urlParams.get("orderId");
     const amount = urlParams.get("amount");
@@ -187,6 +190,13 @@ export default function App() {
     } else if (payment === "fail") {
       const failMessage = urlParams.get("message") || "결제가 취소되었거나 실패했습니다.";
       localStorage.removeItem("kuji_pending_payment");
+      alert(decodeURIComponent(failMessage));
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (pointCharge === "success" && paymentKey && orderId && amount) {
+      handlePointChargeCompletion(paymentKey, orderId, amount);
+    } else if (pointCharge === "fail") {
+      const failMessage = urlParams.get("message") || "충전이 취소되었거나 실패했습니다.";
+      localStorage.removeItem("point_charge_pending");
       alert(decodeURIComponent(failMessage));
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (urlParams.has("code")) {
@@ -238,6 +248,40 @@ export default function App() {
     } catch (error) {
       console.error("결제 승인 처리 중 오류:", error);
       alert("결제 승인 후 뽑기 처리에 실패했습니다. 관리자에게 문의해주세요.");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  };
+
+  const handlePointChargeCompletion = async (paymentKey: string, orderId: string, amount: string) => {
+    try {
+      const pendingData = localStorage.getItem("point_charge_pending");
+      if (!pendingData) {
+        alert("충전 대기 정보를 찾을 수 없습니다.");
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+      
+      // Cleanup URL immediately
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      const result = await confirmPointCharge({
+        paymentKey,
+        orderId,
+        amount: Number(amount)
+      });
+      
+      localStorage.removeItem("point_charge_pending");
+      alert(`충전 완료! 🎉\n총 보유 포인트: ${result.totalPoints.toLocaleString()}P`);
+      
+      // Refresh user info
+      const token = localStorage.getItem("token");
+      if (token) {
+        await handleFetchUserInfo(token);
+      }
+      setScreen("main");
+    } catch (error) {
+      console.error("포인트 충전 처리 중 오류:", error);
+      alert("충전 승인 처리에 실패했습니다. 관리자에게 문의해주세요.");
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   };
@@ -1281,6 +1325,7 @@ export default function App() {
             user={user}
             onBack={() => setScreen("main")}
             onEdit={() => setScreen("profileEdit")}
+            onChargePoints={() => setScreen("pointCharge")}
           />
         )}
         {screen === "profileEdit" && user && (
@@ -1291,6 +1336,12 @@ export default function App() {
               setUser({ ...user, ...userData });
               setScreen("profile");
             }}
+          />
+        )}
+        {screen === "pointCharge" && user && (
+          <PointCharge
+            currentPoints={user.points || 0}
+            onBack={() => setScreen("main")}
           />
         )}
         {screen === "purchase" && (

@@ -163,7 +163,8 @@ export type ScreenType =
   | "adminUserManagement"
   | "adminStatistics"
   | "kakaoCallback"
-  | "businessPending";
+  | "businessPending"
+  | "pointCharge";
 
 export type Banner = {
   id: string;
