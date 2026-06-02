@@ -1,16 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchTrackingInfo, type TrackingResponse } from '../api/shipping';
 import { motion, AnimatePresence } from './motion';
 import { X, ChevronDown, ChevronUp, Package, Truck, MapPin, CheckCircle, Phone, MessageCircle } from './icons';
 import type { WinningItem } from '@/shared-types';
 import SellerInquiryModal from './SellerInquiryModal';
-
-type DeliveryStatus = {
-  date: string;
-  time: string;
-  location: string;
-  status: string;
-  isCompleted: boolean;
-};
 
 type DeliveryTrackingProps = {
   orderNumber?: string;
@@ -43,82 +36,42 @@ export default function DeliveryTracking({
 }: DeliveryTrackingProps) {
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [showInquiryModal, setShowInquiryModal] = useState(false);
+  const [trackingData, setTrackingData] = useState<TrackingResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!winning?.shippingId) {
+        return;
+      }
+      
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await fetchTrackingInfo(winning.shippingId);
+        setTrackingData(data);
+      } catch (err: any) {
+        setError(err.message || '배송 진행 상황을 불러오는 데 실패했습니다.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchHistory();
+  }, [winning?.shippingId]);
 
   // Use winning item data if provided, otherwise use props
-  const finalOrderNumber = winning?.id || orderNumber || 'N/A';
-  const finalTrackingNumber = winning?.trackingNumber || trackingNumber || 'CJ1234567890';
-  const finalCourier = courier || 'CJ대한통운';
-  const finalRecipientAddress = recipientAddress || '서울시 강남구 테헤란로 123';
-  const finalDeliveryDriver = deliveryDriver;
-  const finalDeliveryDriverPhone = deliveryDriverPhone;
+  const finalOrderNumber = trackingData?.orderNumber || winning?.id || orderNumber || 'N/A';
+  const finalTrackingNumber = trackingData?.trackingNumber || winning?.trackingNumber || trackingNumber || 'CJ1234567890';
+  const finalCourier = trackingData?.courier || courier || 'CJ대한통운';
+  const finalRecipientAddress = trackingData?.recipientAddress || recipientAddress || '서울시 강남구 테헤란로 123';
+  const finalDeliveryDriver = trackingData?.deliveryDriver || deliveryDriver;
+  const finalDeliveryDriverPhone = trackingData?.deliveryDriverPhone || deliveryDriverPhone;
   const finalSellerContact = sellerContact;
   const finalSellerName = sellerName;
   const finalSellerId = sellerId;
-
-  // Generate delivery history based on the actual delivery status
-  const getDynamicHistory = (): DeliveryStatus[] => {
-    const status = winning?.deliveryStatus || 'preparing';
-    const datePrefix = winning?.date ? winning.date.split(' ')[0] : '2026-05-25';
-    
-    // Helper to format dates relative to the base date
-    const getOffsetDateStr = (daysOffset: number): string => {
-      try {
-        const baseDate = new Date(datePrefix);
-        baseDate.setDate(baseDate.getDate() + daysOffset);
-        return baseDate.toISOString().substring(0, 10);
-      } catch (e) {
-        return datePrefix;
-      }
-    };
-
-    const history: DeliveryStatus[] = [];
-
-    if (status === 'delivered') {
-      history.push({
-        date: getOffsetDateStr(2),
-        time: '14:30',
-        location: finalRecipientAddress,
-        status: '배송 완료',
-        isCompleted: true,
-      });
-    }
-
-    if (status === 'shipped' || status === 'delivered') {
-      history.push({
-        date: getOffsetDateStr(2),
-        time: '09:15',
-        location: '서울 강남구 물류센터',
-        status: '배송 출발 (배송원: 홍길동 010-1234-5678)',
-        isCompleted: true,
-      });
-      history.push({
-        date: getOffsetDateStr(1),
-        time: '22:45',
-        location: '경기 광주 터미널',
-        status: '간선 상차',
-        isCompleted: true,
-      });
-      history.push({
-        date: getOffsetDateStr(1),
-        time: '20:10',
-        location: '경기 광주 터미널',
-        status: '간선 도착',
-        isCompleted: true,
-      });
-    }
-
-    history.push({
-      date: getOffsetDateStr(0),
-      time: '10:00',
-      location: '부산 사상구 물류센터',
-      status: '배송 준비중 (집하 완료)',
-      isCompleted: true,
-    });
-
-    return history;
-  };
-
-  const deliveryHistory = getDynamicHistory();
+  const deliveryHistory = trackingData?.history || [];
 
   // Current delivery stage
   const getCurrentStage = () => {
@@ -254,6 +207,23 @@ export default function DeliveryTracking({
           {/* Delivery History Timeline */}
           <div className="bg-white/10 rounded-2xl p-6">
             <h3 className="text-white mb-4">배송 상세 내역</h3>
+            
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+                <span className="text-white/70">배송 내역을 조회 중입니다...</span>
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <Package className="w-10 h-10 text-white/20 mb-3" />
+                <span className="text-red-400 text-sm text-center">{error}</span>
+              </div>
+            ) : deliveryHistory.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <Package className="w-10 h-10 text-white/20 mb-3" />
+                <span className="text-white/50 text-sm">배송 내역이 없습니다.</span>
+              </div>
+            ) : (
             <div className="relative">
               {/* Vertical Line */}
               <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-white/20" />
@@ -297,6 +267,7 @@ export default function DeliveryTracking({
                 ))}
               </div>
             </div>
+            )}
 
             {/* Show More/Less Button */}
             {deliveryHistory.length > 3 && (

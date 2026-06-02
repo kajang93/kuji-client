@@ -107,3 +107,48 @@ export async function completeShipping(shippingId: number): Promise<void> {
     throw new Error(error || '배송 완료 처리에 실패했습니다.');
   }
 }
+
+export interface DeliveryStatus {
+  date: string;
+  time: string;
+  location: string;
+  status: string;
+  isCompleted: boolean;
+}
+
+export interface TrackingResponse {
+  orderNumber: string;
+  trackingNumber: string;
+  courier: string;
+  recipientAddress: string;
+  deliveryDriver: string;
+  deliveryDriverPhone: string;
+  history: DeliveryStatus[];
+}
+
+/**
+ * 7. 배송 진행 상황(타임라인) 조회
+ */
+export async function fetchTrackingInfo(shippingId: number): Promise<TrackingResponse> {
+  const response = await fetch(`${API_BASE_URL}/${shippingId}/tracking`, {
+    headers: getHeaders()
+  });
+
+  if (!response.ok) {
+    let errorMessage = '배송 진행 상황을 불러오는 데 실패했습니다.';
+    try {
+      const text = await response.text();
+      try {
+        const errorData = JSON.parse(text);
+        errorMessage = errorData.message || errorData.error || text;
+      } catch {
+        errorMessage = text || errorMessage;
+      }
+    } catch (e) {
+      // 무시
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
