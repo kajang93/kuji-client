@@ -7,7 +7,7 @@ import type { WinningItem } from '@/shared-types';
 type BusinessShippingManagementProps = {
   onBack: () => void;
   winningHistory: WinningItem[];
-  onUpdateShipping?: (winningId: string, status: 'preparing' | 'shipped' | 'delivered', trackingNumber?: string) => void;
+  onUpdateShipping?: (winningId: string, status: 'preparing' | 'shipped' | 'delivered', trackingNumber?: string, courierName?: string) => void;
 };
 
 type GroupedWinnings = {
@@ -21,6 +21,7 @@ export default function BusinessShippingManagement({
 }: BusinessShippingManagementProps) {
   const [selectedSeries, setSelectedSeries] = useState<string | null>(null);
   const [trackingNumbers, setTrackingNumbers] = useState<Record<string, string>>({});
+  const [courierNames, setCourierNames] = useState<Record<string, string>>({});
 
   // Group winnings by series
   const groupedWinnings: GroupedWinnings = winningHistory.reduce((acc, winning) => {
@@ -68,16 +69,28 @@ export default function BusinessShippingManagement({
     const winning = winningHistory.find(w => w.id === winningId);
     const existingTracking = winning?.trackingNumber;
     const trackingNum = (trackingNumbers[winningId] !== undefined ? trackingNumbers[winningId] : (existingTracking || '')).trim();
+    const courierName = courierNames[winningId];
     
-    if (newStatus === 'shipped' && !trackingNum) {
-      alert('운송장 번호를 입력해주세요');
-      return;
+    if (newStatus === 'shipped') {
+      if (!courierName) {
+        alert('택배사를 선택해주세요');
+        return;
+      }
+      if (!trackingNum) {
+        alert('운송장 번호를 입력해주세요');
+        return;
+      }
     }
 
-    onUpdateShipping?.(winningId, newStatus, trackingNum || undefined);
+    onUpdateShipping?.(winningId, newStatus, trackingNum || undefined, courierName);
     
     // Clear tracking number after update
     setTrackingNumbers(prev => {
+      const newState = { ...prev };
+      delete newState[winningId];
+      return newState;
+    });
+    setCourierNames(prev => {
       const newState = { ...prev };
       delete newState[winningId];
       return newState;
@@ -155,7 +168,26 @@ export default function BusinessShippingManagement({
                     {/* Tracking Number Input */}
                     {winning.deliveryStatus === 'preparing' && (
                       <div>
-                        <label className="text-white/70 text-sm block mb-2">운송장 번호</label>
+                        <label className="text-white/70 text-sm block mb-2">운송장 정보</label>
+                        <select
+                          value={courierNames[winning.id] || ''}
+                          onChange={(e) => setCourierNames(prev => ({ ...prev, [winning.id]: e.target.value }))}
+                          className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white mb-2 focus:outline-none focus:border-teal-400"
+                        >
+                          <option value="" disabled>택배사 선택</option>
+                          <option value="CJ대한통운">CJ대한통운</option>
+                          <option value="우체국택배">우체국택배</option>
+                          <option value="한진택배">한진택배</option>
+                          <option value="롯데택배">롯데택배</option>
+                          <option value="로젠택배">로젠택배</option>
+                          <option value="CU편의점택배">CU편의점택배</option>
+                          <option value="GS25편의점택배">GS25편의점택배</option>
+                          <option value="쿠팡로지스틱스">쿠팡로지스틱스</option>
+                          <option value="우체국 EMS">우체국 EMS</option>
+                          <option value="경동택배">경동택배</option>
+                          <option value="대신택배">대신택배</option>
+                          <option value="일양로지스">일양로지스</option>
+                        </select>
                         <input
                           type="text"
                           value={trackingNumbers[winning.id] !== undefined ? trackingNumbers[winning.id] : (winning.trackingNumber || '')}

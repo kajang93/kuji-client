@@ -361,6 +361,7 @@ export default function App() {
                   s.status === 'SHIPPING' ? 'shipped' :
                   s.status === 'DELIVERED' ? 'delivered' : 'preparing',
                 trackingNumber: s.trackingNumber,
+                courierName: s.courierName,
                 needsOptionSelection: false,
                 isNew: false
               });
@@ -697,6 +698,7 @@ export default function App() {
     winningId: string,
     status: "preparing" | "shipped" | "delivered",
     trackingNumber?: string,
+    courierName?: string
   ) => {
     // winningId is structured as "shippingId-drawHistoryId"
     const parts = winningId.split('-');
@@ -708,15 +710,19 @@ export default function App() {
 
     try {
       if (status === "shipped") {
+        if (!courierName) {
+          toast.error("택배사를 선택해주세요.");
+          return;
+        }
         if (!trackingNumber) {
           toast.error("운송장 번호를 입력해주세요.");
           return;
         }
         await updateTrackingInfo(shippingId, {
-          courierName: "대한통운",
+          courierName: courierName,
           trackingNumber: trackingNumber
         });
-        toast.success("운송장이 등록되고 배송이 시작되었습니다.");
+        toast.success("송장 등록 및 배송이 시작되었습니다!");
       } else if (status === "delivered") {
         await completeShipping(shippingId);
         toast.success("배송 완료 처리가 완료되었습니다.");

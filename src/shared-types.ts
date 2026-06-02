@@ -78,6 +78,7 @@ export type WinningItem = {
   };
   isNew?: boolean;
   shippingId?: number; // 추가
+  courierName?: string; // 추가
 };
 
 export interface ShippingInfo {

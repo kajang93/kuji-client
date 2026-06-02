@@ -35,6 +35,19 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
     deliveryMessage: ''
   });
 
+  const handlePhoneChange = (value: string) => {
+    const numbers = value.replace(/[^0-9]/g, '');
+    let formatted = numbers;
+    
+    if (numbers.length > 3 && numbers.length <= 7) {
+      formatted = `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    } else if (numbers.length > 7) {
+      formatted = `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+    }
+    
+    setShippingForm({ ...shippingForm, phone: formatted });
+  };
+
   // Auto-trigger option selection for new winnings
   useEffect(() => {
     // Fill default shipping info if user exists
@@ -560,7 +573,8 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                       type="tel" 
                       placeholder="010-0000-0000"
                       value={shippingForm.phone}
-                      onChange={e => setShippingForm({...shippingForm, phone: e.target.value})}
+                      onChange={e => handlePhoneChange(e.target.value)}
+                      maxLength={13}
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-400 transition-colors"
                     />
                   </div>

@@ -63,8 +63,8 @@ export default function DeliveryTracking({
 
   // Use winning item data if provided, otherwise use props
   const finalOrderNumber = trackingData?.orderNumber || winning?.id || orderNumber || 'N/A';
-  const finalTrackingNumber = trackingData?.trackingNumber || winning?.trackingNumber || trackingNumber || 'CJ1234567890';
-  const finalCourier = trackingData?.courier || courier || 'CJ대한통운';
+  const finalTrackingNumber = trackingData?.trackingNumber || winning?.trackingNumber || trackingNumber || '-';
+  const finalCourier = trackingData?.courier || winning?.courierName || courier || '-';
   const finalRecipientAddress = trackingData?.recipientAddress || recipientAddress || '서울시 강남구 테헤란로 123';
   const finalDeliveryDriver = trackingData?.deliveryDriver || deliveryDriver;
   const finalDeliveryDriverPhone = trackingData?.deliveryDriverPhone || deliveryDriverPhone;
