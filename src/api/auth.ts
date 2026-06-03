@@ -95,3 +95,80 @@ export const signup = async (data: any): Promise<void> => {
     throw new Error(errorData.message || "회원가입에 실패했습니다.");
   }
 };
+
+/**
+ * 이메일 중복 확인
+ */
+export const checkEmail = async (email: string): Promise<boolean> => {
+  const response = await fetch(`${API_BASE_URL}/check-email?email=${encodeURIComponent(email)}`);
+  if (!response.ok) {
+    throw new Error("이메일 중복 확인에 실패했습니다.");
+  }
+  const data = await response.json();
+  return data.isAvailable;
+};
+
+/**
+ * 인증문자 발송
+ */
+export const sendSms = async (phoneNumber: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/send-sms`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phoneNumber }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "인증번호 발송에 실패했습니다.");
+  }
+};
+
+/**
+ * 아이디 찾기
+ */
+export const findId = async (phoneNumber: string, verificationCode: string): Promise<string> => {
+  const response = await fetch(`${API_BASE_URL}/find-id`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phoneNumber, verificationCode }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "해당 번호로 가입된 아이디를 찾을 수 없습니다.");
+  }
+  const text = await response.text();
+  try {
+    const json = JSON.parse(text);
+    return json.email || json.id || text;
+  } catch (e) {
+    return text;
+  }
+};
+
+/**
+ * 비밀번호 재설정
+ */
+export const resetPassword = async (email: string, phoneNumber: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, phoneNumber }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "회원 정보를 확인할 수 없습니다.");
+  }
+};
+
+/**
+ * 사업자 프로필 조회
+ */
+export const fetchBusinessProfile = async (): Promise<any> => {
+  const response = await fetch(`${API_BASE_URL}/business-profile`, {
+    headers: getHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error("사업자 프로필을 불러올 수 없습니다.");
+  }
+  return response.json();
+};

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchAdminSummary, fetchAdminDailySales, AdminSummary, DailySales } from '../api/statistics';
 import { motion } from './motion';
 import { BarChart as BarChartIcon, TrendingUp, Users, DollarSign, ShoppingCart, Package, Calendar, ArrowUp, ArrowDown, ChevronLeft } from './icons';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
@@ -12,74 +13,78 @@ type Props = {
 export default function AdminStatistics({ onBack }: Props) {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('month');
 
-  // 매출 통계 데이터
-  const salesData = [
-    { name: '1월', sales: 4200000, users: 45, orders: 120 },
-    { name: '2월', sales: 3800000, users: 38, orders: 105 },
-    { name: '3월', sales: 5100000, users: 52, orders: 142 },
-    { name: '4월', sales: 4700000, users: 48, orders: 135 },
-    { name: '5월', sales: 6200000, users: 65, orders: 178 },
-    { name: '6월', sales: 5800000, users: 60, orders: 165 },
-    { name: '7월', sales: 7100000, users: 72, orders: 195 },
-    { name: '8월', sales: 6500000, users: 68, orders: 182 },
-    { name: '9월', sales: 5900000, users: 61, orders: 170 },
-    { name: '10월', sales: 6800000, users: 70, orders: 188 },
-    { name: '11월', sales: 7500000, users: 78, orders: 210 },
-  ];
+  const [adminSummary, setAdminSummary] = useState<AdminSummary | null>(null);
+  const [dailySales, setDailySales] = useState<DailySales[]>([]);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
-  // 상품별 판매 데이터
-  const productSalesData = [
-    { name: '원피스', value: 35, sales: 15800000 },
-    { name: '귀멸의 칼날', value: 28, sales: 12600000 },
-    { name: '나루토', value: 22, sales: 9900000 },
-    { name: '포켓몬', value: 15, sales: 6700000 },
-  ];
+  useEffect(() => {
+    // 페이지 진입 시 스크롤을 최상단으로 이동
+    window.scrollTo(0, 0);
 
-  // 등급별 당첨 통계
-  const prizeRankData = [
-    { rank: 'A상', count: 45, rate: '5.6%' },
-    { rank: 'B상', count: 68, rate: '8.5%' },
-    { rank: 'C상', count: 52, rate: '6.5%' },
-    { rank: 'D상', count: 98, rate: '12.2%' },
-    { rank: 'E상', count: 145, rate: '18.1%' },
-    { rank: 'F상', count: 178, rate: '22.2%' },
-    { rank: 'G상', count: 142, rate: '17.7%' },
-    { rank: 'H상', count: 72, rate: '9.0%' },
-  ];
+    const loadStats = async () => {
+      try {
+        const [summaryData, salesData] = await Promise.all([
+          fetchAdminSummary(),
+          fetchAdminDailySales(7)
+        ]);
+        setAdminSummary(summaryData);
+        setDailySales(salesData);
+      } catch (error) {
+        console.error("Failed to load admin stats", error);
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+    loadStats();
+  }, []);
+
+  // 매출 통계 데이터 (백엔드 연동)
+  const salesData = dailySales.map(d => ({
+    name: d.date,
+    sales: d.totalAmount,
+    users: 0, // 해당 API 미지원
+    orders: 0 // 해당 API 미지원
+  }));
+
+  // 상품별 판매 데이터 (목데이터 제거)
+  const productSalesData: any[] = [];
+
+  // 등급별 당첨 통계 (목데이터 제거)
+  const prizeRankData: any[] = [];
 
   const COLORS = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#06b6d4', '#f97316'];
 
-  // 주요 통계 카드
+  // 주요 통계 카드 (백엔드 연동)
   const mainStats = [
     {
       label: '총 매출',
-      value: '¥68,600,000',
-      change: '+15.3%',
+      value: isLoadingStats ? '-' : `₩${adminSummary?.totalKujiSalesPoints?.toLocaleString() || '0'}`,
+      change: '-',
       isPositive: true,
       icon: DollarSign,
       color: 'from-green-500 to-emerald-500',
     },
     {
-      label: '신규 사용자',
-      value: '1,234',
-      change: '+8.2%',
+      label: '총 충전액',
+      value: isLoadingStats ? '-' : `₩${adminSummary?.totalChargedPoints?.toLocaleString() || '0'}`,
+      change: '-',
+      isPositive: true,
+      icon: DollarSign,
+      color: 'from-purple-500 to-pink-500',
+    },
+    {
+      label: '전체 가입자',
+      value: isLoadingStats ? '-' : `${adminSummary?.totalMembers?.toLocaleString() || '0'}명`,
+      change: '-',
       isPositive: true,
       icon: Users,
       color: 'from-blue-500 to-cyan-500',
     },
     {
-      label: '총 주문',
-      value: '2,090',
-      change: '+12.5%',
+      label: '오늘 신규 가입',
+      value: isLoadingStats ? '-' : `${adminSummary?.newMembersToday?.toLocaleString() || '0'}명`,
+      change: '-',
       isPositive: true,
-      icon: ShoppingCart,
-      color: 'from-purple-500 to-pink-500',
-    },
-    {
-      label: '판매 상품',
-      value: '45',
-      change: '-2.1%',
-      isPositive: false,
       icon: Package,
       color: 'from-yellow-500 to-orange-500',
     },
@@ -166,8 +171,8 @@ export default function AdminStatistics({ onBack }: Props) {
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-white text-lg">월별 매출 추이</h3>
-                <p className="text-white/60 text-sm">최근 11개월 매출 현황</p>
+                <h3 className="text-white text-lg">최근 매출 추이</h3>
+                <p className="text-white/60 text-sm">최근 7일 매출 현황</p>
               </div>
             </div>
             <div className="h-80">
@@ -183,7 +188,7 @@ export default function AdminStatistics({ onBack }: Props) {
                       borderRadius: '12px',
                       color: '#fff',
                     }}
-                    formatter={(value: number) => [`¥${value.toLocaleString()}`, '매출']}
+                    formatter={(value: number) => [`₩${value.toLocaleString()}`, '매출']}
                   />
                   <Line type="monotone" dataKey="sales" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 5 }} />
                 </LineChart>
@@ -333,45 +338,16 @@ export default function AdminStatistics({ onBack }: Props) {
           </motion.div>
         </div>
 
-        {/* Top Performers */}
+        {/* Top Performers (목데이터 제거) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
           className="mt-6 bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20"
         >
-          <h3 className="text-white text-lg mb-4">실시간 요약</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white/5 rounded-xl p-4">
-              <div className="text-white/60 text-sm mb-2">오늘의 매출</div>
-              <div className="text-white text-2xl mb-1" style={{ fontWeight: 700 }}>
-                ¥2,580,000
-              </div>
-              <div className="flex items-center gap-1 text-green-400 text-sm">
-                <ArrowUp className="w-4 h-4" />
-                <span>전일 대비 +18.3%</span>
-              </div>
-            </div>
-            <div className="bg-white/5 rounded-xl p-4">
-              <div className="text-white/60 text-sm mb-2">오늘의 신규 가입</div>
-              <div className="text-white text-2xl mb-1" style={{ fontWeight: 700 }}>
-                48명
-              </div>
-              <div className="flex items-center gap-1 text-green-400 text-sm">
-                <ArrowUp className="w-4 h-4" />
-                <span>전일 대비 +12.5%</span>
-              </div>
-            </div>
-            <div className="bg-white/5 rounded-xl p-4">
-              <div className="text-white/60 text-sm mb-2">오늘의 주문</div>
-              <div className="text-white text-2xl mb-1" style={{ fontWeight: 700 }}>
-                87건
-              </div>
-              <div className="flex items-center gap-1 text-green-400 text-sm">
-                <ArrowUp className="w-4 h-4" />
-                <span>전일 대비 +8.7%</span>
-              </div>
-            </div>
+          <h3 className="text-white text-lg mb-4">실시간 요약 (데이터 수집 중)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center text-white/50 py-10">
+            실시간 데이터가 존재하지 않습니다.
           </div>
         </motion.div>
       </div>

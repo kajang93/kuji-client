@@ -1,5 +1,9 @@
+import { useState, useEffect } from 'react';
+import Chart from 'react-apexcharts';
+import { ApexOptions } from 'apexcharts';
 import { motion } from './motion';
 import { Package, TrendingUp, ShoppingCart, Truck, DollarSign, Users, Menu } from './icons';
+import { fetchSellerSummary, fetchSellerDailySales, SellerSummary, DailySales } from '../api/statistics';
 
 type BusinessDashboardProps = {
   onNavigate: (screen: 'productList' | 'productRegister' | 'shipping') => void;
@@ -8,40 +12,103 @@ type BusinessDashboardProps = {
 };
 
 export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout }: BusinessDashboardProps) {
+  const [sellerSummary, setSellerSummary] = useState<SellerSummary | null>(null);
+  const [dailySales, setDailySales] = useState<DailySales[]>([]);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const [summaryData, salesData] = await Promise.all([
+          fetchSellerSummary(),
+          fetchSellerDailySales(7)
+        ]);
+        setSellerSummary(summaryData);
+        setDailySales(salesData);
+      } catch (error) {
+        console.error("Failed to load seller stats", error);
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+    loadStats();
+  }, []);
   // Mock data for demo
   const stats = [
     {
-      title: '등록된 시리즈',
-      value: '0',
-      icon: Package,
-      color: 'from-purple-600 to-purple-700',
-      bgColor: 'bg-purple-500/20',
-      iconColor: 'text-purple-300',
-    },
-    {
-      title: '오늘 판매',
-      value: '0',
+      title: '총 발생 매출',
+      value: isLoadingStats ? '-' : `₩${sellerSummary?.totalSalesPoints?.toLocaleString() || '0'}`,
       icon: ShoppingCart,
       color: 'from-blue-600 to-blue-700',
       bgColor: 'bg-blue-500/20',
       iconColor: 'text-blue-300',
     },
     {
-      title: '배송 대기',
-      value: '0',
-      icon: Truck,
-      color: 'from-pink-600 to-pink-700',
-      bgColor: 'bg-pink-500/20',
-      iconColor: 'text-pink-300',
-    },
-    {
-      title: '이번 달 매출',
-      value: '₩0',
+      title: '예상 정산금',
+      value: isLoadingStats ? '-' : `₩${sellerSummary?.estimatedSettlement?.toLocaleString() || '0'}`,
       icon: DollarSign,
       color: 'from-cyan-600 to-cyan-700',
       bgColor: 'bg-cyan-500/20',
       iconColor: 'text-cyan-300',
     },
+    {
+      title: '적용 수수료율',
+      value: isLoadingStats ? '-' : `${sellerSummary?.appliedFeeRate || '0'}%`,
+      icon: Package,
+      color: 'from-purple-600 to-purple-700',
+      bgColor: 'bg-purple-500/20',
+      iconColor: 'text-purple-300',
+    },
+    {
+      title: '배송 대기',
+      value: isLoadingStats ? '-' : `${sellerSummary?.pendingShippingCount?.toLocaleString() || '0'}건`,
+      icon: Truck,
+      color: 'from-pink-600 to-pink-700',
+      bgColor: 'bg-pink-500/20',
+      iconColor: 'text-pink-300',
+      onClick: () => onNavigate('shipping') // Click action added
+    },
+  ];
+
+  const chartOptions: ApexOptions = {
+    chart: {
+      type: 'area',
+      toolbar: { show: false },
+      background: 'transparent',
+      fontFamily: 'inherit',
+    },
+    theme: { mode: 'dark' },
+    colors: ['#F59E0B'], // Amber/Gold color for business sales
+    dataLabels: { enabled: false },
+    stroke: { curve: 'smooth', width: 3 },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.7,
+        opacityTo: 0.1,
+        stops: [0, 90, 100]
+      }
+    },
+    xaxis: {
+      categories: dailySales.map(d => d.date),
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+      labels: { style: { colors: '#9ca3af' } }
+    },
+    yaxis: {
+      labels: {
+        style: { colors: '#9ca3af' },
+        formatter: (val) => `₩${(val / 10000).toLocaleString()}만`
+      }
+    },
+    grid: { borderColor: '#ffffff10', strokeDashArray: 4 },
+    legend: { position: 'top', horizontalAlign: 'right' },
+    tooltip: { theme: 'dark' }
+  };
+
+  const chartSeries = [
+    { name: '일일 판매액', data: dailySales.map(d => d.totalAmount) }
   ];
 
   const quickActions = [
@@ -107,7 +174,8 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm rounded-xl p-3 border border-white/20 shadow-lg"
+              className={`bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm rounded-xl p-3 border border-white/20 shadow-lg ${stat.onClick ? 'cursor-pointer hover:border-pink-400/50 hover:bg-white/10 transition-all' : ''}`}
+              onClick={stat.onClick}
             >
               <div className="flex items-center gap-2 mb-1">
                 <div className={`w-8 h-8 ${stat.bgColor} rounded-lg flex items-center justify-center`}>
@@ -147,18 +215,20 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
 
         {/* Recent Activity - Scrollable Section */}
         <div className="space-y-4">
-          <h2 className="text-white px-1">최근 활동</h2>
+          <h2 className="text-white px-1">최근 7일 매출 추이</h2>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
             className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/20 shadow-lg"
           >
-            <div className="space-y-3">
-              <div className="text-center py-10 text-white/40">
-                <p>최근 활동 내역이 없습니다.</p>
+            {isLoadingStats ? (
+              <div className="h-[250px] flex items-center justify-center text-white/50">데이터를 불러오는 중입니다...</div>
+            ) : (
+              <div className="h-[250px] w-full">
+                <Chart options={chartOptions} series={chartSeries} type="area" height="100%" />
               </div>
-            </div>
+            )}
           </motion.div>
 
           {/* Tips */}

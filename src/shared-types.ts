@@ -45,6 +45,7 @@ export type Prize = {
   remainQty?: number;    // Backend field alignment
   opened: boolean[];
   drawHistoryId?: number; // 추가
+  options?: any; // 추가: KujiItem options
 };
 
 export type AnimeCollection = {

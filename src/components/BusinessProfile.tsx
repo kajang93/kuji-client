@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Building2, Mail, Phone, MapPin, FileText, Calendar, Camera, ImageIcon } from './icons';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { fetchBusinessProfile } from '../api/auth';
 
 type BusinessProfileProps = {
   user: { name: string; email: string; type: 'business' };
@@ -13,17 +14,31 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Mock business data
-  const businessInfo = {
-    businessName: user.name,
-    businessNumber: '123-45-67890',
-    representative: '홍길동',
-    phone: '02-1234-5678',
-    email: user.email,
-    address: '서울특별시 강남구 테헤란로 123 (역삼동)',
-    registrationDate: '2024-01-15',
-    status: '승인됨',
-  };
+  const [businessInfo, setBusinessInfo] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const data = await fetchBusinessProfile();
+        setBusinessInfo({
+          businessName: data.companyName || user.name,
+          businessNumber: data.businessNumber || '-',
+          representative: data.ceoName || '-',
+          phone: data.phoneNumber || '-',
+          email: user.email,
+          address: data.shippingAddress || '-',
+          registrationDate: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : '-',
+          status: data.isApproved ? '승인됨' : '심사중',
+        });
+      } catch (error) {
+        console.error("Failed to load business profile", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadProfile();
+  }, [user]);
 
   const handleImageSelect = (type: 'gallery' | 'camera') => {
     setShowImagePicker(false);
@@ -96,16 +111,16 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
                 className="hidden"
               />
             </div>
-            <h2 className="text-white text-2xl mb-2">{businessInfo.businessName}</h2>
+            <h2 className="text-white text-2xl mb-2">{isLoading ? '-' : businessInfo?.businessName}</h2>
             <div className="inline-block px-4 py-1 bg-amber-400/20 border border-amber-400/50 rounded-full text-amber-300 mb-2">
               사업자 계정
             </div>
             <div className={`inline-block px-3 py-1 rounded-full text-sm ${
-              businessInfo.status === '승인됨'
+              businessInfo?.status === '승인됨'
                 ? 'bg-green-500/20 border border-green-400/50 text-green-300'
                 : 'bg-yellow-500/20 border border-yellow-400/50 text-yellow-300'
             }`}>
-              {businessInfo.status}
+              {isLoading ? '-' : businessInfo?.status}
             </div>
           </div>
         </motion.div>
@@ -125,7 +140,7 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
               </div>
               <div className="text-white/80">사업자등록번호</div>
             </div>
-            <div className="text-white pl-13">{businessInfo.businessNumber}</div>
+            <div className="text-white pl-13">{isLoading ? '-' : businessInfo?.businessNumber}</div>
           </motion.div>
 
           {/* Representative */}
@@ -141,7 +156,7 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
               </div>
               <div className="text-white/80">대표자명</div>
             </div>
-            <div className="text-white pl-13">{businessInfo.representative}</div>
+            <div className="text-white pl-13">{isLoading ? '-' : businessInfo?.representative}</div>
           </motion.div>
 
           {/* Phone */}
@@ -157,7 +172,7 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
               </div>
               <div className="text-white/80">대표 전화</div>
             </div>
-            <div className="text-white pl-13">{businessInfo.phone}</div>
+            <div className="text-white pl-13">{isLoading ? '-' : businessInfo?.phone}</div>
           </motion.div>
 
           {/* Email */}
@@ -173,7 +188,7 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
               </div>
               <div className="text-white/80">이메일</div>
             </div>
-            <div className="text-white pl-13">{businessInfo.email}</div>
+            <div className="text-white pl-13">{isLoading ? '-' : businessInfo?.email}</div>
           </motion.div>
 
           {/* Address */}
@@ -189,7 +204,7 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
               </div>
               <div className="text-white/80">사업장 주소</div>
             </div>
-            <div className="text-white pl-13">{businessInfo.address}</div>
+            <div className="text-white pl-13">{isLoading ? '-' : businessInfo?.address}</div>
           </motion.div>
 
           {/* Registration Date */}
@@ -205,7 +220,7 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
               </div>
               <div className="text-white/80">가입일</div>
             </div>
-            <div className="text-white pl-13">{businessInfo.registrationDate}</div>
+            <div className="text-white pl-13">{isLoading ? '-' : businessInfo?.registrationDate}</div>
           </motion.div>
         </div>
 

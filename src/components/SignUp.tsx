@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Check, Upload, X, FileText, Search } from './icons';
 import { toast } from 'sonner';
-import { signup } from '../api/auth';
+import { signup, checkEmail } from '../api/auth';
 import AddressSearchModal from './AddressSearchModal';
 
 type SignupProps = {
@@ -141,20 +141,23 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
     }
   };
 
-  const handleEmailCheck = () => {
+  const handleEmailCheck = async () => {
     const email = formData.emailDomain === '직접입력' 
       ? `${formData.emailId}@${formData.customDomain}`
       : `${formData.emailId}@${formData.emailDomain}`;
 
     if (formData.emailId.length >= 2) {
-      // Mock API call for email duplicate check
-      const isAvailable = Math.random() > 0.3;
-      setEmailAvailable(isAvailable);
-      setEmailChecked(true);
-      if (isAvailable) {
-        toast.success('사용 가능한 이메일입니다.');
-      } else {
-        toast.error('이미 사용중인 이메일입니다.');
+      try {
+        const isAvailable = await checkEmail(email);
+        setEmailAvailable(isAvailable);
+        setEmailChecked(true);
+        if (isAvailable) {
+          toast.success('사용 가능한 이메일입니다.');
+        } else {
+          toast.error('이미 사용중인 이메일입니다.');
+        }
+      } catch (error) {
+        toast.error('이메일 중복 확인에 실패했습니다.');
       }
     } else {
       toast.error('이메일 주소를 입력해주세요.');
@@ -280,6 +283,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       email: email,
       password: formData.password,
       nickname: formData.nickname || (userType === 'customer' ? formData.name : formData.businessName),
+      phoneNumber: formData.phone,
       birthDate: userType === 'customer' ? formData.birthdate : null,
       role: userType === 'business' ? 'BIZ' : 'USER',
       businessNumber: userType === 'business' ? formData.businessNumber : null,

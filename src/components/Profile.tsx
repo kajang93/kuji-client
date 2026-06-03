@@ -32,15 +32,14 @@ export default function Profile({ user, onBack, onEdit, onChargePoints }: Profil
     }));
   }, [user]);
 
-  // Mock user data as fallback
   const [userDetails, setUserDetails] = useState({
     name: user.name,
     email: user.email,
-    phone: user.phone || '010-1234-5678',
-    address: user.address || '서울특별시 강남구 테헤란로 123',
+    phone: user.phone || '-',
+    address: user.address || '-',
     addressDetail: user.addressDetail || '',
-    birthdate: user.birthdate || '1990-01-01',
-    joinDate: '2024-01-15',
+    birthdate: user.birthdate || '-',
+    joinDate: '-',
     type: user.type === 'business' ? '사업자' : '일반 고객',
   });
 

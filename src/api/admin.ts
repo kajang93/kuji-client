@@ -83,3 +83,16 @@ export const deleteNotice = async (id: number): Promise<void> => {
     throw new Error("공지사항 삭제에 실패했습니다.");
   }
 };
+
+/**
+ * [관리자] 전체 회원 목록 조회
+ */
+export const fetchAdminMembers = async (): Promise<any[]> => {
+  const response = await fetch("/api/admin/members", {
+    headers: getHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error("회원 목록을 불러올 수 없습니다.");
+  }
+  return response.json();
+};

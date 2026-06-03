@@ -1,6 +1,10 @@
 import { useState } from 'react';
+import { useEffect } from 'react';
+import Chart from 'react-apexcharts';
+import { ApexOptions } from 'apexcharts';
 import { motion, AnimatePresence } from './motion';
-import { Users, MessageSquare, Bell, Calendar, FileText, Settings as SettingsIcon, BarChart, Layout, Plus, Send, ChevronLeft, X } from './icons';
+import { Users, MessageSquare, Bell, Calendar, FileText, Settings as SettingsIcon, BarChart, Layout, Plus, Send, ChevronLeft, X, DollarSign } from './icons';
+import { fetchAdminSummary, fetchAdminDailySales, AdminSummary, DailySales } from '../api/statistics';
 
 type AdminDashboardProps = {
   onNavigate: (screen: 'noticeManagement' | 'eventManagement' | 'inquiryManagement' | 'users' | 'statistics' | 'mainBanner' | 'userManagement') => void;
@@ -8,6 +12,28 @@ type AdminDashboardProps = {
 
 export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const [activeQuickAction, setActiveQuickAction] = useState<'notice' | 'event' | 'inquiry' | null>(null);
+  
+  const [adminSummary, setAdminSummary] = useState<AdminSummary | null>(null);
+  const [dailySales, setDailySales] = useState<DailySales[]>([]);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const [summaryData, salesData] = await Promise.all([
+          fetchAdminSummary(),
+          fetchAdminDailySales(7)
+        ]);
+        setAdminSummary(summaryData);
+        setDailySales(salesData);
+      } catch (error) {
+        console.error("Failed to load admin stats", error);
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+    loadStats();
+  }, []);
 
   // Quick Notice State
   const [noticeForm, setNoticeForm] = useState({ title: '', content: '', isImportant: false });
@@ -27,10 +53,51 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   ]);
 
   const stats = [
-    { label: '전체 사용자', value: '1,234', icon: Users, color: 'from-blue-500 to-cyan-500' },
-    { label: '미답변 문의', value: String(quickInquiries.length), icon: MessageSquare, color: 'from-yellow-500 to-orange-500' },
-    { label: '진행중 이벤트', value: '5', icon: Calendar, color: 'from-purple-500 to-pink-500' },
-    { label: '공지사항', value: '12', icon: Bell, color: 'from-green-500 to-emerald-500' },
+    { label: '전체 사용자', value: isLoadingStats ? '-' : adminSummary?.totalMembers?.toLocaleString() || '0', icon: Users, color: 'from-blue-500 to-cyan-500' },
+    { label: '누적 충전액', value: isLoadingStats ? '-' : `₩${adminSummary?.totalChargedPoints?.toLocaleString() || '0'}`, icon: DollarSign, color: 'from-green-500 to-emerald-500' },
+    { label: '누적 판매액', value: isLoadingStats ? '-' : `₩${adminSummary?.totalKujiSalesPoints?.toLocaleString() || '0'}`, icon: BarChart, color: 'from-yellow-500 to-orange-500' },
+    { label: '오늘 신규 가입', value: isLoadingStats ? '-' : `${adminSummary?.newMembersToday?.toLocaleString() || '0'}명`, icon: Plus, color: 'from-purple-500 to-pink-500' },
+  ];
+
+  const chartOptions: ApexOptions = {
+    chart: {
+      type: 'area',
+      toolbar: { show: false },
+      background: 'transparent',
+      fontFamily: 'inherit',
+    },
+    theme: { mode: 'dark' },
+    colors: ['#00E396', '#FF0080'], // Green for Charge, Pink for Revenue
+    dataLabels: { enabled: false },
+    stroke: { curve: 'smooth', width: 3 },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.7,
+        opacityTo: 0.1,
+        stops: [0, 90, 100]
+      }
+    },
+    xaxis: {
+      categories: dailySales.map(d => d.date),
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+      labels: { style: { colors: '#9ca3af' } }
+    },
+    yaxis: {
+      labels: {
+        style: { colors: '#9ca3af' },
+        formatter: (val) => `₩${(val / 10000).toLocaleString()}만`
+      }
+    },
+    grid: { borderColor: '#ffffff10', strokeDashArray: 4 },
+    legend: { position: 'top', horizontalAlign: 'right', labels: { colors: '#fff' } },
+    tooltip: { theme: 'dark' }
+  };
+
+  const chartSeries = [
+    { name: '일일 금액', data: dailySales.map(d => d.totalAmount) }
   ];
 
   const menuItems = [
@@ -183,6 +250,18 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
               <div className="text-center">문의 답변하기</div>
             </button>
           </div>
+        </div>
+
+        {/* Analytics Chart */}
+        <div className="mt-8 bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+          <h3 className="text-white text-lg mb-4">최근 7일 매출 추이</h3>
+          {isLoadingStats ? (
+            <div className="h-[300px] flex items-center justify-center text-white/50">데이터를 불러오는 중입니다...</div>
+          ) : (
+            <div className="h-[300px] w-full">
+              <Chart options={chartOptions} series={chartSeries} type="area" height="100%" />
+            </div>
+          )}
         </div>
       </div>
 

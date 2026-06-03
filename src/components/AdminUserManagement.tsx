@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from './motion';
 import { Search, Filter, UserCheck, UserX, Shield, Store, User, ChevronDown, Edit, Trash2, Plus, ChevronLeft } from './icons';
+import { fetchAdminMembers } from '../api/admin';
 
 type User = {
   id: string;
@@ -21,75 +22,39 @@ type Props = {
 };
 
 export default function AdminUserManagement({ onBack }: Props) {
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'customer' | 'business' | 'admin'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  // Mock data
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: 'U001',
-      name: '김철수',
-      email: 'chulsoo@example.com',
-      phone: '010-1234-5678',
-      userType: 'customer',
-      points: 1500,
-      createdAt: '2024-01-15',
-      isActive: true,
-      purchases: 25,
-      winnings: 12,
-    },
-    {
-      id: 'U002',
-      name: '박영희',
-      email: 'younghee@example.com',
-      phone: '010-2345-6789',
-      userType: 'customer',
-      points: 3200,
-      createdAt: '2024-02-20',
-      isActive: true,
-      purchases: 48,
-      winnings: 23,
-    },
-    {
-      id: 'B001',
-      name: '애니메이트 강남점',
-      email: 'animate@example.com',
-      phone: '02-1234-5678',
-      userType: 'business',
-      points: 0,
-      createdAt: '2024-01-10',
-      isActive: true,
-      products: 15,
-    },
-    {
-      id: 'B002',
-      name: '반프레스토 공식',
-      email: 'banpresto@example.com',
-      phone: '02-2345-6789',
-      userType: 'business',
-      points: 0,
-      createdAt: '2023-12-05',
-      isActive: true,
-      products: 32,
-    },
-    {
-      id: 'A001',
-      name: '관리자',
-      email: 'admin@ichiban.com',
-      phone: '02-9999-9999',
-      userType: 'admin',
-      points: 0,
-      createdAt: '2023-10-01',
-      isActive: true,
-    },
-  ]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    loadMembers();
+  }, []);
+
+  const loadMembers = async () => {
+    try {
+      const data = await fetchAdminMembers();
+      const mapped = data.map((d: any) => ({
+        id: d.id.toString(),
+        name: d.nickname || d.name,
+        email: d.email,
+        phone: d.phoneNumber || '-',
+        userType: d.role === 'ROLE_BUSINESS' || d.role === 'BIZ' ? 'business' : (d.role === 'ROLE_ADMIN' || d.role === 'ADMIN' ? 'admin' : 'customer'),
+        points: d.points || 0,
+        createdAt: d.createdAt ? new Date(d.createdAt).toLocaleDateString() : '-',
+        isActive: d.isActive !== false,
+      }));
+      setUsers(mapped);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = 

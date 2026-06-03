@@ -424,19 +424,27 @@ export default function App() {
       const items = await fetchKujiBoardDetail(Number(anime.id));
 
       // 2. Map backend items to frontend prizes structure
-      // 2. Map backend items (KujiItemResponse) to frontend prizes structure
-      const updatedPrizes = items.map(p => ({
-        ...p,
-        id: (p as any).id?.toString() || Math.random().toString(),
-        rank: (p as any).grade || (p as any).rank,
-        // Match the backend's imageUrls array
-        image: ((p as any).imageUrls && (p as any).imageUrls.length > 0)
-          ? (p as any).imageUrls[0]
-          : (p as any).imageUrl || (p as any).image,
-        totalCount: (p as any).totalQty ?? (p as any).totalCount ?? 0,
-        remainingCount: (p as any).remainQty ?? (p as any).remainingCount ?? 0,
-        opened: (p as any).opened || []
-      }));
+      const updatedPrizes = items.map(p => {
+        let parsedOptions = [];
+        if ((p as any).options) {
+          try {
+            parsedOptions = typeof (p as any).options === 'string' ? JSON.parse((p as any).options) : (p as any).options;
+          } catch(e) {}
+        }
+        return {
+          ...p,
+          id: (p as any).id?.toString() || Math.random().toString(),
+          rank: (p as any).grade || (p as any).rank,
+          // Match the backend's imageUrls array
+          image: ((p as any).imageUrls && (p as any).imageUrls.length > 0)
+            ? (p as any).imageUrls[0]
+            : (p as any).imageUrl || (p as any).image,
+          totalCount: (p as any).totalQty ?? (p as any).totalCount ?? 0,
+          remainingCount: (p as any).remainQty ?? (p as any).remainingCount ?? 0,
+          opened: (p as any).opened || [],
+          options: parsedOptions
+        };
+      });
 
       const updatedAnime = {
         ...anime,
@@ -895,8 +903,28 @@ export default function App() {
     setAlertModal((prev) => ({ ...prev, isOpen: false }));
   };
 
-  // Mock prize options for all ranks
+  // Real prize options from backend data
   const getPrizeOptions = (rank: string): PrizeOption[] => {
+    const prize = selectedAnime?.prizes.find((p) => p.rank === rank);
+    if (prize && prize.options && Array.isArray(prize.options) && prize.options.length > 0) {
+      if (typeof prize.options[0] === 'string') {
+        return prize.options.map((opt: string, i: number) => ({
+          id: `${prize.id}_opt_${i}`,
+          name: opt,
+          image: prize.image,
+          description: ""
+        }));
+      }
+      if (prize.options[0].name) {
+        return prize.options.map((opt: any, i: number) => ({
+          id: opt.id || `${prize.id}_opt_${i}`,
+          name: opt.name,
+          image: opt.image || prize.image,
+          description: opt.description || ""
+        }));
+      }
+    }
+
     const options: Record<string, PrizeOption[]> = {
       A: [
         {

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Mail, Building2, Users, Eye, EyeOff, X, Ticket } from './icons';
 import { toast } from 'sonner';
-import { login, fetchMyProfile } from '../api/auth';
+import { login, fetchMyProfile, findId, resetPassword, sendSms } from '../api/auth';
 import Signup from './Signup';
 
 // Auth Migration: Login.tsx updated.
@@ -24,8 +24,13 @@ export default function Login({ onLogin, onBack }: LoginProps) {
   const [showFindPw, setShowFindPw] = useState(false);
   const [findEmail, setFindEmail] = useState('');
   const [findPhone, setFindPhone] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [logoClickCount, setLogoClickCount] = useState(0);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isCodeSent, setIsCodeSent] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(180); // 3 minutes
+  const [foundEmail, setFoundEmail] = useState('');
 
   // Refs for input fields
   const customerPwRef = useRef<HTMLInputElement>(null);
@@ -83,22 +88,73 @@ export default function Login({ onLogin, onBack }: LoginProps) {
     setActiveTab('customer');
   };
 
-  const handleFindId = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Mock find ID
-    toast.success(`입력하신 이메일/휴대폰으로 이메일 정보를 전송했습니다.\n이메일: user123`);
-    setShowFindId(false);
-    setFindEmail('');
-    setFindPhone('');
+  const formatPhone = (val: string) => {
+    const raw = val.replace(/[^0-9]/g, '');
+    if (raw.length <= 3) return raw;
+    if (raw.length <= 7) return `${raw.slice(0, 3)}-${raw.slice(3)}`;
+    return `${raw.slice(0, 3)}-${raw.slice(3, 7)}-${raw.slice(7, 11)}`;
   };
 
-  const handleFindPw = (e: React.FormEvent) => {
+  // Timer for SMS verification
+  useEffect(() => {
+    let timer: any;
+    if (isCodeSent && timeLeft > 0) {
+      timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+    } else if (timeLeft === 0) {
+      setIsCodeSent(false);
+      toast.error('인증 시간이 만료되었습니다. 다시 요청해주세요.');
+    }
+    return () => clearInterval(timer);
+  }, [isCodeSent, timeLeft]);
+
+  const handleSendSms = async () => {
+    if (!findPhone || findPhone.length < 12) {
+      toast.error('올바른 휴대폰 번호를 입력해주세요.');
+      return;
+    }
+    try {
+      await sendSms(findPhone);
+      setIsCodeSent(true);
+      setTimeLeft(180);
+      toast.success('인증번호가 발송되었습니다.');
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleFindId = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock find password
-    toast.success(`입력하신 이메일/휴대폰으로 임시 비밀번호를 전송했습니다.`);
-    setShowFindPw(false);
-    setFindEmail('');
-    setFindPhone('');
+    if (!findPhone) {
+      toast.error('휴대폰 번호를 입력해주세요.');
+      return;
+    }
+    if (!verificationCode) {
+      toast.error('인증번호를 입력해주세요.');
+      return;
+    }
+    try {
+      const fullEmail = await findId(findPhone, verificationCode);
+      setFoundEmail(fullEmail);
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleFindPw = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!findEmail || !findPhone) {
+      toast.error('이메일과 휴대폰 번호를 모두 입력해주세요.');
+      return;
+    }
+    try {
+      await resetPassword(findEmail, findPhone);
+      toast.success(`비밀번호가 temp1234! 로 초기화되었습니다.`);
+      setShowFindPw(false);
+      setFindEmail('');
+      setFindPhone('');
+    } catch (error: any) {
+      toast.error(error.message);
+    }
   };
 
   const handleLogoClick = () => {
@@ -485,7 +541,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 className="bg-gradient-to-br from-purple-800 to-blue-900 rounded-2xl p-6 w-full max-w-md border border-white/20 shadow-2xl"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-white text-xl">이메일 찾기</h2>
+                  <h2 className="text-white text-xl">이메일 찾기 및 문자 인증</h2>
                   <button
                     onClick={() => setShowFindId(false)}
                     className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
@@ -494,40 +550,89 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                   </button>
                 </div>
 
-                <form onSubmit={handleFindId} className="space-y-4">
-                  <div>
-                    <label className="block text-white mb-2">이메일</label>
-                    <input
-                      type="email"
-                      value={findEmail}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFindEmail(e.target.value)}
-                      placeholder="이메일을 입력하세요"
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
-                      required
-                    />
+                {foundEmail ? (
+                  <div className="text-center py-8 space-y-6">
+                    <div className="w-16 h-16 bg-pink-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Mail className="w-8 h-8 text-pink-400" />
+                    </div>
+                    <h3 className="text-white text-lg">고객님의 가입된 이메일입니다</h3>
+                    <div className="bg-white/10 border border-white/20 p-4 rounded-xl text-2xl font-bold text-pink-300">
+                      {foundEmail}
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        setShowFindId(false);
+                        setFoundEmail('');
+                        setFindPhone('');
+                        setVerificationCode('');
+                        setIsCodeSent(false);
+                      }}
+                      className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl shadow-xl mt-6"
+                    >
+                      로그인하기
+                    </motion.button>
                   </div>
+                ) : (
+                  <form onSubmit={handleFindId} className="space-y-4">
+                    <div>
+                      <label className="block text-white mb-2">휴대폰 번호</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="tel"
+                          value={findPhone}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFindPhone(formatPhone(e.target.value))}
+                          placeholder="010-0000-0000"
+                          className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
+                          disabled={isCodeSent}
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSendSms}
+                          disabled={isCodeSent}
+                          className="px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl whitespace-nowrap transition-colors disabled:opacity-50"
+                        >
+                          {isCodeSent ? '발송됨' : '인증요청'}
+                        </button>
+                      </div>
+                    </div>
 
-                  <div>
-                    <label className="block text-white mb-2">휴대폰 번호</label>
-                    <input
-                      type="tel"
-                      value={findPhone}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFindPhone(e.target.value)}
-                      placeholder="010-0000-0000"
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
-                      required
-                    />
-                  </div>
+                    {isCodeSent && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                      >
+                        <label className="block text-white mb-2 flex justify-between">
+                          <span>인증번호 6자리</span>
+                          <span className="text-pink-400 text-sm">
+                            {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                          </span>
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={verificationCode}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVerificationCode(e.target.value.replace(/[^0-9]/g, ''))}
+                          placeholder="인증번호 입력"
+                          className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
+                          required
+                        />
+                      </motion.div>
+                    )}
 
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    type="submit"
-                    className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl shadow-xl mt-4"
-                  >
-                    <div className="text-center">이메일 찾기</div>
-                  </motion.button>
-                </form>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      type="submit"
+                      disabled={!isCodeSent}
+                      className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl shadow-xl mt-4 disabled:opacity-50"
+                    >
+                      <div className="text-center">인증 완료 및 이메일 확인</div>
+                    </motion.button>
+                  </form>
+                )}
               </motion.div>
             </motion.div>
           </>
@@ -563,15 +668,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 </div>
 
                 <form onSubmit={handleFindPw} className="space-y-4">
-                  <div>
-                    <label className="block text-white mb-2">이메일</label>
-                    <input
-                      type="text"
-                      placeholder="이메일을 입력하세요"
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
-                      required
-                    />
-                  </div>
+
 
                   <div>
                     <label className="block text-white mb-2">이메일</label>
@@ -590,7 +687,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                     <input
                       type="tel"
                       value={findPhone}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFindPhone(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFindPhone(formatPhone(e.target.value))}
                       placeholder="010-0000-0000"
                       className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
                       required

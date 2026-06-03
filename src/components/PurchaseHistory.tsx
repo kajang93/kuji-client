@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Package, Calendar, CreditCard, X, Clock, Menu } from './icons';
 import { useSwipeNavigation } from './useSwipeNavigation';
+import { fetchMyDrawHistory } from '../api/kuji';
 
 type PurchaseHistoryProps = {
   onBack: () => void;
@@ -42,8 +43,30 @@ export default function PurchaseHistory({ onBack }: PurchaseHistoryProps) {
     threshold: 100,
   });
 
-  // Mock purchase history data
-  const purchases: PurchaseItem[] = [];
+  const [purchases, setPurchases] = useState<PurchaseItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const data = await fetchMyDrawHistory();
+        const mapped = data.map((d: any) => ({
+          id: d.id ? d.id.toString() : '-',
+          date: d.createdAt ? new Date(d.createdAt).toLocaleDateString() : '-',
+          animeName: d.boardTitle || d.title || '쿠지 상품',
+          quantity: d.drawnCount || d.count || 1,
+          totalPrice: d.totalAmount || d.amount || 0,
+          status: d.status?.toLowerCase() === 'pending' ? 'pending' : (d.status?.toLowerCase() === 'cancelled' ? 'cancelled' : 'completed'),
+        }));
+        setPurchases(mapped);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadHistory();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
