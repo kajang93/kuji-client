@@ -1,8 +1,8 @@
 import { KujiBoard, BoardStatus, BoardImageType } from "../shared-types";
 
-import { getHeaders } from "./client";
+import { getHeaders, API_HOST } from "./client";
 
-const API_BASE_URL = "/api/kuji";
+const API_BASE_URL = `${API_HOST}/api/kuji`;
 
 export const fetchKujiBoards = async (): Promise<KujiBoard[]> => {
   const response = await fetch(API_BASE_URL, {

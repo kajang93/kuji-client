@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Check, Upload, X, FileText, Search } from './icons';
 import { toast } from 'sonner';
-import { signup, checkEmail } from '../api/auth';
+import { signup, checkEmail, sendSms, verifySms } from '../api/auth';
 import AddressSearchModal from './AddressSearchModal';
 
 type SignupProps = {
@@ -177,17 +177,27 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
     }
   };
 
-  const handleSendVerification = () => {
+  const handleSendVerification = async () => {
     if (formData.phone.length >= 10) {
-      setPhoneVerificationSent(true);
-      toast.success('인증번호가 전송되었습니다.');
+      try {
+        await sendSms(formData.phone);
+        setPhoneVerificationSent(true);
+        toast.success('인증번호가 전송되었습니다.');
+      } catch (error: any) {
+        toast.error(error.message || '인증번호 전송에 실패했습니다.');
+      }
     }
   };
 
-  const handleVerifyPhone = () => {
+  const handleVerifyPhone = async () => {
     if (formData.verificationCode.length === 6) {
-      setFormData({ ...formData, phoneVerified: true });
-      toast.success('휴대폰 인증이 완료되었습니다.');
+      try {
+        await verifySms(formData.phone, formData.verificationCode);
+        setFormData({ ...formData, phoneVerified: true });
+        toast.success('휴대폰 인증이 완료되었습니다.');
+      } catch (error: any) {
+        toast.error(error.message || '인증번호 확인에 실패했습니다.');
+      }
     }
   };
 

@@ -1,4 +1,4 @@
-import { getHeaders } from './client';
+import { getHeaders, API_HOST } from "./client";
 import { v4 as uuidv4 } from 'uuid';
 
 export interface NotificationSettingDto {

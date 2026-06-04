@@ -1,4 +1,4 @@
-import { getHeaders } from "./client";
+import { getHeaders, API_HOST } from "./client";
 import { KujiBoard } from "../shared-types";
 
 /**

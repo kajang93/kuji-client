@@ -1,7 +1,7 @@
 import { Inquiry, InquiryCreateRequest } from "../shared-types";
-import { getHeaders } from "./client";
+import { getHeaders, API_HOST } from "./client";
 
-const API_BASE_URL = "/api/inquiries";
+const API_BASE_URL = `${API_HOST}/api/inquiries`;
 
 /**
  * 1:1 문의 등록

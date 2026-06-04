@@ -1,9 +1,9 @@
 /**
  * 포인트 충전 API
  */
-import { getHeaders } from "./client";
+import { getHeaders, API_HOST } from "./client";
 
-const API_BASE_URL = "/api/points";
+const API_BASE_URL = `${API_HOST}/api/points`;
 
 // ── 타입 정의 ──────────────────────────────
 

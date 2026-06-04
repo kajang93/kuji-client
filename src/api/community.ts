@@ -1,7 +1,7 @@
 import { Post, PostCreateRequest, PostComment } from "../shared-types";
-import { getHeaders } from "./client";
+import { getHeaders, API_HOST } from "./client";
 
-const API_BASE_URL = "/api/posts";
+const API_BASE_URL = `${API_HOST}/api/posts`;
 
 /**
  * 게시글 목록 조회

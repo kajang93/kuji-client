@@ -1,7 +1,7 @@
 import { ShippingInfo } from '../shared-types';
-import { getHeaders } from './client';
+import { getHeaders, API_HOST } from "./client";
 
-const API_BASE_URL = '/api/shipping';
+const API_BASE_URL = `${API_HOST}/api/shipping`;
 
 /**
  * 1. 배송 신청 (사용자)

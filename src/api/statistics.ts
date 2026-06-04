@@ -1,6 +1,6 @@
-import { getHeaders } from './client';
+import { getHeaders, API_HOST } from "./client";
 
-const API_BASE_URL = '/api/statistics';
+const API_BASE_URL = `${API_HOST}/api/statistics`;
 
 // ================================
 // Types

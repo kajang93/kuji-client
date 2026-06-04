@@ -1,5 +1,5 @@
 import { Inquiry, Post } from "../shared-types";
-import { getHeaders } from "./client";
+import { getHeaders, API_HOST } from "./client";
 
 /**
  * [관리자] 모든 사용자 문의 목록 조회

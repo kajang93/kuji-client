@@ -1,8 +1,8 @@
 import { MemberProfileResponse } from "../shared-types";
 
-import { getHeaders } from "./client";
+import { getHeaders, API_HOST } from "./client";
 
-const API_BASE_URL = "/api/members";
+const API_BASE_URL = `${API_HOST}/api/members`;
 
 /**
  * 로그인 요청
@@ -120,6 +120,21 @@ export const sendSms = async (phoneNumber: string): Promise<void> => {
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(errorText || "인증번호 발송에 실패했습니다.");
+  }
+};
+
+/**
+ * 인증번호 검증 (회원가입 등)
+ */
+export const verifySms = async (phoneNumber: string, code: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/verify-sms`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phoneNumber, code }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "인증번호가 일치하지 않거나 만료되었습니다.");
   }
 };
 
