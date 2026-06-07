@@ -49,6 +49,7 @@ import { toggleWishlist, fetchMyWishlist } from "./api/wishlist";
 import { onForegroundMessage } from "./api/firebase";
 import { fetchSellerShippingList, completeShipping, updateTrackingInfo } from "./api/shipping";
 import { confirmPointCharge } from "./api/points";
+import { toAbsoluteUrl } from "./api/client";
 
 import {
   Prize,
@@ -88,7 +89,7 @@ export default function App() {
   } | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [returnToScreen, setReturnToScreen] = useState<
-    "detail" | null
+    "detail" | "list" | null
   >(null);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [selectedWinningId, setSelectedWinningId] = useState<
@@ -119,9 +120,10 @@ export default function App() {
         return {
           id: board.id.toString(),
           name: board.title,
-          image: board.images.find((img: any) => img.imageType === 'THUMBNAIL')?.imageUrl ||
-            board.images[0]?.imageUrl ||
-            "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
+          image: toAbsoluteUrl(
+            board.images.find((img: any) => img.imageType === 'THUMBNAIL')?.imageUrl ||
+            board.images[0]?.imageUrl
+          ) || "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
           totalKuji: board.totalCount || 0,
           remainingKuji: board.remainCount || 0,
           gradeCount: board.gradeCount || 0,
@@ -232,9 +234,9 @@ export default function App() {
         ...p,
         id: p.id?.toString() || Math.random().toString(),
         rank: p.grade || p.rank,
-        image: (p.imageUrls && p.imageUrls.length > 0)
+        image: toAbsoluteUrl((p.imageUrls && p.imageUrls.length > 0)
           ? p.imageUrls[0]
-          : p.imageUrl || p.image,
+          : p.imageUrl || p.image),
         totalCount: p.totalQty ?? p.totalCount ?? 0,
         remainingCount: p.remainQty ?? p.remainingCount ?? 0,
         opened: p.opened || [],
@@ -543,9 +545,9 @@ export default function App() {
         ...p,
         id: p.id?.toString() || Math.random().toString(),
         rank: p.grade || p.rank,
-        image: (p.imageUrls && p.imageUrls.length > 0)
+        image: toAbsoluteUrl((p.imageUrls && p.imageUrls.length > 0)
           ? p.imageUrls[0]
-          : p.imageUrl || p.image,
+          : p.imageUrl || p.image),
         totalCount: p.totalQty ?? p.totalCount ?? 0,
         remainingCount: p.remainQty ?? p.remainingCount ?? 0,
         opened: p.opened || [],
@@ -772,6 +774,7 @@ export default function App() {
 
   const handleToggleWishlist = async (animeId: string) => {
     if (!user) {
+      setReturnToScreen("list"); // 뒤로가기 시 목록으로 복귀
       setScreen("login");
       return;
     }
@@ -1337,7 +1340,10 @@ export default function App() {
         {screen === "login" && (
           <Login
             onLogin={handleLogin}
-            onBack={() => setScreen(returnToScreen || "main")}
+            onBack={() => {
+              setScreen(returnToScreen || "main");
+              setReturnToScreen(null);
+            }}
           />
         )}
         {screen === "selection" && selectedAnime && (

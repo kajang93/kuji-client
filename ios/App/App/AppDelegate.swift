@@ -7,7 +7,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+
+        // ✅ 1. URLCache 설정 (메모리 4MB, 디스크 20MB)
+        // 용량을 적게 잡아 구버전 웹 리소스가 오래 남지 않도록 합니다.
+        let memoryCapacity = 4 * 1024 * 1024   // 4 MB
+        let diskCapacity   = 20 * 1024 * 1024  // 20 MB
+        URLCache.shared = URLCache(memoryCapacity: memoryCapacity,
+                                   diskCapacity: diskCapacity,
+                                   diskPath: "kuji_url_cache")
+
+        // ✅ 2. 앱 시작 시 웹 캐시 전체 삭제 (항상 최신 빌드 로드)
+        URLCache.shared.removeAllCachedResponses()
+
+        // ✅ 3. 앱 아이콘 배지 초기화
+        application.applicationIconBadgeNumber = 0
+
         return true
     }
 
@@ -17,8 +31,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
-        // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-        // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+        // ✅ 백그라운드 진입 시 메모리 캐시만 비움 (디스크는 유지)
+        URLCache.shared.removeAllCachedResponses()
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
@@ -26,7 +40,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        // ✅ 포그라운드 복귀 시 배지 초기화
+        UIApplication.shared.applicationIconBadgeNumber = 0
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
@@ -43,7 +58,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the app was launched with an activity, including Universal Links.
         // Feel free to add additional processing here, but if you want the App API to support
         // tracking app url opens, make sure to keep this call
-        return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
+        if userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+           let url = userActivity.webpageURL {
+            _ = ApplicationDelegateProxy.shared.application(application, open: url, options: [:])
+        }
+        return true
     }
 
 }

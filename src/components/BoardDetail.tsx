@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, MoreVertical, Trash2, Eye, User, Calendar, Share2, Edit2, Heart, Star, MessageSquare, Send } from './icons';
 import { Post, PostComment } from '../shared-types';
@@ -23,10 +23,12 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
   const [showMenu, setShowMenu] = useState(false);
   
   // Comment states
-  const [newComment, setNewComment] = useState('');
+  const newCommentRef = useRef<HTMLInputElement>(null);
+  const [hasNewComment, setHasNewComment] = useState(false);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
-  const [editCommentContent, setEditCommentContent] = useState('');
+  const editCommentRef = useRef<HTMLTextAreaElement>(null);
 
   const isAuthor = user && post && user.email === post.authorEmail;
 
@@ -117,12 +119,15 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return toast.error('로그인이 필요합니다.');
-    if (!newComment.trim()) return;
+    
+    const commentValue = newCommentRef.current?.value?.trim();
+    if (!commentValue) return;
 
     setIsSubmittingComment(true);
     try {
-      await createComment(postId, newComment.trim());
-      setNewComment('');
+      await createComment(postId, commentValue);
+      if (newCommentRef.current) newCommentRef.current.value = '';
+      setHasNewComment(false);
       toast.success('댓글이 등록되었습니다.');
       await reloadComments();
     } catch (error: any) {
@@ -133,9 +138,10 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
   };
 
   const handleCommentEditSubmit = async (commentId: number) => {
-    if (!editCommentContent.trim()) return;
+    const editValue = editCommentRef.current?.value?.trim();
+    if (!editValue) return;
     try {
-      await updateComment(postId, commentId, editCommentContent.trim());
+      await updateComment(postId, commentId, editValue);
       setEditingCommentId(null);
       toast.success('댓글이 수정되었습니다.');
       await reloadComments();
@@ -325,8 +331,8 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
                       {editingCommentId === comment.id ? (
                         <div className="mt-2">
                           <textarea
-                            value={editCommentContent}
-                            onChange={(e) => setEditCommentContent(e.target.value)}
+                            defaultValue={comment.content}
+                            ref={editCommentRef}
                             className="w-full bg-slate-900/50 border border-white/20 rounded-xl p-3 text-sm text-white resize-none focus:outline-none focus:border-cyan-400"
                             rows={3}
                           />
@@ -355,7 +361,11 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
                               <button 
                                 onClick={() => {
                                   setEditingCommentId(comment.id);
-                                  setEditCommentContent(comment.content);
+                                  setTimeout(() => {
+                                    if (editCommentRef.current) {
+                                      editCommentRef.current.value = comment.content;
+                                    }
+                                  }, 0);
                                 }}
                                 className="text-[10px] text-slate-500 hover:text-cyan-400 flex items-center gap-1"
                               >
@@ -386,14 +396,14 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
           <form onSubmit={handleCommentSubmit} className="flex gap-2">
             <input
               type="text"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
+              ref={newCommentRef}
+              onChange={(e) => setHasNewComment(e.target.value.trim().length > 0)}
               placeholder="댓글을 입력하세요..."
               className="flex-1 bg-white/10 border border-white/20 rounded-full px-5 py-3 text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors"
             />
             <button
               type="submit"
-              disabled={isSubmittingComment || !newComment.trim()}
+              disabled={isSubmittingComment || !hasNewComment}
               className="w-12 h-12 flex-shrink-0 bg-cyan-500 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:bg-slate-600 transition-colors shadow-lg shadow-cyan-500/30"
             >
               {isSubmittingComment ? (

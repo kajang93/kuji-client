@@ -6,4 +6,25 @@
 
 @layer base {
   html, body, #root { min-height: 100vh; height: 100%; margin: 0; }
+
+  /* ✅ iOS WebView 터치 버그 방지 */
+  * {
+    /* 300ms 탭 딜레이 제거 */
+    touch-action: manipulation;
+    /* 탭 시 파란 하이라이트 제거 */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ✅ 버튼 클릭 영역 및 포인터 강제 적용 */
+  button, a, [role="button"] {
+    cursor: pointer;
+    /* 최소 터치 영역 보장 (iOS 권장 44px) */
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* ✅ iOS Safari 텍스트 크기 자동 조정 방지 */
+  body {
+    -webkit-text-size-adjust: 100%;
+  }
 }

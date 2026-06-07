@@ -1,8 +1,27 @@
 import { KujiBoard, BoardStatus, BoardImageType } from "../shared-types";
 
-import { getHeaders, API_HOST } from "./client";
+import { getHeaders, API_HOST, toAbsoluteUrl } from "./client";
 
 const API_BASE_URL = `${API_HOST}/api/kuji`;
+
+/** API 응답 객체의 모든 이미지 URL을 절대경로로 변환 */
+const normalizeImageUrls = (obj: any): any => {
+  if (Array.isArray(obj)) return obj.map(normalizeImageUrls);
+  if (obj && typeof obj === "object") {
+    const result = { ...obj };
+    if (result.imageUrl)      result.imageUrl      = toAbsoluteUrl(result.imageUrl);
+    if (result.itemImageUrl)  result.itemImageUrl  = toAbsoluteUrl(result.itemImageUrl);
+    if (result.profileImageUrl) result.profileImageUrl = toAbsoluteUrl(result.profileImageUrl);
+    if (Array.isArray(result.imageUrls))
+      result.imageUrls = result.imageUrls.map((u: string) => toAbsoluteUrl(u));
+    if (Array.isArray(result.images))
+      result.images = result.images.map(normalizeImageUrls);
+    if (Array.isArray(result.prizes))
+      result.prizes = result.prizes.map(normalizeImageUrls);
+    return result;
+  }
+  return obj;
+};
 
 export const fetchKujiBoards = async (): Promise<KujiBoard[]> => {
   const response = await fetch(API_BASE_URL, {
@@ -11,7 +30,8 @@ export const fetchKujiBoards = async (): Promise<KujiBoard[]> => {
   if (!response.ok) {
     throw new Error("Failed to fetch kuji boards");
   }
-  return response.json();
+  const data = await response.json();
+  return normalizeImageUrls(data);
 };
 
 export interface CreateKujiBoardRequest {
@@ -116,7 +136,8 @@ export const fetchKujiBoardDetail = async (boardId: number): Promise<Prize[]> =>
   if (!response.ok) {
     throw new Error(`Failed to fetch board details for ID: ${boardId}`);
   }
-  return response.json();
+  const data = await response.json();
+  return normalizeImageUrls(data);
 };
 
 /**
@@ -224,7 +245,8 @@ export const drawKuji = async (
     const errorData = await response.json().catch(() => ({ message: "Failed to draw kuji" }));
     throw new Error(errorData.message || "Failed to draw kuji");
   }
-  return response.json();
+  const data = await response.json();
+  return normalizeImageUrls(data);
 };
 
 /**
@@ -237,7 +259,8 @@ export const fetchMyDrawHistory = async (): Promise<any[]> => {
   if (!response.ok) {
     throw new Error("Failed to fetch draw history");
   }
-  return response.json();
+  const data = await response.json();
+  return normalizeImageUrls(data);
 };
 
 /**
