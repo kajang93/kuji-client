@@ -21,17 +21,21 @@ jobs:
       - name: Install Dependencies
         run: npm install
         
+      - name: Create .env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+          
       - name: Build Project
         run: npm run build
         
-      - name: Copy dist to AWS temp directory
+      - name: Copy build to AWS temp directory
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USERNAME }}
           key: ${{ secrets.AWS_PRIVATE_KEY }}
-          source: "dist/*"
-          target: "~/dist-temp"
+          source: "build/*"
+          target: "~/build-temp"
           strip_components: 1
 
       - name: Move to Nginx directory
@@ -42,5 +46,5 @@ jobs:
           key: ${{ secrets.AWS_PRIVATE_KEY }}
           script: |
             sudo rm -rf /var/www/html/*
-            sudo cp -r ~/dist-temp/* /var/www/html/
-            rm -rf ~/dist-temp
+            sudo cp -r ~/build-temp/* /var/www/html/
+            rm -rf ~/build-temp
