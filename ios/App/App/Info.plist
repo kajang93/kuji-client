@@ -61,5 +61,11 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>프로필 사진 촬영 및 커뮤니티 게시글 사진 첨부를 위해 카메라 권한이 필요합니다.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>프로필 사진 설정 및 커뮤니티 게시글 사진 첨부를 위해 사진첩 권한이 필요합니다.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>저장된 쿠지 이미지나 결과 화면을 사진첩에 저장하기 위해 권한이 필요합니다.</string>
 </dict>
 </plist>

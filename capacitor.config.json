@@ -1,5 +1,8 @@
 {
   "appId": "com.kuji.app",
   "appName": "KujiShop",
-  "webDir": "build"
+  "webDir": "build",
+  "server": {
+    "cleartext": true
+  }
 }
