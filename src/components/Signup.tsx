@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Check, Upload, X, FileText, Search } from './icons';
 import { toast } from 'sonner';
 import { signup, checkEmail, sendSms, verifySms } from '../api/auth';
+import { compressImageFile } from '../api/client';
 import AddressSearchModal from './AddressSearchModal';
 
 type SignupProps = {
@@ -203,9 +204,21 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
 
 
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData({ ...formData, businessFile: e.target.files[0] });
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      let fileToUpload = file;
+      
+      // 이미지만 압축 (PDF 등은 그대로 통과)
+      if (file.type.startsWith('image/')) {
+        fileToUpload = await compressImageFile(file);
+      }
+      
+      if (fileToUpload.size > 10 * 1024 * 1024) {
+        toast.error('파일 용량은 10MB를 초과할 수 없습니다.');
+        return;
+      }
+      setFormData({ ...formData, businessFile: fileToUpload });
     }
   };
 

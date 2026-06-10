@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Building2, Mail, Phone, MapPin, FileText, Calendar, Camera, ImageIcon } from './icons';
 import { useState, useRef, useEffect } from 'react';
 import { fetchBusinessProfile } from '../api/auth';
+import { validateImageFile, compressImageFile } from '../api/client';
 
 type BusinessProfileProps = {
   user: { name: string; email: string; type: 'business' };
@@ -53,14 +54,21 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
     }
   };
 
-  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const compressedFile = await compressImageFile(file);
+      
+      const errorMsg = validateImageFile(compressedFile, 10);
+      if (errorMsg) {
+        alert(errorMsg);
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfileImage(reader.result as string);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressedFile);
     }
   };
 

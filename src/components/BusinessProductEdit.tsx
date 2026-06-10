@@ -4,6 +4,7 @@ import { ChevronLeft, Save, Upload, X, Plus } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import type { AnimeCollection, Prize } from '@/shared-types';
 import { updateKujiItem, updateKujiItemImage, deleteKujiItem, registerBoardItems, updateKujiBoardStatus } from '../api/kuji';
+import { validateImageFile, compressImageFile } from '../api/client';
 
 type BusinessProductEditProps = {
   onBack: () => void;
@@ -91,19 +92,26 @@ export default function BusinessProductEdit({ onBack, collection, onSave }: Busi
     }));
   };
 
-  const handleImageUpload = (rank: string, index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (rank: string, index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const compressedFile = await compressImageFile(file);
+      
+      const errorMsg = validateImageFile(compressedFile, 10);
+      if (errorMsg) {
+        alert(errorMsg);
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setPrizes(prev => ({
           ...prev,
           [rank]: prev[rank].map((product, i) => 
-            i === index ? { ...product, image: reader.result as string, file } : product
+            i === index ? { ...product, image: reader.result as string, file: compressedFile } : product
           )
         }));
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressedFile);
     }
   };
 

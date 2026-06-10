@@ -4,6 +4,7 @@ import { ChevronLeft, Send, Image as ImageIcon, Check, X } from './icons';
 import { PostCategory, PostCreateRequest } from '../shared-types';
 import { useRef } from 'react';
 import { createPost, fetchPostDetail, updatePost } from '../api/community';
+import { validateImageFile, compressImageFile } from '../api/client';
 import { toast } from 'sonner';
 
 interface BoardWriteProps {
@@ -53,17 +54,32 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (images.length + files.length > 3) {
       toast.error('사진은 최대 3장까지 등록 가능합니다.');
       return;
     }
 
-    const newImages = [...images, ...files];
+    const validFiles: File[] = [];
+    for (const file of files) {
+      // 1차 자동 압축 (1MB 이하로)
+      const compressedFile = await compressImageFile(file);
+      
+      const errorMsg = validateImageFile(compressedFile, 10);
+      if (errorMsg) {
+        toast.error(errorMsg);
+      } else {
+        validFiles.push(compressedFile);
+      }
+    }
+
+    if (validFiles.length === 0) return;
+
+    const newImages = [...images, ...validFiles];
     setImages(newImages);
 
-    const newPreviews = files.map(file => URL.createObjectURL(file));
+    const newPreviews = validFiles.map(file => URL.createObjectURL(file));
     setPreviews([...previews, ...newPreviews]);
   };
 
@@ -226,6 +242,9 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
             <ImageIcon className="w-5 h-5" />
             <span className="text-sm">사진 추가 ({images.length}/3)</span>
           </button>
+          <div className="text-[10px] text-slate-500 mt-2">
+            ※ 최대 10MB 이하의 이미지 파일만 업로드 가능합니다.
+          </div>
         </div>
       </form>
     </div>

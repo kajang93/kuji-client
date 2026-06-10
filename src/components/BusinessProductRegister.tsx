@@ -3,6 +3,7 @@ import { motion } from './motion';
 import { ChevronLeft, Upload, Save, X, Plus, Check, Loader2 } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { createKujiBoard, uploadBoardImages } from '../api/kuji';
+import { validateImageFile, compressImageFile } from '../api/client';
 
 type BusinessProductRegisterProps = {
   onBack: () => void;
@@ -49,23 +50,37 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
     H: 'from-red-400 to-red-600',
   };
 
-  const handleSeriesImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSeriesImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSeriesFile(file);
+      const compressedFile = await compressImageFile(file);
+      
+      const errorMsg = validateImageFile(compressedFile, 10);
+      if (errorMsg) {
+        alert(errorMsg);
+        return;
+      }
+      setSeriesFile(compressedFile);
       const reader = new FileReader();
       reader.onloadend = () => {
         setSeriesImage(reader.result as string);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressedFile);
     }
   };
 
-  const handleProductImageUpload = (productId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProductImageUpload = async (productId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const compressedFile = await compressImageFile(file);
+      
+      const errorMsg = validateImageFile(compressedFile, 10);
+      if (errorMsg) {
+        alert(errorMsg);
+        return;
+      }
       // Store the actual file for submission
-      setProductFiles(prev => ({ ...prev, [productId]: file }));
+      setProductFiles(prev => ({ ...prev, [productId]: compressedFile }));
       
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -76,7 +91,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
           ) || []
         }));
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressedFile);
     }
   };
 
@@ -496,8 +511,8 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
             <div className="text-white/70 text-sm">
               <p className="mb-2 font-bold text-indigo-300">이미지 업로드 안내</p>
               <ul className="list-disc list-inside space-y-1">
-                <li>파일당 최대 용량: <span className="text-teal-300 font-bold">2MB</span></li>
-                <li>한 번에 전송 가능한 최대 용량: <span className="text-teal-300 font-bold">10MB</span></li>
+                <li>파일당 최대 용량: <span className="text-teal-300 font-bold">10MB</span></li>
+                <li>이미지 확장자: <span className="text-teal-300 font-bold">JPG, PNG 등</span></li>
                 <li>각 등급별로 여러 상품을 등록할 수 있으며, 고화질 이미지 사용을 권장합니다.</li>
               </ul>
             </div>

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, User, Mail, Phone, MapPin, Calendar, Save, Search, Camera, ImageIcon, X } from './icons';
 import AddressSearchModal from './AddressSearchModal';
 import { updateMyProfile } from '../api/auth';
+import { validateImageFile, compressImageFile } from '../api/client';
 
 type ProfileEditProps = {
   user: { name: string; email: string; type: 'social' | 'business'; phone?: string; address?: string; addressDetail?: string; birthdate?: string };
@@ -92,15 +93,23 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
     }
   };
 
-  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
+      const compressedFile = await compressImageFile(file);
+      
+      const errorMsg = validateImageFile(compressedFile, 10);
+      if (errorMsg) {
+        alert(errorMsg);
+        return;
+      }
+
+      setSelectedFile(compressedFile);
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfileImage(reader.result as string);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressedFile);
     }
   };
 
@@ -143,6 +152,9 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
               >
                 <Camera className="w-4 h-4 text-white" />
               </button>
+              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] text-white/60">
+                최대 10MB
+              </div>
               <input
                 ref={fileInputRef}
                 type="file"
