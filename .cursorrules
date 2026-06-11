@@ -1,0 +1,14 @@
+# AI Assistant Rules for Kuji Client
+
+1. **Commit Messages**: 
+   - ALWAYS write commit messages purely in Korean.
+   - DO NOT use English prefixes like `feat:`, `fix:`, `chore:`, `README:`, etc.
+   - Just explain the changes clearly in Korean. (e.g., "회원가입 문자 인증 연동", "리드미 문서 업데이트")
+
+2. **Styling & UI**:
+   - Priority on premium UI/UX. Use `Tailwind CSS`, `Framer Motion`, and `Lucide React` icons.
+   - Maintain the `Slate-900` to `Indigo-950` dark mode background and `Rose/Amber` accents.
+
+3. **Code Style**:
+   - Use TypeScript and functional components.
+   - Never write sensitive keys in code (use `.env`).
