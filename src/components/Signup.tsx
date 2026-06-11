@@ -378,7 +378,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                   type="button"
                   onClick={handleBusinessNumberCheck}
                   disabled={formData.businessNumber.length !== 10}
-                  className={`px-6 py-3 rounded-xl whitespace-nowrap ${
+                  className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap ${
                     formData.businessNumber.length === 10
                       ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                       : 'bg-gray-600 text-gray-400 cursor-not-allowed'
@@ -451,7 +451,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
               type="button"
               onClick={handlePasswordCheck}
               disabled={formData.password.length === 0}
-              className={`px-4 sm:px-6 py-3 rounded-xl whitespace-nowrap text-sm sm:text-base ${
+              className={`flex items-center justify-center px-4 sm:px-6 py-3 rounded-xl whitespace-nowrap text-sm sm:text-base ${
                 formData.password.length > 0
                   ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                   : 'bg-gray-600 text-gray-400 cursor-not-allowed'
@@ -496,7 +496,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                   }
                 }}
                 disabled={!formData.passwordConfirm}
-                className={`px-4 sm:px-6 py-3 rounded-xl whitespace-nowrap text-sm sm:text-base ${
+                className={`flex items-center justify-center px-4 sm:px-6 py-3 rounded-xl whitespace-nowrap text-sm sm:text-base ${
                   formData.passwordConfirm
                     ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
@@ -529,7 +529,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
             이메일 <span className="text-red-400">*</span>
           </label>
           <div className="flex flex-col sm:flex-row gap-2">
-            <div className="flex-1 flex gap-2">
+            <div className="flex-1 min-w-0 flex gap-2">
               <input
                 type="text"
                 value={formData.emailId}
@@ -540,7 +540,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
               />
               <span className="text-white self-center text-lg">@</span>
               {formData.emailDomain === '직접입력' ? (
-                <div className="flex-1 flex gap-2">
+                <div className="flex-1 min-w-0 flex gap-2">
                   <input
                     type="text"
                     value={formData.customDomain}
@@ -575,7 +575,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
               type="button"
               onClick={handleEmailCheck}
               disabled={!formData.emailId}
-              className={`px-6 py-3 rounded-xl whitespace-nowrap font-bold ${
+              className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap font-bold ${
                 formData.emailId
                   ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                   : 'bg-gray-600 text-gray-400 cursor-not-allowed'
@@ -624,7 +624,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                 type="button"
                 onClick={handleSendVerification}
                 disabled={formData.phone.length < 10}
-                className={`px-6 py-3 rounded-xl whitespace-nowrap ${
+                className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap ${
                   formData.phone.length >= 10
                     ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
@@ -654,7 +654,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                 type="button"
                 onClick={handleVerifyPhone}
                 disabled={formData.verificationCode.length !== 6}
-                className={`px-6 py-3 rounded-xl whitespace-nowrap ${
+                className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap ${
                   formData.verificationCode.length === 6
                     ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
@@ -878,7 +878,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           type="submit"
-          className="w-full py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-xl text-lg shadow-2xl mt-8"
+          className="flex items-center justify-center w-full py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-xl text-lg shadow-2xl mt-8"
         >
           
             {userType === 'business' ? '신청 요청' : '회원가입 완료'}
@@ -971,7 +971,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
 
               <button
                 onClick={() => setShowTermsModal(false)}
-                className="mt-4 w-full py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-xl hover:from-yellow-300 hover:to-yellow-400 transition-all"
+                className="mt-4 flex items-center justify-center w-full py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-xl hover:from-yellow-300 hover:to-yellow-400 transition-all"
               >
                 닫기
               </button>
