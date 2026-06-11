@@ -174,7 +174,7 @@ export default function PurchaseHistory({ onBack }: PurchaseHistoryProps) {
                 onClick={() => setSelectedPurchase(purchase)}
                 className="w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-colors"
               >
-                <div className="text-center">상세보기</div>
+                상세보기
               </button>
             </motion.div>
           ))
@@ -275,7 +275,7 @@ export default function PurchaseHistory({ onBack }: PurchaseHistoryProps) {
                 onClick={() => setSelectedPurchase(null)}
                 className="w-full mt-4 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all"
               >
-                <div className="text-center">닫기</div>
+                닫기
               </button>
             </motion.div>
           </motion.div>

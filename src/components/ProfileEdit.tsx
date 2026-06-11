@@ -357,7 +357,7 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
                   onClick={() => setShowImagePicker(false)}
                   className="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl text-white transition-colors"
                 >
-                  <div className="text-center">취소</div>
+                  취소
                 </button>
               </div>
             </motion.div>

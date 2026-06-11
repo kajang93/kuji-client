@@ -314,7 +314,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                   type="submit"
                   className="w-full py-3 bg-gradient-to-r from-rose-500 to-indigo-600 text-white rounded-xl shadow-xl"
                 >
-                  <div className="text-center">로그인</div>
+                  로그인
                 </motion.button>
               </form>
 
@@ -419,7 +419,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                   onClick={() => setShowSignup(true)}
                   className="w-full py-3 bg-white/10 border border-pink-400/50 text-pink-300 rounded-xl hover:bg-white/20 transition-colors"
                 >
-                  <div className="text-center">회원가입</div>
+                  회원가입
                 </motion.button>
               </div>
             </motion.div>
@@ -483,7 +483,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 type="submit"
                 className="w-full py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-xl text-lg shadow-xl mt-6"
               >
-                <div className="text-center">사업자 로그인</div>
+                사업자 로그인
               </motion.button>
 
               <div className="flex justify-between text-sm">
@@ -514,7 +514,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                   onClick={() => setShowSignup(true)}
                   className="w-full py-3 bg-white/10 border border-yellow-400/50 text-yellow-300 rounded-xl hover:bg-white/20 transition-colors"
                 >
-                  <div className="text-center">사업자 등록 신청</div>
+                  사업자 등록 신청
                 </motion.button>
               </div>
             </motion.form>
@@ -629,7 +629,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                       disabled={!isCodeSent}
                       className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl shadow-xl mt-4 disabled:opacity-50"
                     >
-                      <div className="text-center">인증 완료 및 이메일 확인</div>
+                      인증 완료 및 이메일 확인
                     </motion.button>
                   </form>
                 )}
@@ -700,7 +700,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                     type="submit"
                     className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl shadow-xl mt-4"
                   >
-                    <div className="text-center">비밀번호 찾기</div>
+                    비밀번호 찾기
                   </motion.button>
                 </form>
               </motion.div>
@@ -775,7 +775,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                     type="submit"
                     className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl shadow-xl mt-4"
                   >
-                    <div className="text-center">이메일 로그인</div>
+                    이메일 로그인
                   </motion.button>
                 </form>
               </motion.div>

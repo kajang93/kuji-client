@@ -91,7 +91,7 @@ export default function Wishlist({ onBack, onSelectAnime, wishlist, allCollectio
                   onClick={() => onSelectAnime(item.id)}
                   className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all"
                 >
-                  <div className="text-center">구매하러 가기</div>
+                  구매하러 가기
                 </button>
               </div>
             </motion.div>

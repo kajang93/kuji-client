@@ -506,7 +506,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
             onClick={() => setShowModal('privacy')}
             className="w-full bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/20 text-white transition-colors"
           >
-            <div className="text-center">개인정보 처리방침</div>
+            개인정보 처리방침
           </motion.button>
 
           <motion.button
@@ -518,7 +518,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
             onClick={() => setShowModal('terms')}
             className="w-full bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/20 text-white transition-colors"
           >
-            <div className="text-center">서비스 이용약관</div>
+            서비스 이용약관
           </motion.button>
 
           <motion.button
@@ -530,7 +530,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
             onClick={() => setShowModal('info')}
             className="w-full bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/20 text-white transition-colors"
           >
-            <div className="text-center">앱 정보</div>
+            앱 정보
           </motion.button>
         </div>
 
@@ -611,7 +611,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                 onClick={() => setShowModal(null)}
                 className="mt-4 w-full py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl hover:from-amber-300 hover:to-amber-400 transition-all"
               >
-                <div className="text-center">닫기</div>
+                닫기
               </button>
             </motion.div>
           </motion.div>

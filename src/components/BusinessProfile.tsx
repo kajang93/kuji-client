@@ -242,7 +242,7 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
           onClick={onEdit}
           className="w-full mt-6 py-4 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl shadow-xl hover:from-amber-300 hover:to-amber-400 transition-all"
         >
-          <div className="text-center">프로필 수정</div>
+          프로필 수정
         </motion.button>
 
         {/* Info Note */}
@@ -301,7 +301,7 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
                   onClick={() => setShowImagePicker(false)}
                   className="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl text-white transition-colors"
                 >
-                  <div className="text-center">취소</div>
+                  취소
                 </button>
               </div>
             </motion.div>

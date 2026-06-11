@@ -235,19 +235,19 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
               onClick={() => setActiveQuickAction('notice')}
               className="py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl hover:shadow-lg transition-all"
             >
-              <div className="text-center">공지사항 작성</div>
+              공지사항 작성
             </button>
             <button 
               onClick={() => setActiveQuickAction('event')}
               className="py-3 px-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:shadow-lg transition-all"
             >
-              <div className="text-center">이벤트 등록</div>
+              이벤트 등록
             </button>
             <button 
               onClick={() => setActiveQuickAction('inquiry')}
               className="py-3 px-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl hover:shadow-lg transition-all"
             >
-              <div className="text-center">문의 답변하기</div>
+              문의 답변하기
             </button>
           </div>
         </div>

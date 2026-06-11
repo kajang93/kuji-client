@@ -135,7 +135,7 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
     </div>
   );
 }
-��을 구매하세요
+��을 구매하세요
           </p>
         </div>
       </div>

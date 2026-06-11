@@ -371,7 +371,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                     }
                   }}
                   placeholder="10자리 숫자 입력"
-                  className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
+                  className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
                   required
                 />
                 <button
@@ -384,7 +384,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                       : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  <div className="text-center">확인</div>
+                  확인
                 </button>
               </div>
               {businessNumberChecked && (
@@ -444,7 +444,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
               }}
               ref={passwordRef}
               placeholder="8자 이상, 영문/숫자/특수문자 중 3가지 조합"
-              className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
+              className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
               required
             />
             <button
@@ -457,7 +457,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                   : 'bg-gray-600 text-gray-400 cursor-not-allowed'
               }`}
             >
-              <div className="text-center">확인</div>
+              확인
             </button>
           </div>
           {passwordError && (
@@ -481,7 +481,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                 onChange={(e) => handleChange('passwordConfirm', e.target.value)}
                 ref={passwordConfirmRef}
                 placeholder="비밀번호를 다시 입력하세요"
-                className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
+                className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
                 required
               />
               <button
@@ -502,7 +502,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                <div className="text-center">확인</div>
+                확인
               </button>
             </div>
           ) : (
@@ -535,7 +535,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                 value={formData.emailId}
                 onChange={(e) => handleChange('emailId', e.target.value)}
                 placeholder="이메일 주소"
-                className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
+                className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
                 required
               />
               <span className="text-white self-center text-lg">@</span>
@@ -546,7 +546,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                     value={formData.customDomain}
                     onChange={(e) => handleChange('customDomain', e.target.value)}
                     placeholder="도메인 입력"
-                    className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
+                    className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
                   />
                   <button
                     type="button"
@@ -560,7 +560,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                 <select
                   value={formData.emailDomain}
                   onChange={(e) => handleChange('emailDomain', e.target.value)}
-                  className="flex-1 px-4 py-3 rounded-xl bg-slate-800 border border-white/30 text-white focus:outline-none focus:border-yellow-400 appearance-none"
+                  className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-slate-800 border border-white/30 text-white focus:outline-none focus:border-yellow-400 appearance-none"
                 >
                   {emailDomains.map((domain) => (
                     <option key={domain} value={domain}>
@@ -615,7 +615,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                 handleChange('phone', value);
               }}
               placeholder="010-0000-0000"
-              className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
+              className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
               disabled={formData.phoneVerified}
               required
             />
@@ -630,7 +630,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                <div className="text-center">인증</div>
+                인증
               </button>
             )}
           </div>
@@ -647,7 +647,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                   }
                 }}
                 placeholder="인증번호 6자리"
-                className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
+                className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
                 maxLength={6}
               />
               <button
@@ -660,7 +660,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                <div className="text-center">확인</div>
+                확인
               </button>
             </div>
           )}
@@ -880,9 +880,9 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
           type="submit"
           className="w-full py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-xl text-lg shadow-2xl mt-8"
         >
-          <div className="text-center">
+          
             {userType === 'business' ? '신청 요청' : '회원가입 완료'}
-          </div>
+          
         </motion.button>
       </form>
 
@@ -973,7 +973,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                 onClick={() => setShowTermsModal(false)}
                 className="mt-4 w-full py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-xl hover:from-yellow-300 hover:to-yellow-400 transition-all"
               >
-                <div className="text-center">닫기</div>
+                닫기
               </button>
             </motion.div>
           </motion.div>

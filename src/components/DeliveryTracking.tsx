@@ -314,7 +314,7 @@ export default function DeliveryTracking({
           onClick={onClose}
           className="mt-6 w-full py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-xl hover:from-yellow-300 hover:to-yellow-400 transition-all"
         >
-          <div className="text-center">닫기</div>
+          닫기
         </button>
       </motion.div>
 

@@ -261,7 +261,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
               onClick={handlePurchaseClick}
               className="flex-1 py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-2xl text-lg font-semibold shadow-xl hover:shadow-yellow-400/50 transition-shadow"
             >
-              <div className="text-center">구매하기</div>
+              구매하기
             </motion.button>
           </div>
         </div>
@@ -434,7 +434,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                   onClick={() => setShowPurchaseModal(false)}
                   className="flex-1 py-2.5 bg-white/10 border border-white/30 text-white rounded-2xl hover:bg-white/20 transition-colors text-sm"
                 >
-                  <div className="text-center">취소</div>
+                  취소
                 </motion.button>
                 
                 <motion.button
@@ -443,7 +443,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                   onClick={handleConfirmPurchase}
                   className="flex-1 py-2.5 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-2xl font-semibold shadow-xl text-sm"
                 >
-                  <div className="text-center">구매하기</div>
+                  구매하기
                 </motion.button>
               </div>
             </motion.div>
