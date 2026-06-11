@@ -1,6 +1,6 @@
 import { MemberProfileResponse } from "../shared-types";
 
-import { getHeaders, API_HOST } from "./client";
+import { getHeaders, API_HOST, extractErrorMessage } from "./client";
 
 const API_BASE_URL = `${API_HOST}/api/members`;
 
@@ -119,7 +119,7 @@ export const sendSms = async (phoneNumber: string): Promise<void> => {
   });
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || "인증번호 발송에 실패했습니다.");
+    throw new Error(extractErrorMessage(errorText, "인증번호 발송에 실패했습니다."));
   }
 };
 
@@ -134,7 +134,7 @@ export const verifySms = async (phoneNumber: string, code: string): Promise<void
   });
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || "인증번호가 일치하지 않거나 만료되었습니다.");
+    throw new Error(extractErrorMessage(errorText, "인증번호가 일치하지 않거나 만료되었습니다."));
   }
 };
 
@@ -149,7 +149,7 @@ export const findId = async (phoneNumber: string, verificationCode: string): Pro
   });
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || "해당 번호로 가입된 아이디를 찾을 수 없습니다.");
+    throw new Error(extractErrorMessage(errorText, "해당 번호로 가입된 아이디를 찾을 수 없습니다."));
   }
   const text = await response.text();
   try {
@@ -171,7 +171,7 @@ export const resetPassword = async (email: string, phoneNumber: string): Promise
   });
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || "회원 정보를 확인할 수 없습니다.");
+    throw new Error(extractErrorMessage(errorText, "회원 정보를 확인할 수 없습니다."));
   }
 };
 

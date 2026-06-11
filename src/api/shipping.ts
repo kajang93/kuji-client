@@ -1,5 +1,5 @@
 import { ShippingInfo } from '../shared-types';
-import { getHeaders, API_HOST } from "./client";
+import { getHeaders, API_HOST, extractErrorMessage } from "./client";
 
 const API_BASE_URL = `${API_HOST}/api/shipping`;
 
@@ -23,7 +23,7 @@ export async function requestShipping(data: {
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(error || '배송 신청에 실패했습니다.');
+    throw new Error(extractErrorMessage(error, '배송 신청에 실패했습니다.'));
   }
 
   return response.json();
@@ -74,7 +74,7 @@ export async function updateTrackingInfo(shippingId: number, data: {
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(error || '운송장 정보 등록에 실패했습니다.');
+    throw new Error(extractErrorMessage(error, '운송장 정보 등록에 실패했습니다.'));
   }
 }
 
@@ -104,7 +104,7 @@ export async function completeShipping(shippingId: number): Promise<void> {
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(error || '배송 완료 처리에 실패했습니다.');
+    throw new Error(extractErrorMessage(error, '배송 완료 처리에 실패했습니다.'));
   }
 }
 

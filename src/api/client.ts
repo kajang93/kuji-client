@@ -64,3 +64,18 @@ export const compressImageFile = async (file: File): Promise<File> => {
     return file; // 실패 시 원본 파일 반환
   }
 };
+
+/**
+ * 에러 텍스트 파싱 헬퍼
+ * 백엔드에서 내려주는 JSON 에러 응답(e.g. {"message": "에러 내용", "status": 400})에서
+ * 순수 텍스트 메시지만 추출합니다.
+ */
+export const extractErrorMessage = (text: string, fallback: string): string => {
+  if (!text) return fallback;
+  try {
+    const json = JSON.parse(text);
+    return json.message || text;
+  } catch {
+    return text;
+  }
+};
