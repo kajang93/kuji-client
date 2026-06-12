@@ -43,6 +43,7 @@ import KakaoCallback from "./components/KakaoCallback";
 import BusinessPending from "./components/BusinessPending";
 import PointCharge from "./components/PointCharge";
 import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory, fetchSellerKujiBoards, deleteKujiBoard } from "./api/kuji";
+import { PullToRefresh } from "./components/PullToRefresh";
 import BoardList from "./components/BoardList";
 import BoardDetail from "./components/BoardDetail";
 import BoardWrite from "./components/BoardWrite";
@@ -181,32 +182,32 @@ useRefreshOnPageShow(handleRefresh);
     }
   };
 
-  const handleRefresh = async () => {
-    await handleFetchBoards();
-    if (user?.role === 'ADMIN' || user?.role === 'SELLER') {
-      try {
-        const boards = await fetchSellerKujiBoards();
-        const mappedCollections = boards.map((board: any) => {
-          return {
-            id: board.id.toString(),
-            name: board.title,
-            image: board.images?.find((img: any) => img.imageType === 'THUMBNAIL')?.imageUrl || board.images?.[0]?.imageUrl || "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
-            totalKuji: board.totalCount || 0,
-            remainingKuji: board.remainCount || 0,
-            gradeCount: board.gradeCount || 0,
-            boardId: board.id,
-            isWished: board.isWished,
-            operationStatus: board.status === 'ACTIVE' ? 'active' : board.status === 'PREPARING' ? 'scheduled' : 'ended',
-            pricePerDraw: board.pricePerDraw || 15000,
-            prizes: []
-          };
-        });
-        setSellerCollections(mappedCollections);
-      } catch (e) {
-        console.error(e);
-      }
+async function handleRefresh() {
+  await handleFetchBoards();
+  if (user?.role === 'ADMIN' || user?.role === 'SELLER') {
+    try {
+      const boards = await fetchSellerKujiBoards();
+      const mappedCollections = boards.map((board: any) => {
+        return {
+          id: board.id.toString(),
+          name: board.title,
+          image: board.images?.find((img: any) => img.imageType === 'THUMBNAIL')?.imageUrl || board.images?.[0]?.imageUrl || "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
+          totalKuji: board.totalCount || 0,
+          remainingKuji: board.remainCount || 0,
+          gradeCount: board.gradeCount || 0,
+          boardId: board.id,
+          isWished: board.isWished,
+          operationStatus: board.status === 'ACTIVE' ? 'active' : board.status === 'PREPARING' ? 'scheduled' : 'ended',
+          pricePerDraw: board.pricePerDraw || 15000,
+          prizes: []
+        };
+      });
+      setSellerCollections(mappedCollections);
+    } catch (e) {
+      console.error(e);
     }
-  };
+  }
+}
 
   useEffect(() => {
     handleFetchBoards();
@@ -1368,11 +1369,8 @@ useRefreshOnPageShow(handleRefresh);
         </button>
       )}
 
-      <div
-        className="flex-1 overflow-y-auto overflow-x-hidden relative w-full"
-        id="main-scroll-container"
-      >
-        <PullToRefresh onRefresh={handleRefresh}>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden relative w-full" id="main-scroll-container">
+
         {screen === "main" && (
           <MainScreen
             onStart={() => setScreen("list")}
@@ -1915,7 +1913,7 @@ useRefreshOnPageShow(handleRefresh);
             }}
           />
         )}
-      </PullToRefresh>
+
     </div>
 
       {/* Sidebar - Different for Business Users */}

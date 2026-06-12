@@ -66,6 +66,8 @@ export default defineConfig({
     target: 'esnext',
     outDir: 'build',
     base: './',
+    minify: false,
+    sourcemap: true,
   },
   server: {
     host: true, // 로컬 네트워크(192.168.x.x)에서도 접속 가능하도록 설정

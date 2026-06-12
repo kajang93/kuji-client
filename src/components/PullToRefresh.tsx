@@ -93,7 +93,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ onRefresh, childre
           <Loader2 
             className={`w-6 h-6 text-cyan-400 ${isRefreshing ? 'animate-spin' : ''}`}
             style={{ 
-              transform: !isRefreshing ? \`rotate(\${pullDistance * 2}deg)\` : undefined 
+              transform: !isRefreshing ? `rotate(${pullDistance * 2}deg)` : undefined 
             }}
           />
         </div>

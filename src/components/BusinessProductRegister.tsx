@@ -39,17 +39,6 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
 
   const ranks = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
-  const rankColors: Record<string, string> = {
-    A: 'from-yellow-400 to-yellow-600',
-    B: 'from-purple-400 to-purple-600',
-    C: 'from-blue-400 to-blue-600',
-    D: 'from-green-400 to-green-600',
-    E: 'from-pink-400 to-pink-600',
-    F: 'from-orange-400 to-orange-600',
-    G: 'from-teal-400 to-teal-600',
-    H: 'from-red-400 to-red-600',
-  };
-
   const handleSeriesImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {

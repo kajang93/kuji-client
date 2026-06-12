@@ -295,3 +295,13 @@ export const motion = {
     </td>
   )),
 };
+
+export const useAnimation = () => {
+  const [animation, setAnimation] = React.useState<any>({});
+  const controls = React.useMemo(() => ({
+    set: (obj: any) => setAnimation(prev => ({ ...prev, ...obj })),
+    start: (obj: any) => setAnimation(prev => ({ ...prev, ...obj })),
+    get: () => animation,
+  }), [animation]);
+  return controls;
+};
