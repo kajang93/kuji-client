@@ -439,13 +439,18 @@ export default function BusinessProductEdit({ onBack, collection, onSave }: Busi
         <motion.button
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={{ scale: isSaving ? 1 : 1.02 }}
+          whileTap={{ scale: isSaving ? 1 : 0.98 }}
           onClick={handleSave}
-          className="w-full mt-6 py-4 bg-gradient-to-r from-teal-400 to-blue-500 text-white rounded-xl shadow-xl flex items-center justify-center gap-2"
+          disabled={isSaving}
+          className={`w-full mt-6 py-4 rounded-xl shadow-xl flex items-center justify-center gap-2 transition-colors ${
+            isSaving 
+              ? 'bg-gray-500 text-white/70 cursor-not-allowed' 
+              : 'bg-gradient-to-r from-teal-400 to-blue-500 text-white'
+          }`}
         >
-          <Save className="w-5 h-5" />
-          <span>저장하기</span>
+          <Save className={`w-5 h-5 ${isSaving ? 'animate-pulse' : ''}`} />
+          <span>{isSaving ? '저장 중...' : '저장하기'}</span>
         </motion.button>
       </div>
     </div>

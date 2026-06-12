@@ -28,6 +28,8 @@ import PrizeSelection from "./components/PrizeSelection";
 import BusinessProductList from "./components/BusinessProductList";
 import BusinessProductEdit from "./components/BusinessProductEdit";
 import BusinessProductRegister from "./components/BusinessProductRegister";
+import { useGlobalGestures } from "./hooks/useGlobalGestures";
+import { useRefreshOnPageShow } from "./hooks/useRefreshOnPageShow";
 import BusinessShippingManagement from "./components/BusinessShippingManagement";
 import SellerInquiries from "./components/SellerInquiries";
 import Community from "./components/Community";
@@ -70,6 +72,7 @@ import {
 
 
 export default function App() {
+
   const [screen, setScreen] = useState<ScreenType>("main");
   const [banners, setBanners] = useState<Banner[]>([]);
   const [selectedAnime, setSelectedAnime] =
@@ -108,7 +111,8 @@ export default function App() {
     message: "",
     type: "info",
   });
-
+  useGlobalGestures(screen, setScreen, returnToScreen, setReturnToScreen);
+useRefreshOnPageShow(handleRefresh);
   const [animeCollections, setAnimeCollections] = useState<AnimeCollection[]>([]);
   const [sellerCollections, setSellerCollections] = useState<AnimeCollection[]>([]);
 
@@ -1654,16 +1658,12 @@ export default function App() {
         )}
         {screen === "businessProductEdit" &&
           editingCollectionId &&
-          animeCollections.find(
+          sellerCollections.find(
             (c) => c.id === editingCollectionId,
           ) && (
             <BusinessProductEdit
               onBack={() => setScreen("businessProducts")}
-              collection={
-                animeCollections.find(
-                  (c) => c.id === editingCollectionId,
-                )!
-              }
+              collection={sellerCollections.find((c) => c.id === editingCollectionId)!}
               onSave={(updatedCollection) => {
                 // In real app, save to backend
                 showAlert("상품이 수정되었습니다", "success");
@@ -1915,7 +1915,8 @@ export default function App() {
             }}
           />
         )}
-      </div>
+      </PullToRefresh>
+    </div>
 
       {/* Sidebar - Different for Business Users */}
       {user?.type === "business" ? (

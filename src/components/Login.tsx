@@ -62,6 +62,16 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       // Fetch user info to get role and status
       const userData = await fetchMyProfile();
       const userRole = userData.role || "USER";
+
+      // Enforce login tab matches user role
+      if (type === 'customer' && (userRole === 'ROLE_BUSINESS' || userRole === 'BIZ')) {
+        toast.error('사업자 계정은 사업자 탭에서 로그인해주세요.');
+        return;
+      }
+      if (type === 'business' && !(userRole === 'ROLE_BUSINESS' || userRole === 'BIZ')) {
+        toast.error('사업자 계정이 아닌 사용자입니다.');
+        return;
+      }
       
       onLogin({
         name: userData.nickname || userData.name,
