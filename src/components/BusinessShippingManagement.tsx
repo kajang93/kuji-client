@@ -243,7 +243,7 @@ export default function BusinessShippingManagement({
       <div className="sticky top-0 z-20 bg-gradient-to-r from-purple-900 to-blue-900 border-b-2 border-cyan-400/50 shadow-lg">
         <div className="flex items-center gap-4 p-4">
           <button
-            onClick={() => setSelectedSeries(null)}
+            onClick={onBack}
             className="p-2 bg-pink-500 rounded-full hover:bg-pink-600 transition-colors"
           >
             <ChevronLeft className="w-6 h-6 text-white" />
