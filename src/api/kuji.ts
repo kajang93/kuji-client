@@ -45,6 +45,16 @@ export const fetchSellerKujiBoards = async (): Promise<KujiBoard[]> => {
   return normalizeImageUrls(data);
 };
 
+export const deleteKujiBoard = async (boardId: number): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/${boardId}`, {
+    method: "DELETE",
+    headers: getHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to delete kuji board");
+  }
+};
+
 export interface CreateKujiBoardRequest {
   title: string;
   pricePerDraw: number;

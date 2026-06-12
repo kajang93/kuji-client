@@ -40,7 +40,7 @@ import { Toaster, toast, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import BusinessPending from "./components/BusinessPending";
 import PointCharge from "./components/PointCharge";
-import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory, fetchSellerKujiBoards } from "./api/kuji";
+import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory, fetchSellerKujiBoards, deleteKujiBoard } from "./api/kuji";
 import BoardList from "./components/BoardList";
 import BoardDetail from "./components/BoardDetail";
 import BoardWrite from "./components/BoardWrite";
@@ -1576,6 +1576,18 @@ export default function App() {
             onBack={() => setScreen("businessDashboard")}
             onOpenSidebar={() => setIsSidebarOpen(true)}
             collections={sellerCollections}
+            onDelete={async (id) => {
+              if (window.confirm("정말로 이 상품을 삭제하시겠습니까? 삭제된 데이터는 복구할 수 없습니다.")) {
+                try {
+                  await deleteKujiBoard(Number(id));
+                  setSellerCollections(prev => prev.filter(c => c.id !== id));
+                  alert("상품이 성공적으로 삭제되었습니다.");
+                } catch (e) {
+                  console.error(e);
+                  alert("상품 삭제에 실패했습니다.");
+                }
+              }
+            }}
             onEdit={async (id) => {
               try {
                 // Fetch full details of items (Backend returns List<KujiItem>)

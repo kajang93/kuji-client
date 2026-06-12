@@ -7,10 +7,11 @@ type BusinessProductListProps = {
   onBack: () => void;
   collections: AnimeCollection[];
   onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
   onOpenSidebar?: () => void;
 };
 
-export default function BusinessProductList({ onBack, collections, onEdit, onOpenSidebar }: BusinessProductListProps) {
+export default function BusinessProductList({ onBack, collections, onEdit, onDelete, onOpenSidebar }: BusinessProductListProps) {
   const getStockStatus = (remaining: number, total: number) => {
     const percentage = (remaining / total) * 100;
     if (percentage > 50) return { color: 'text-green-400', icon: TrendingUp, label: '재고 충분' };
@@ -175,13 +176,21 @@ export default function BusinessProductList({ onBack, collections, onEdit, onOpe
                   </div>
 
                   {/* Action Buttons */}
-                  <button
-                    onClick={() => onEdit?.(collection.id)}
-                    className="w-full py-3 bg-blue-500 hover:bg-blue-600 rounded-lg text-white transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Edit className="w-4 h-4" />
-                    상품 수정
-                  </button>
+                  <div className="flex gap-2 w-full">
+                    <button
+                      onClick={() => onEdit?.(collection.id)}
+                      className="flex-1 py-3 bg-blue-500 hover:bg-blue-600 rounded-lg text-white transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Edit className="w-4 h-4" />
+                      상품 수정
+                    </button>
+                    <button
+                      onClick={() => onDelete?.(collection.id)}
+                      className="px-4 py-3 bg-red-500/20 hover:bg-red-500/40 rounded-lg text-red-400 transition-colors flex items-center justify-center"
+                    >
+                      삭제
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             );
