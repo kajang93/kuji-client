@@ -40,7 +40,7 @@ import { Toaster, toast, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import BusinessPending from "./components/BusinessPending";
 import PointCharge from "./components/PointCharge";
-import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory } from "./api/kuji";
+import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory, fetchSellerKujiBoards } from "./api/kuji";
 import BoardList from "./components/BoardList";
 import BoardDetail from "./components/BoardDetail";
 import BoardWrite from "./components/BoardWrite";
@@ -110,8 +110,35 @@ export default function App() {
   });
 
   const [animeCollections, setAnimeCollections] = useState<AnimeCollection[]>([]);
+  const [sellerCollections, setSellerCollections] = useState<AnimeCollection[]>([]);
 
   // Fetch Kuji Boards from server
+  
+  useEffect(() => {
+    if (screen === "businessProducts") {
+      fetchSellerKujiBoards()
+        .then(boards => {
+          const mappedCollections = boards.map((board: any) => {
+            return {
+              id: board.id.toString(),
+              name: board.title,
+              image: (board.images?.find((img: any) => img.imageType === 'THUMBNAIL')?.imageUrl || board.images?.[0]?.imageUrl) || "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
+              totalKuji: board.totalCount || 0,
+              remainingKuji: board.remainCount || 0,
+              gradeCount: board.gradeCount || 0,
+              boardId: board.id,
+              isWished: board.isWished,
+              operationStatus: board.status === 'ACTIVE' ? 'active' : board.status === 'PREPARING' ? 'scheduled' : 'ended',
+              pricePerDraw: board.pricePerDraw || 15000,
+              prizes: []
+            };
+          });
+          setSellerCollections(mappedCollections);
+        })
+        .catch(console.error);
+    }
+  }, [screen]);
+  
   const handleFetchBoards = async () => {
     try {
       const boards = await fetchKujiBoards();
@@ -1548,7 +1575,7 @@ export default function App() {
           <BusinessProductList
             onBack={() => setScreen("businessDashboard")}
             onOpenSidebar={() => setIsSidebarOpen(true)}
-            collections={animeCollections}
+            collections={sellerCollections}
             onEdit={async (id) => {
               try {
                 // Fetch full details of items (Backend returns List<KujiItem>)

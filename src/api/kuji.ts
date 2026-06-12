@@ -34,6 +34,17 @@ export const fetchKujiBoards = async (): Promise<KujiBoard[]> => {
   return normalizeImageUrls(data);
 };
 
+export const fetchSellerKujiBoards = async (): Promise<KujiBoard[]> => {
+  const response = await fetch(`${API_BASE_URL}/seller`, {
+    headers: getHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch seller kuji boards");
+  }
+  const data = await response.json();
+  return normalizeImageUrls(data);
+};
+
 export interface CreateKujiBoardRequest {
   title: string;
   pricePerDraw: number;
