@@ -4,6 +4,7 @@ import { ChevronLeft, Upload, Save, X, Plus, Check, Loader2 } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { createKujiBoard, uploadBoardImages } from '../api/kuji';
 import { validateImageFile, compressImageFile } from '../api/client';
+import { rankColors } from '../constants/rankColors';
 
 type BusinessProductRegisterProps = {
   onBack: () => void;
