@@ -68,6 +68,15 @@ export default defineConfig({
     base: './',
     minify: false,
     sourcemap: true,
+    // 청크 자동 분할 비활성화 및 동적 import 를 정적으로 포함해 모듈 순서 보장
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+        inlineDynamicImports: true,
+        preserveEntrySignatures: 'strict',
+        entryFileNames: '[name].js',
+      },
+    },
   },
   server: {
     host: true, // 로컬 네트워크(192.168.x.x)에서도 접속 가능하도록 설정
