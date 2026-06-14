@@ -367,7 +367,9 @@ async function handleRefresh() {
       setUser(formattedUser);
       
       // 사용자 정보 로드 후 찜 목록 및 당첨 내역도 함께 로드
-      handleFetchWishlist();
+      if (formattedUser.type === "social") {
+        handleFetchWishlist();
+      }
       handleFetchWinningHistory(formattedUser.type);
 
       if (formattedUser.type === "business" && formattedUser.isActive === false) {
@@ -564,7 +566,9 @@ async function handleRefresh() {
     setIsSidebarOpen(false);
 
     handleFetchWinningHistory(userData.type);
-    handleFetchWishlist();
+    if (userData.type === "social") {
+      handleFetchWishlist();
+    }
 
     // Business users go to dashboard (if active) or pending screen
     if (userData.type === "business") {
@@ -1636,7 +1640,7 @@ async function handleRefresh() {
                 }));
 
                 // Update the collection in our global state to include prizes
-                setAnimeCollections(prev => prev.map(c =>
+                setSellerCollections(prev => prev.map(c =>
                   c.id === id ? {
                     ...c,
                     prizes: updatedPrizes,
@@ -1672,8 +1676,9 @@ async function handleRefresh() {
         {screen === "businessRegister" && (
           <BusinessProductRegister
             onBack={() => setScreen("businessDashboard")}
-            onComplete={() => {
+            onComplete={async () => {
               showAlert("상품이 등록되었습니다!", "success");
+              await handleRefresh();
               setScreen("businessProducts");
             }}
             onTempSave={(message) => {
