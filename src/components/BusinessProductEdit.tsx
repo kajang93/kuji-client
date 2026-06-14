@@ -3,8 +3,9 @@ import { motion } from './motion';
 import { ChevronLeft, Save, Upload, X, Plus } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import type { AnimeCollection, Prize } from '@/shared-types';
-import { updateKujiItem, updateKujiItemImage, deleteKujiItem, registerBoardItems, updateKujiBoardStatus } from '../api/kuji';
+import { updateKujiItem, updateKujiItemImage, deleteKujiItem, registerBoardItems, updateKujiBoardStatus, uploadBoardImages } from '../api/kuji';
 import { validateImageFile, compressImageFile } from '../api/client';
+import { toast } from 'sonner';
 
 type BusinessProductEditProps = {
   onBack: () => void;
@@ -24,6 +25,7 @@ type PrizeProduct = {
 export default function BusinessProductEdit({ onBack, collection, onSave }: BusinessProductEditProps) {
   const [seriesName, setSeriesName] = useState(collection.name || '');
   const [seriesImage, setSeriesImage] = useState(collection.image || '');
+  const [seriesFile, setSeriesFile] = useState<File | null>(null);
   const [operationStatus, setOperationStatus] = useState<'scheduled' | 'active' | 'ended'>(collection.operationStatus || 'scheduled');
   
   // Check if editing is allowed based on current UI selection
@@ -47,6 +49,25 @@ export default function BusinessProductEdit({ onBack, collection, onSave }: Busi
   const [isSaving, setIsSaving] = useState(false);
 
   const ranks = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+  const handleSeriesImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const compressedFile = await compressImageFile(file);
+      
+      const errorMsg = validateImageFile(compressedFile, 10);
+      if (errorMsg) {
+        toast.error(errorMsg);
+        return;
+      }
+      setSeriesFile(compressedFile);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSeriesImage(reader.result as string);
+      };
+      reader.readAsDataURL(compressedFile);
+    }
+  };
 
   const handleAddProduct = (rank: string) => {
     setPrizes(prev => ({
@@ -72,7 +93,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave }: Busi
       try {
         await deleteKujiItem(Number(product.id));
       } catch (error) {
-        alert('경품 삭제에 실패했습니다.');
+        toast.error('경품 삭제에 실패했습니다.');
         return;
       }
     }
@@ -99,7 +120,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave }: Busi
       
       const errorMsg = validateImageFile(compressedFile, 10);
       if (errorMsg) {
-        alert(errorMsg);
+        toast.error(errorMsg);
         return;
       }
       const reader = new FileReader();
@@ -173,13 +194,18 @@ export default function BusinessProductEdit({ onBack, collection, onSave }: Busi
         await updateKujiBoardStatus(Number(collection.id), backendStatus);
       }
 
-      alert('성공적으로 저장되었습니다.');
+      // 5. Update Series Image if changed
+      if (seriesFile) {
+        await uploadBoardImages(Number(collection.id), 'THUMBNAIL', [seriesFile]);
+      }
+
+      toast.success('성공적으로 저장되었습니다.');
       // Need to tell parent to refresh so status is updated in list
       // For now, onBack will just go back. We can trigger a reload.
       window.location.reload();
     } catch (error) {
       console.error('Save failed:', error);
-      alert('저장 도중 오류가 발생했습니다.');
+      toast.error('저장 도중 오류가 발생했습니다.');
     } finally {
       setIsSaving(false);
     }
@@ -303,6 +329,38 @@ export default function BusinessProductEdit({ onBack, collection, onSave }: Busi
                 }`}
                 placeholder="시리즈명 입력"
               />
+            </div>
+
+            <div>
+              <label className="text-white/70 text-sm block mb-2">시리즈 이미지</label>
+              <label className={`cursor-pointer block ${!isEditingAllowed ? 'pointer-events-none opacity-50' : ''}`}>
+                <div className="w-full h-48 bg-white/10 rounded-xl border-2 border-dashed border-white/30 hover:border-cyan-400 transition-colors overflow-hidden relative">
+                  {seriesImage ? (
+                    <>
+                      <ImageWithFallback src={seriesImage} alt="Series" className="w-full h-full object-cover" />
+                      {isEditingAllowed && (
+                        <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center">
+                          <Upload className="w-8 h-8 text-white/80 mb-2" />
+                          <span className="text-white/80 text-sm font-medium">이미지 변경</span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center">
+                      <Upload className="w-8 h-8 text-white/40 mb-2" />
+                      <span className="text-white/40 text-sm font-medium">클릭하여 이미지 업로드</span>
+                    </div>
+                  )}
+                </div>
+                {isEditingAllowed && (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleSeriesImageUpload}
+                    className="hidden"
+                  />
+                )}
+              </label>
             </div>
           </div>
         </motion.div>
