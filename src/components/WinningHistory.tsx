@@ -5,6 +5,7 @@ import type { WinningItem } from '@/shared-types';
 import { useState, useEffect } from 'react';
 import DeliveryTracking from './DeliveryTracking';
 import AddressSearchModal from './AddressSearchModal';
+import { getToken } from '../api/axiosInstance';
 
 // Type Migration: WinningHistory updated.
 
@@ -51,7 +52,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
   // Auto-trigger option selection for new winnings
   useEffect(() => {
     // Fill default shipping info if user exists
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (token) {
       // In a real app, you might fetch user's default address here
     }

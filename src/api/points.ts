@@ -1,7 +1,8 @@
 /**
  * 포인트 충전 API
  */
-import { getHeaders, API_HOST } from "./client";
+import axiosInstance from "./axiosInstance";
+import { API_HOST } from "./client";
 
 const API_BASE_URL = `${API_HOST}/api/points`;
 
@@ -45,16 +46,8 @@ export interface PointHistory {
 export const preparePointCharge = async (
   data: PrepareChargeRequest
 ): Promise<PrepareChargeResponse> => {
-  const response = await fetch(`${API_BASE_URL}/charge/prepare`, {
-    method: "POST",
-    headers: getHeaders(),
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: "충전 준비에 실패했습니다." }));
-    throw new Error(errorData.message || "충전 준비에 실패했습니다.");
-  }
-  return response.json();
+  const response = await axiosInstance.post(`${API_BASE_URL}/charge/prepare`, data);
+  return response.data;
 };
 
 /**
@@ -63,27 +56,14 @@ export const preparePointCharge = async (
 export const confirmPointCharge = async (
   data: ConfirmChargeRequest
 ): Promise<ConfirmChargeResponse> => {
-  const response = await fetch(`${API_BASE_URL}/charge/confirm`, {
-    method: "POST",
-    headers: getHeaders(),
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: "충전 확인에 실패했습니다." }));
-    throw new Error(errorData.message || "충전 확인에 실패했습니다.");
-  }
-  return response.json();
+  const response = await axiosInstance.post(`${API_BASE_URL}/charge/confirm`, data);
+  return response.data;
 };
 
 /**
  * 포인트 사용/충전 내역 조회
  */
 export const fetchPointHistory = async (): Promise<PointHistory[]> => {
-  const response = await fetch(`${API_BASE_URL}/history`, {
-    headers: getHeaders(),
-  });
-  if (!response.ok) {
-    throw new Error("포인트 내역 조회에 실패했습니다.");
-  }
-  return response.json();
+  const response = await axiosInstance.get(`${API_BASE_URL}/history`);
+  return response.data;
 };

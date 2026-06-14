@@ -588,6 +588,8 @@ async function handleRefresh() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     setUser(null);
     setIsSidebarOpen(false);
     setScreen("main");

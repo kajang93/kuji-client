@@ -1,4 +1,5 @@
-import { getHeaders, API_HOST } from "./client";
+import axiosInstance from "./axiosInstance";
+import { API_HOST } from "./client";
 import { v4 as uuidv4 } from 'uuid';
 
 export interface NotificationSettingDto {
@@ -53,17 +54,12 @@ export const getDeviceId = (): string => {
  */
 export const registerDeviceToken = async (token: string) => {
   const deviceId = getDeviceId();
-  const response = await fetch('/api/notifications/token', {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({
-      token: token,
-      platform: 'WEB',
-      deviceId: deviceId,
-    }),
+  const response = await axiosInstance.post('/api/notifications/token', {
+    token: token,
+    platform: 'WEB',
+    deviceId: deviceId,
   });
-  if (!response.ok) throw new Error('토큰 등록에 실패했습니다.');
-  return response.json().catch(() => null);
+  return response.data ?? null;
 };
 
 /**
@@ -72,12 +68,8 @@ export const registerDeviceToken = async (token: string) => {
  */
 export const deleteDeviceToken = async () => {
   const deviceId = getDeviceId();
-  const response = await fetch(`/api/notifications/token/${deviceId}`, {
-    method: 'DELETE',
-    headers: getHeaders(),
-  });
-  if (!response.ok) throw new Error('토큰 삭제에 실패했습니다.');
-  return response.json().catch(() => null);
+  const response = await axiosInstance.delete(`/api/notifications/token/${deviceId}`);
+  return response.data ?? null;
 };
 
 /**
@@ -87,11 +79,10 @@ export const deleteDeviceToken = async () => {
  * @param size 가져올 개수 (기본 10)
  */
 export const getMyNotifications = async (page: number = 0, size: number = 10) => {
-  const response = await fetch(`/api/notifications?page=${page}&size=${size}`, {
-    headers: getHeaders(),
+  const response = await axiosInstance.get(`/api/notifications`, {
+    params: { page, size },
   });
-  if (!response.ok) throw new Error('알림 목록을 불러올 수 없습니다.');
-  return response.json() as Promise<PageResponse<NotificationResponse>>;
+  return response.data as PageResponse<NotificationResponse>;
 };
 
 /**
@@ -100,12 +91,8 @@ export const getMyNotifications = async (page: number = 0, size: number = 10) =>
  * @param notificationId 알림 ID
  */
 export const readNotification = async (notificationId: number) => {
-  const response = await fetch(`/api/notifications/${notificationId}/read`, {
-    method: 'PATCH',
-    headers: getHeaders(),
-  });
-  if (!response.ok) throw new Error('읽음 처리에 실패했습니다.');
-  return response.json().catch(() => null);
+  const response = await axiosInstance.patch(`/api/notifications/${notificationId}/read`);
+  return response.data ?? null;
 };
 
 /**
@@ -117,11 +104,8 @@ export const readNotification = async (notificationId: number) => {
  * - 설정 화면 진입 시 서버에서 현재 토글 상태를 불러옵니다.
  */
 export const getNotificationSettings = async (): Promise<NotificationSettingDto> => {
-  const response = await fetch('/api/notifications/settings', {
-    headers: getHeaders(),
-  });
-  if (!response.ok) throw new Error('알림 설정을 불러올 수 없습니다.');
-  return response.json();
+  const response = await axiosInstance.get('/api/notifications/settings');
+  return response.data;
 };
 
 /**
@@ -129,19 +113,11 @@ export const getNotificationSettings = async (): Promise<NotificationSettingDto>
  * - 사용자가 토글을 변경할 때마다 서버에 저장합니다.
  */
 export const updateNotificationSettings = async (settings: Partial<NotificationSettingDto>): Promise<void> => {
-  const response = await fetch('/api/notifications/settings', {
-    method: 'PATCH',
-    headers: getHeaders(),
-    body: JSON.stringify(settings),
-  });
-  if (!response.ok) throw new Error('알림 설정 저장에 실패했습니다.');
-};
+  const response = await axiosInstance.patch('/api/notifications/settings', settings);
+  // axios throws on error
+}
 
 export const readAllNotifications = async () => {
-  const response = await fetch('/api/notifications/read-all', {
-    method: 'PATCH',
-    headers: getHeaders(),
-  });
-  if (!response.ok) throw new Error('전체 읽음 처리에 실패했습니다.');
-  return response.json().catch(() => null);
+  const response = await axiosInstance.patch('/api/notifications/read-all');
+  return response.data ?? null;
 };

@@ -7,10 +7,9 @@ import imageCompression from 'browser-image-compression';
 export const API_HOST = import.meta.env.VITE_API_BASE_URL || "";
 
 export const getHeaders = () => {
-  const token = localStorage.getItem("token");
+  // Token is now handled via HttpOnly cookies; no Authorization header needed
   return {
     "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 };
 

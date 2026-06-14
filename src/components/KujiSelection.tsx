@@ -89,8 +89,16 @@ export default function KujiSelection({ boardId, totalKuji, purchaseCount, point
           successUrl: `${window.location.origin}/?payment=success`,
           failUrl: `${window.location.origin}/?payment=fail`
         });
-      } catch (error) {
-        console.error("Payment error:", error);
+      } catch (error: any) {
+        console.warn("Payment process aborted/error:", error);
+        
+        // Toss Payments throws an error when the user cancels the payment window
+        if (error?.code === 'USER_CANCEL' || error?.message?.includes('취소')) {
+          // It's just a user cancellation, we don't need to show a scary error
+          setIsProcessing(false);
+          return;
+        }
+
         alert("결제 준비 중 오류가 발생했습니다.");
         setIsProcessing(false);
       }
@@ -136,17 +144,17 @@ export default function KujiSelection({ boardId, totalKuji, purchaseCount, point
           >
             <ChevronLeft className="w-6 h-6 text-white" />
           </button>
-          <h1 className="text-white text-xl">쿠지 선택</h1>
-          <div className="text-white text-right">
-            <div className="text-sm opacity-80">선택됨</div>
-            <div className="text-xl">
-              <span className={selectedKuji.length === purchaseCount ? 'text-yellow-400' : 'text-white'}>
+          <div className="text-center">
+            <h1 className="text-white text-xl font-bold">쿠지 선택</h1>
+            <div className="text-sm mt-1">
+              <span className={selectedKuji.length === purchaseCount ? 'text-yellow-400 font-bold' : 'text-white/90'}>
                 {selectedKuji.length}
               </span>
-              <span className="text-white/50"> / </span>
-              <span>{purchaseCount}</span>
+              <span className="text-white/50 mx-1">/</span>
+              <span className="text-white/80">{purchaseCount} 개 선택됨</span>
             </div>
           </div>
+          <div className="w-10" /> {/* Placeholder for right spacing to let the Menu button sit without overlap */}
         </div>
       </div>
 

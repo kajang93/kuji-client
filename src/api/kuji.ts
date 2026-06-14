@@ -1,6 +1,7 @@
 import { KujiBoard, BoardStatus, BoardImageType } from "../shared-types";
 
-import { getHeaders, API_HOST, toAbsoluteUrl } from "./client";
+import axiosInstance from "./axiosInstance";
+import { API_HOST, toAbsoluteUrl } from "./client";
 
 const API_BASE_URL = `${API_HOST}/api/kuji`;
 
@@ -24,35 +25,18 @@ const normalizeImageUrls = (obj: any): any => {
 };
 
 export const fetchKujiBoards = async (): Promise<KujiBoard[]> => {
-  const response = await fetch(API_BASE_URL, {
-    headers: getHeaders(),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to fetch kuji boards");
-  }
-  const data = await response.json();
-  return normalizeImageUrls(data);
+  const response = await axiosInstance.get(API_BASE_URL);
+  return normalizeImageUrls(response.data);
 };
 
 export const fetchSellerKujiBoards = async (): Promise<KujiBoard[]> => {
-  const response = await fetch(`${API_BASE_URL}/seller`, {
-    headers: getHeaders(),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to fetch seller kuji boards");
-  }
-  const data = await response.json();
-  return normalizeImageUrls(data);
+  const response = await axiosInstance.get(`${API_BASE_URL}/seller`);
+  return normalizeImageUrls(response.data);
 };
 
 export const deleteKujiBoard = async (boardId: number): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/${boardId}`, {
-    method: "DELETE",
-    headers: getHeaders(),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to delete kuji board");
-  }
+  const response = await axiosInstance.delete(`${API_BASE_URL}/${boardId}`);
+  // axios throws on non-2xx, so explicit error handling not needed
 };
 
 export interface CreateKujiBoardRequest {
@@ -63,16 +47,8 @@ export interface CreateKujiBoardRequest {
 }
 
 export const createKujiBoard = async (data: CreateKujiBoardRequest): Promise<number> => {
-  const response = await fetch(API_BASE_URL, {
-    method: "POST",
-    headers: getHeaders(),
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to create kuji board");
-  }
-  // The service returns the ID (Long)
-  return response.json();
+  const response = await axiosInstance.post(API_BASE_URL, data);
+  return response.data; // service returns the ID
 };
 
 export const uploadBoardImages = async (
@@ -80,38 +56,21 @@ export const uploadBoardImages = async (
   type: BoardImageType,
   files: File[]
 ): Promise<void> => {
-  const token = localStorage.getItem("token");
   const formData = new FormData();
   formData.append("type", type);
   files.forEach((file) => {
     formData.append("files", file);
   });
-
-  const response = await fetch(`${API_BASE_URL}/${boardId}/images`, {
-    method: "POST",
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to upload images");
-  }
+  const response = await axiosInstance.post(`${API_BASE_URL}/${boardId}/images`, formData);
+  // axios handles errors via thrown exception
 };
 
 export const updateKujiBoardStatus = async (
   boardId: number,
   status: BoardStatus
 ): Promise<void> => {
-  const token = localStorage.getItem("token");
-  const response = await fetch(`${API_BASE_URL}/${boardId}/status?status=${status}`, {
-    method: "PATCH",
-    headers: getHeaders(),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to update kuji board status");
-  }
+  const response = await axiosInstance.patch(`${API_BASE_URL}/${boardId}/status?status=${status}`);
+  // error handling via axios
 };
 
 /**
@@ -122,43 +81,22 @@ export const registerBoardItems = async (
   itemsData: any[],
   files: File[]
 ): Promise<void> => {
-  const token = localStorage.getItem("token");
   const formData = new FormData();
-  
-  // Create a Blob from the items JSON data
   const jsonBlob = new Blob([JSON.stringify(itemsData)], { type: 'application/json' });
   formData.append("items", jsonBlob);
-
-  // Append images
   files.forEach((file) => {
     formData.append("files", file);
   });
-
-  const response = await fetch(`${API_BASE_URL}/${boardId}/items`, {
-    method: "POST",
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to register items");
-  }
+  const response = await axiosInstance.post(`${API_BASE_URL}/${boardId}/items`, formData);
+  // axios will throw on error
 };
 
 /**
  * Fetch detailed information of items for a board.
  */
 export const fetchKujiBoardDetail = async (boardId: number): Promise<Prize[]> => {
-  const response = await fetch(`${API_BASE_URL}/${boardId}`, {
-    headers: getHeaders(),
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch board details for ID: ${boardId}`);
-  }
-  const data = await response.json();
-  return normalizeImageUrls(data);
+  const response = await axiosInstance.get(`${API_BASE_URL}/${boardId}`);
+  return normalizeImageUrls(response.data);
 };
 
 /**
@@ -168,14 +106,8 @@ export const updateKujiItem = async (
   itemId: number,
   data: { grade?: string; name?: string; totalQty?: number }
 ): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/items/${itemId}`, {
-    method: "PATCH",
-    headers: getHeaders(),
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to update kuji item");
-  }
+  const response = await axiosInstance.patch(`${API_BASE_URL}/items/${itemId}`, data);
+  // axios handles errors
 };
 
 /**
@@ -185,33 +117,18 @@ export const updateKujiItemImage = async (
   itemId: number,
   file: File
 ): Promise<void> => {
-  const token = localStorage.getItem("token");
   const formData = new FormData();
   formData.append("file", file);
-
-  const response = await fetch(`${API_BASE_URL}/items/${itemId}/images`, {
-    method: "POST",
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: formData,
-  });
-  if (!response.ok) {
-    throw new Error("Failed to update kuji item image");
-  }
+  const response = await axiosInstance.post(`${API_BASE_URL}/items/${itemId}/images`, formData);
+  // axios error handling
 };
 
 /**
  * Delete a specific kuji item.
  */
 export const deleteKujiItem = async (itemId: number): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/items/${itemId}`, {
-    method: "DELETE",
-    headers: getHeaders(),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to delete kuji item");
-  }
+  const response = await axiosInstance.delete(`${API_BASE_URL}/items/${itemId}`);
+  // axios throws on error
 };
 export interface PreparePaymentRequest {
   count: number;
@@ -231,15 +148,8 @@ export const prepareKujiPayment = async (
   boardId: number,
   data: PreparePaymentRequest
 ): Promise<PreparePaymentResponse> => {
-  const response = await fetch(`${API_BASE_URL}/${boardId}/payment/prepare`, {
-    method: "POST",
-    headers: getHeaders(),
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to prepare kuji payment");
-  }
-  return response.json();
+  const response = await axiosInstance.post(`${API_BASE_URL}/${boardId}/payment/prepare`, data);
+  return response.data;
 };
 
 export interface DrawKujiRequest {
@@ -257,31 +167,16 @@ export const drawKuji = async (
   boardId: number,
   request: DrawKujiRequest
 ): Promise<{ results: any[]; totalRemaining: number }> => {
-  const response = await fetch(`${API_BASE_URL}/${boardId}/draw`, {
-    method: "POST",
-    headers: getHeaders(),
-    body: JSON.stringify(request),
-  });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: "Failed to draw kuji" }));
-    throw new Error(errorData.message || "Failed to draw kuji");
-  }
-  const data = await response.json();
-  return normalizeImageUrls(data);
+  const response = await axiosInstance.post(`${API_BASE_URL}/${boardId}/draw`, request);
+  return normalizeImageUrls(response.data);
 };
 
 /**
  * Fetch the user's personal winning history (storage).
  */
 export const fetchMyDrawHistory = async (): Promise<any[]> => {
-  const response = await fetch(`${API_BASE_URL}/draw-history/me`, {
-    headers: getHeaders(),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to fetch draw history");
-  }
-  const data = await response.json();
-  return normalizeImageUrls(data);
+  const response = await axiosInstance.get(`${API_BASE_URL}/draw-history/me`);
+  return normalizeImageUrls(response.data);
 };
 
 /**

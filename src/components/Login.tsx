@@ -56,8 +56,15 @@ export default function Login({ onLogin, onBack }: LoginProps) {
     if (!userId || !userPw) return;
 
     try {
-      const { token } = await login(userId, userPw);
-      localStorage.setItem("token", token);
+      const token = await login(userId, userPw);
+      // rememberMe 체크 여부에 따라 저장소 분기
+      if (token) {
+        if (rememberMe) {
+          localStorage.setItem('token', token);
+        } else {
+          sessionStorage.setItem('token', token);
+        }
+      }
 
       // Fetch user info to get role and status
       const userData = await fetchMyProfile();

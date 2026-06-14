@@ -37,6 +37,7 @@
     "@tosspayments/payment-sdk": "^1.9.2",
     "@types/uuid": "^10.0.0",
     "apexcharts": "^5.13.0",
+    "axios": "^1.17.0",
     "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "*",
