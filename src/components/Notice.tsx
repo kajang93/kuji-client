@@ -23,12 +23,26 @@ export default function Notice({ onBack }: NoticeProps) {
     try {
       const data = await fetchPosts('NOTICE');
       
+      let fetchedNotices: Post[] = [];
       // 서버 응답이 배열이 아닐 경우(Page 객체 등) 대응
       if (Array.isArray(data)) {
-        setNotices(data);
+        fetchedNotices = data;
       } else if (data && typeof data === 'object' && Array.isArray((data as any).content)) {
-        setNotices((data as any).content);
+        fetchedNotices = (data as any).content;
       }
+      
+      const brochureNotice: Post = {
+        id: 'brochure' as any,
+        title: '🎉 온라인 쿠지 플랫폼 오픈 안내 (브로셔)',
+        content: '온라인 쿠지 플랫폼 서비스 안내 브로셔입니다.',
+        type: 'NOTICE',
+        authorId: 0,
+        viewCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      setNotices([brochureNotice, ...fetchedNotices]);
     } catch (error) {
       toast.error('공지사항을 불러오지 못했습니다.');
     } finally {
@@ -133,11 +147,21 @@ export default function Notice({ onBack }: NoticeProps) {
                 </div>
               </div>
 
-              <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                <div className="text-white/90 whitespace-pre-line leading-relaxed">
-                  {selectedNotice.content}
+              {selectedNotice.id === 'brochure' ? (
+                <div className="w-full h-[60vh] bg-black rounded-2xl overflow-hidden border border-white/10">
+                  <iframe 
+                    src="/brochure.html" 
+                    className="w-full h-full border-0"
+                    title="온라인 쿠지 플랫폼 브로셔"
+                  />
                 </div>
-              </div>
+              ) : (
+                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                  <div className="text-white/90 whitespace-pre-line leading-relaxed">
+                    {selectedNotice.content}
+                  </div>
+                </div>
+              )}
 
               <motion.button
                 whileHover={{ scale: 1.02 }}

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>온라인 쿠지 플랫폼 브로셔</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+            color: white;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .phone-mockup {
+            border: 4px solid #334155;
+            border-radius: 2rem;
+            overflow: hidden;
+            background-color: #000;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            aspect-ratio: 9/19.5;
+            width: 100%;
+            max-width: 260px;
+            margin: 0 auto;
+        }
+        .neon-text {
+            color: #00e5ff;
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+        }
+    </style>
+</head>
+<body class="antialiased pb-20">
+
+    <!-- 🌟 상단 헤더 -->
+    <header class="pt-16 pb-12 px-6 text-center relative">
+        <div class="absolute inset-0 flex justify-center items-center opacity-20 blur-3xl z-0 pointer-events-none">
+            <div class="w-64 h-64 bg-pink-600 rounded-full mix-blend-screen animate-pulse"></div>
+            <div class="w-64 h-64 bg-indigo-600 rounded-full mix-blend-screen"></div>
+        </div>
+        
+        <div class="relative z-10 max-w-2xl mx-auto">
+            <h1 class="text-3xl md:text-5xl font-black text-white leading-tight mb-4 drop-shadow-lg break-keep">
+                종이 현황판은 이제 그만!<br>내 손안의 <span class="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-500">온라인 쿠지 플랫폼</span>
+            </h1>
+            <h2 class="text-base md:text-xl font-bold neon-text drop-shadow-md break-keep">
+                재고 관리부터 카카오 알림톡까지,<br>가맹점 사장님을 위한 완벽한 솔루션
+            </h2>
+        </div>
+    </header>
+
+    <!-- 📱 기능 소개 4구역 (그리드) -->
+    <main class="max-w-4xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 relative z-10">
+        
+        <!-- Feature 1 -->
+        <div class="flex flex-col items-center">
+            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700 px-4 py-3 rounded-2xl mb-6 shadow-xl text-center w-full max-w-[280px]">
+                <h3 class="text-lg font-bold text-pink-400 mb-1">📊 실시간 현황판</h3>
+                <p class="text-xs text-gray-300">잔여 쿠지 및 당첨 현황 실시간 동기화</p>
+            </div>
+            <div class="phone-mockup border-pink-500/30">
+                <video src="/assets/videos/dashboard_demo.MP4" class="w-full h-full object-cover" autoplay loop muted playsinline></video>
+            </div>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="flex flex-col items-center">
+            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700 px-4 py-3 rounded-2xl mb-6 shadow-xl text-center w-full max-w-[280px]">
+                <h3 class="text-lg font-bold text-blue-400 mb-1">🎫 미개봉 랜덤 선택</h3>
+                <p class="text-xs text-gray-300">직관적이고 공정한 쿠지 뽑기 경험 제공</p>
+            </div>
+            <div class="phone-mockup border-blue-500/30">
+                <video src="/assets/videos/kuji_demo.MP4" class="w-full h-full object-cover" autoplay loop muted playsinline></video>
+            </div>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="flex flex-col items-center">
+            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700 px-4 py-3 rounded-2xl mb-6 shadow-xl text-center w-full max-w-[280px]">
+                <h3 class="text-lg font-bold text-yellow-400 mb-1">💬 알림톡 자동 발송</h3>
+                <p class="text-xs text-gray-300">배송 및 당첨 안내 100% 카카오 알림톡 자동화</p>
+            </div>
+            <div class="phone-mockup border-yellow-500/30">
+                <video src="/assets/videos/shipping_demo.MP4" class="w-full h-full object-cover" autoplay loop muted playsinline></video>
+            </div>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="flex flex-col items-center">
+            <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700 px-4 py-3 rounded-2xl mb-6 shadow-xl text-center w-full max-w-[280px]">
+                <h3 class="text-lg font-bold text-purple-400 mb-1">✨ 시리즈별 상품 선택</h3>
+                <p class="text-xs text-gray-300">다양한 쿠지 시리즈 관리 및 손쉬운 라인업 선택</p>
+            </div>
+            <div class="phone-mockup border-purple-500/30">
+                <video src="/assets/videos/intro_serise_select_demo.MP4" class="w-full h-full object-cover" autoplay loop muted playsinline></video>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 🤝 파트너 모집 구역 -->
+    <section class="max-w-3xl mx-auto px-6 mt-20 relative z-10">
+        <div class="w-full bg-slate-900/80 backdrop-blur-md border border-slate-700 rounded-3xl p-6 md:p-10 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-pink-500 to-purple-500"></div>
+
+            <h3 class="text-xl md:text-2xl font-extrabold text-center text-white mb-6 tracking-tight">
+                🚀 사업을 확장할 파트너 & 초기 가맹점을 모십니다
+            </h3>
+            
+            <ul class="space-y-4 text-sm md:text-base text-gray-200 font-medium">
+                <li class="flex items-start bg-white/5 p-3 rounded-xl border border-white/5">
+                    <span class="text-green-400 mr-3 text-lg leading-none mt-0.5">✅</span> 
+                    <span>서비스 핵심 기능 구축 완료, 즉시 시범 도입 가능 (결제 PG 연동 완료)</span>
+                </li>
+                <li class="flex items-start bg-white/5 p-3 rounded-xl border border-white/5">
+                    <span class="text-green-400 mr-3 text-lg leading-none mt-0.5">✅</span> 
+                    <span><strong class="text-pink-400 font-bold">초기 가맹점 입점 수수료 6개월 무료</strong> 혜택 지원</span>
+                </li>
+                <li class="flex items-start bg-white/5 p-3 rounded-xl border border-white/5">
+                    <span class="text-green-400 mr-3 text-lg leading-none mt-0.5">✅</span> 
+                    <span>B2B 오프라인 샵 영업을 함께할 파트너 및 코파운더 대환영</span>
+                </li>
+            </ul>
+
+            <!-- 연락처 영역 -->
+            <div class="mt-8 flex justify-center bg-slate-950/80 rounded-2xl p-5 border border-slate-800">
+                <!-- 카카오톡 채널 채팅 버튼 -->
+                <div class="flex flex-col items-center gap-2">
+                    <a id="chat-channel-button" href="javascript:chatChannel()" class="hover:scale-105 transition-transform cursor-pointer inline-block">
+                        <img src="https://developers.kakao.com/tool/resource/static/img/button/channel/consult/consult_small_yellow_pc.png"
+                            alt="카카오톡 채널 채팅 버튼" class="h-10 object-contain" />
+                    </a>
+                    <span class="text-xs text-gray-400 font-bold">1:1 파트너십 문의하기</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 카카오톡 채널 SDK 및 설정 -->
+    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.1/kakao.min.js" integrity="sha384-OL+ylM/iuPLtW5U3XcvLSGhE8JzReKDank5InqlHGWPhb4140/yrBw0bg0y7+C9J" crossorigin="anonymous"></script>
+    <script>
+      // 개발자님의 실제 JavaScript 키를 여기에 입력해주세요.
+      Kakao.init('b5093376c961399884efc39d88b7a60e');
+      
+      function chatChannel() {
+        Kakao.Channel.chat({
+          // 추가하려는 채널 Public ID를 여기에 입력해주세요. (예: _xcLxwcl)
+          channelPublicId: '_sdvGX',
+        });
+      }
+    </script>
+</body>
+</html>
