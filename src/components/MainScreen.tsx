@@ -191,6 +191,7 @@ export default function MainScreen({ onStart, banners }: MainScreenProps) {
                   src="/brochure.html" 
                   className="absolute inset-0 w-full h-full border-0"
                   title="브로셔"
+                  sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation"
                 />
               </div>
               
