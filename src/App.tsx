@@ -261,6 +261,8 @@ async function handleRefresh() {
       localStorage.removeItem("point_charge_pending");
       alert(decodeURIComponent(failMessage));
       window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (urlParams.get("action") === "signup") {
+      setScreen("login");
     } else if (urlParams.has("code")) {
       setScreen("kakaoCallback");
     } else if (window.location.hash.includes("access_token")) {
