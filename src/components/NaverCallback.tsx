@@ -33,16 +33,30 @@ export default function NaverCallback({
     }
   }, []);
 
-  const handleNaverLogin = async (naverAccessToken: string) => {
+  const handleNaverLogin = async (naverAccessToken: string, isTermsAgreed?: boolean, isPrivacyAgreed?: boolean, isMarketingAgreed?: boolean) => {
     try {
-      // 프론트엔드에서 발급받은 액세스 토큰으로 우리 백엔드에 로그인 요청
-      const data = await loginWithNaver(naverAccessToken);
-      
-      // 토큰 저장 및 실제 사용자 상세 정보 가져오기
-      // (로그인 유지 체크 상태를 모르므로 기본적으로 localStorage 사용, 실제 서비스에선 개선 필요)
+      const data = await loginWithNaver(naverAccessToken, isTermsAgreed, isPrivacyAgreed, isMarketingAgreed);
+
+      // 신규 회원 → 약관 동의 필요
+      if ((data as any).isNewUser && !(data as any).token) {
+        const agreed = confirm(
+          `[네이버 로그인 - 약관 동의]\n\n` +
+          `이치방쿠지 서비스 이용을 위해 약관에 동의해 주세요.\n\n` +
+          `• [필수] 이용약관 동의\n` +
+          `• [필수] 개인정보 처리방침 동의\n\n` +
+          `확인을 누르시면 동의하고 가입이 완료됩니다.`
+        );
+        if (!agreed) {
+          onLoginFailure("약관 동의가 필요합니다.");
+          return;
+        }
+        // 약관 동의 후 재시도
+        await handleNaverLogin(naverAccessToken, true, true, false);
+        return;
+      }
+
       localStorage.setItem("token", data.token);
       const userData = await fetchMyProfile();
-      
       onLoginSuccess(data.token, userData);
     } catch (error: any) {
       console.error("Naver Login Error:", error);

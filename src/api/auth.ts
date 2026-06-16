@@ -23,8 +23,18 @@ export const loginWithKakao = async (kakaoAccessToken: string): Promise<{token: 
 /**
  * 네이버 로그인 요청
  */
-export const loginWithNaver = async (naverAccessToken: string): Promise<{token: string}> => {
-  const response = await axiosInstance.post(`${API_BASE_URL}/login/naver`, { naverAccessToken });
+export const loginWithNaver = async (
+  naverAccessToken: string,
+  isTermsAgreed?: boolean,
+  isPrivacyAgreed?: boolean,
+  isMarketingAgreed?: boolean
+): Promise<{token: string; isNewUser?: boolean}> => {
+  const response = await axiosInstance.post(`${API_BASE_URL}/login/naver`, {
+    naverAccessToken,
+    isTermsAgreed,
+    isPrivacyAgreed,
+    isMarketingAgreed,
+  });
   return response.data;
 };
 

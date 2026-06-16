@@ -1918,6 +1918,34 @@ async function handleRefresh() {
             }}
           />
         )}
+        {screen === "naverCallback" && (
+          <NaverCallback
+            onLoginSuccess={(token, userData) => {
+              localStorage.setItem("token", token);
+              const formattedUser = {
+                name: userData.nickname || userData.name,
+                email: userData.email,
+                type: (userData.role === "BIZ" ? "business" : "social") as any,
+                points: userData.points || 0,
+                profileImageUrl: userData.profileImageUrl || "",
+              };
+              setUser(formattedUser);
+              window.history.replaceState({}, document.title, window.location.pathname);
+              if (formattedUser.type === "business") {
+                setScreen("businessDashboard");
+              } else {
+                setScreen("main");
+                handleFetchWishlist();
+              }
+              sonnerToast.success("네이버 로그인에 성공했습니다!");
+            }}
+            onLoginFailure={(error) => {
+              setScreen("login");
+              window.history.replaceState({}, document.title, window.location.pathname);
+              sonnerToast.error(`로그인 실패: ${error}`);
+            }}
+          />
+        )}
         {screen === "businessPending" && (
           <BusinessPending
             user={user}

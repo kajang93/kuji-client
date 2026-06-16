@@ -75,7 +75,6 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       
       // Implicit Grant 방식 (response_type=token)으로 액세스 토큰을 바로 발급받음 (CORS 문제 회피)
       const NAVER_AUTH_URL = `https://nid.naver.com/oauth2.0/authorize?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}`;
-      alert("요청 URL 확인용: \n" + NAVER_AUTH_URL);
       window.location.href = NAVER_AUTH_URL;
       return;
     }
