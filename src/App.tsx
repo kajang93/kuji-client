@@ -40,6 +40,7 @@ import LiveTicker from "./components/LiveTicker";
 import { Menu } from "./components/icons";
 import { Toaster, toast, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
+import NaverCallback from "./components/NaverCallback";
 import BusinessPending from "./components/BusinessPending";
 import PointCharge from "./components/PointCharge";
 import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory, fetchSellerKujiBoards, deleteKujiBoard } from "./api/kuji";
@@ -262,6 +263,9 @@ async function handleRefresh() {
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (urlParams.has("code")) {
       setScreen("kakaoCallback");
+    } else if (window.location.hash.includes("access_token")) {
+      // 네이버 로그인은 Implicit Grant 방식이라 URL hash로 토큰이 옴
+      setScreen("naverCallback");
     } else if (token && token !== "undefined" && token !== "null") {
       handleFetchUserInfo(token);
     }

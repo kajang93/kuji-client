@@ -23,6 +23,17 @@ export default function Login({ onLogin, onBack }: LoginProps) {
   const [showFindId, setShowFindId] = useState(false);
   const [showFindPw, setShowFindPw] = useState(false);
   const [findEmail, setFindEmail] = useState('');
+
+  // URL 파라미터로 회원가입 페이지 직접 접근 처리
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("action") === "signup") {
+      setActiveTab('business');
+      setShowSignup(true);
+      // 브라우저 주소창에서 파라미터 숨기기
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
   const [findPhone, setFindPhone] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [logoClickCount, setLogoClickCount] = useState(0);
@@ -44,6 +55,27 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code`;
 
       window.location.href = KAKAO_AUTH_URL;
+      return;
+    }
+
+    if (provider === 'naver') {
+      const CLIENT_ID = import.meta.env.VITE_NAVER_CLIENT_ID;
+      if (!CLIENT_ID) {
+        toast.error("네이버 로그인이 설정되지 않았습니다.");
+        return;
+      }
+      
+      // 로컬 환경에서 127.0.0.1로 접속했을 때 네이버가 거부하는 현상 방지
+      const REDIRECT_URI = import.meta.env.DEV 
+        ? "http://localhost:5173/auth/naver/callback" 
+        : "https://kujishop.shop/auth/naver/callback";
+
+      // state는 임의의 난수 문자열로 생성
+      const STATE = Math.random().toString(36).substring(2, 15);
+      
+      // Implicit Grant 방식 (response_type=token)으로 액세스 토큰을 바로 발급받음 (CORS 문제 회피)
+      const NAVER_AUTH_URL = `https://nid.naver.com/oauth2.0/authorize?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}`;
+      window.location.href = NAVER_AUTH_URL;
       return;
     }
 

@@ -165,6 +165,7 @@ export type ScreenType =
   | "adminUserManagement"
   | "adminStatistics"
   | "kakaoCallback"
+  | "naverCallback"
   | "businessPending"
   | "pointCharge";
 
