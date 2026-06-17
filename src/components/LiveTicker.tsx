@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { Trophy, Zap } from './icons';
 import { fetchRecentDrawHistory } from '../api/kuji';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 interface RecentDraw {
   maskedNickname: string;
@@ -19,9 +21,37 @@ export default function LiveTicker() {
     // 초기 로드
     loadWinnings();
 
-    // 1분마다 당첨 내역 갱신
-    const interval = setInterval(loadWinnings, 60000);
-    return () => clearInterval(interval);
+    const socketUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8080';
+    
+    const client = new Client({
+      webSocketFactory: () => new SockJS(`${socketUrl}/ws`),
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
+      onConnect: () => {
+        console.log('Connected to WebSocket Ticker');
+        client.subscribe('/topic/draw-ticker', (message) => {
+          if (message.body) {
+            const newDraw = JSON.parse(message.body) as RecentDraw;
+            setWinnings(prev => {
+              const newWinnings = [newDraw, ...prev].slice(0, 20); // 최대 20개 유지
+              return newWinnings;
+            });
+            // 새 당첨 내역이 들어오면 즉시 화면에 표시
+            setCurrentIndex(0);
+          }
+        });
+      },
+      onStompError: (frame) => {
+        console.error('Broker reported error: ' + frame.headers['message']);
+      },
+    });
+
+    client.activate();
+
+    return () => {
+      client.deactivate();
+    };
   }, []);
 
   useEffect(() => {
