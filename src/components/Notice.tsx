@@ -152,8 +152,7 @@ export default function Notice({ onBack }: NoticeProps) {
                   <iframe 
                     src="/brochure.html" 
                     className="w-full h-full border-0"
-                    title="온라인 쿠지 플랫폼 브로셔"
-                    sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation"
+                    title="브로셔"
                   />
                 </div>
               ) : (

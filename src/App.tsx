@@ -41,6 +41,7 @@ import { Menu } from "./components/icons";
 import { Toaster, toast, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import NaverCallback from "./components/NaverCallback";
+import GoogleCallback from "./components/GoogleCallback";
 import BusinessPending from "./components/BusinessPending";
 import PointCharge from "./components/PointCharge";
 import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory, fetchSellerKujiBoards, deleteKujiBoard } from "./api/kuji";
@@ -266,8 +267,12 @@ async function handleRefresh() {
     } else if (urlParams.has("code")) {
       setScreen("kakaoCallback");
     } else if (window.location.hash.includes("access_token")) {
-      // 네이버 로그인은 Implicit Grant 방식이라 URL hash로 토큰이 옴
-      setScreen("naverCallback");
+      const state = new URLSearchParams(window.location.hash.substring(1)).get("state");
+      if (state?.startsWith("google_")) {
+        setScreen("googleCallback");
+      } else {
+        setScreen("naverCallback");
+      }
     } else if (token && token !== "undefined" && token !== "null") {
       handleFetchUserInfo(token);
     }
@@ -1938,6 +1943,34 @@ async function handleRefresh() {
                 handleFetchWishlist();
               }
               sonnerToast.success("네이버 로그인에 성공했습니다!");
+            }}
+            onLoginFailure={(error) => {
+              setScreen("login");
+              window.history.replaceState({}, document.title, window.location.pathname);
+              sonnerToast.error(`로그인 실패: ${error}`);
+            }}
+          />
+        )}
+        {screen === "googleCallback" && (
+          <GoogleCallback
+            onLoginSuccess={(token, userData) => {
+              localStorage.setItem("token", token);
+              const formattedUser = {
+                name: userData.nickname || userData.name,
+                email: userData.email,
+                type: (userData.role === "BIZ" ? "business" : "social") as any,
+                points: userData.points || 0,
+                profileImageUrl: userData.profileImageUrl || "",
+              };
+              setUser(formattedUser);
+              window.history.replaceState({}, document.title, window.location.pathname);
+              if (formattedUser.type === "business") {
+                setScreen("businessDashboard");
+              } else {
+                setScreen("main");
+                handleFetchWishlist();
+              }
+              sonnerToast.success("구글 로그인에 성공했습니다!");
             }}
             onLoginFailure={(error) => {
               setScreen("login");

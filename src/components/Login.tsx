@@ -65,17 +65,35 @@ export default function Login({ onLogin, onBack }: LoginProps) {
         return;
       }
       
-      // 로컬 환경에서 127.0.0.1로 접속했을 때 네이버가 거부하는 현상 방지
       const REDIRECT_URI = import.meta.env.DEV 
         ? "http://localhost:5173/auth/naver/callback" 
         : "https://kujishop.shop/auth/naver/callback";
 
-      // state는 임의의 난수 문자열로 생성
-      const STATE = Math.random().toString(36).substring(2, 15);
+      // App.tsx에서 구별하기 위해 접두사 추가
+      const STATE = "naver_" + Math.random().toString(36).substring(2, 15);
       
-      // Implicit Grant 방식 (response_type=token)으로 액세스 토큰을 바로 발급받음 (CORS 문제 회피)
       const NAVER_AUTH_URL = `https://nid.naver.com/oauth2.0/authorize?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}`;
       window.location.href = NAVER_AUTH_URL;
+      return;
+    }
+
+    if (provider === 'google') {
+      const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (!CLIENT_ID) {
+        toast.error("구글 로그인이 설정되지 않았습니다.");
+        return;
+      }
+
+      const REDIRECT_URI = import.meta.env.DEV 
+        ? "http://localhost:5173/auth/google/callback" 
+        : "https://kujishop.shop/auth/google/callback";
+
+      // App.tsx에서 구별하기 위해 접두사 추가
+      const STATE = "google_" + Math.random().toString(36).substring(2, 15);
+      const SCOPE = encodeURIComponent("https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile");
+      
+      const GOOGLE_AUTH_URL = `https://accounts.google.com/o/oauth2/v2/auth?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}&scope=${SCOPE}`;
+      window.location.href = GOOGLE_AUTH_URL;
       return;
     }
 

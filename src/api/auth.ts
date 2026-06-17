@@ -39,6 +39,24 @@ export const loginWithNaver = async (
 };
 
 /**
+ * 구글 로그인 요청
+ */
+export const loginWithGoogle = async (
+  googleAccessToken: string,
+  isTermsAgreed?: boolean,
+  isPrivacyAgreed?: boolean,
+  isMarketingAgreed?: boolean
+): Promise<{token: string; isNewUser?: boolean}> => {
+  const response = await axiosInstance.post(`${API_BASE_URL}/login/google`, {
+    googleAccessToken,
+    isTermsAgreed,
+    isPrivacyAgreed,
+    isMarketingAgreed,
+  });
+  return response.data;
+};
+
+/**
  * 내 정보 조회
  */
 export const fetchMyProfile = async (): Promise<MemberProfileResponse> => {
