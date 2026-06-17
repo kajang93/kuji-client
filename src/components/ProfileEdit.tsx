@@ -188,8 +188,9 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              maxLength={12}
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-pink-400"
-              placeholder="이름 입력"
+              placeholder="이름 입력 (최대 12자)"
             />
           </div>
 
