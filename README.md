@@ -164,6 +164,17 @@
 
 ---
 
+## 🛠 프론트엔드 리팩토링 로드맵 (Frontend Refactoring Roadmap)
+현재 `App.tsx`에 집중된 모놀리식 구조를 현대적인 React 아키텍처로 개편하여 유지보수성 및 성능을 극대화합니다.
+
+- **Routing Architecture**: `react-router-dom` 도입을 통한 페이지 분리 및 URL 라우팅 체계 구축
+- **Global State Management**: `Zustand` 도입을 통한 전역 상태 관리 (유저 정보, 장바구니, 모달 제어 등) 및 Prop Drilling 제거
+- **Server State Management**: `@tanstack/react-query` 도입을 통한 API 로딩, 캐싱, 에러 핸들링 및 서버 데이터 동기화 최적화
+- **Code Splitting & Lazy Loading**: `React.lazy`와 `Suspense`를 활용한 페이지 단위 번들 스플리팅으로 초기 로딩 속도(FCP) 극대화
+- **SEO & Meta Tags**: `react-helmet-async`를 도입하여 상품별 동적 타이틀 및 Open Graph 메타 태그 최적화
+
+---
+
 ## 📂 폴더 구조 (Project Structure)
 
 ```bash
