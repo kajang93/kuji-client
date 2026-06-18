@@ -67,7 +67,7 @@ export default function KujiSelection({ boardId, totalKuji, purchaseCount, point
         // 1. Prepare payment via Backend
         const prepareRes = await prepareKujiPayment(boardId, {
           count: purchaseCount,
-          metadata: JSON.stringify({ pointsUsed: pointsToUse }) // Save extra info if needed
+          pointsUsed: pointsToUse 
         });
 
         // 2. Save session locally to recover after redirect

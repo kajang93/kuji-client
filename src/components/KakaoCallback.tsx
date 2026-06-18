@@ -52,8 +52,12 @@ export default function KakaoCallback({
       const kakaoAccessToken = tokenData.access_token;
 
       // [STEP 2] 프런트엔드 ➡️ 우리 백엔드 : "이 토큰(kakaoAccessToken)으로 로그인시켜줘!"
-      const data = await loginWithKakao(kakaoAccessToken);
+      const data = await loginWithKakao(kakaoAccessToken, true, true, false);
       
+      if (data.isNewUser && !data.token) {
+        throw new Error("신규 가입 처리에 실패했습니다. 약관 동의를 다시 확인해주세요.");
+      }
+
       // 토큰으로 실제 사용자 상세 정보 가져오기
       localStorage.setItem("token", data.token);
       const userData = await fetchMyProfile();

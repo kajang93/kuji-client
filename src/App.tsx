@@ -650,6 +650,17 @@ async function handleRefresh() {
       setSelectedKuji(kujiIndices);
       setSelectedAnime(updatedAnime);
 
+      // 사용한 포인트 로컬 상태 차감
+      if (pointsToUse > 0) {
+        setUser(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            points: Math.max(0, (prev.points || 0) - pointsToUse)
+          };
+        });
+      }
+
       // Update the collection in the list as well
       setAnimeCollections(prev => prev.map(c =>
         c.id === updatedAnime.id ? updatedAnime : c

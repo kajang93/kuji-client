@@ -15,8 +15,18 @@ export const login = async (email: string, password: string): Promise<any> => {
 /**
  * 카카오 로그인 요청 (백엔드 세션 발급)
  */
-export const loginWithKakao = async (kakaoAccessToken: string): Promise<{token: string}> => {
-  const response = await axiosInstance.post(`${API_BASE_URL}/login/kakao`, { kakaoAccessToken });
+export const loginWithKakao = async (
+  kakaoAccessToken: string,
+  isTermsAgreed?: boolean,
+  isPrivacyAgreed?: boolean,
+  isMarketingAgreed?: boolean
+): Promise<any> => {
+  const response = await axiosInstance.post(`${API_BASE_URL}/login/kakao`, { 
+    kakaoAccessToken,
+    isTermsAgreed,
+    isPrivacyAgreed,
+    isMarketingAgreed
+  });
   return response.data;
 };
 

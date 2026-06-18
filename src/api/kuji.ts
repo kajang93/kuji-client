@@ -132,7 +132,7 @@ export const deleteKujiItem = async (itemId: number): Promise<void> => {
 };
 export interface PreparePaymentRequest {
   count: number;
-  metadata?: string;
+  pointsUsed?: number;
 }
 
 export interface PreparePaymentResponse {
