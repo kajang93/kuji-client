@@ -52,14 +52,27 @@ axiosInstance.interceptors.response.use(
     if (error?.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        // Call refresh endpoint; server should set new access token cookie
-        await axiosInstance.post('/auth/refresh');
-        // Retry original request with new cookie
+        // Call refresh endpoint; server reads HttpOnly cookie and returns new access token
+        const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL || ''}/api/members/refresh`, {}, { withCredentials: true });
+        
+        const newToken = res.data;
+        
+        if (localStorage.getItem('token')) {
+          localStorage.setItem('token', newToken);
+        } else {
+          sessionStorage.setItem('token', newToken);
+        }
+
+        // Retry original request with new token
+        originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         // Refresh failed – force logout flow
-        toast.error('세션이 만료되었습니다. 다시 로그인해주세요.');
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
+        toast.error('로그인이 만료되었습니다. 다시 로그인해주세요.');
         // Optionally you could redirect to login screen here
+        // window.location.href = '/?action=login';
         return Promise.reject(refreshError);
       }
     }
