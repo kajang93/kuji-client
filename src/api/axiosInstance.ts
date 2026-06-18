@@ -55,12 +55,15 @@ axiosInstance.interceptors.response.use(
         // Call refresh endpoint; server reads HttpOnly cookie and returns new access token
         const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL || ''}/api/members/refresh`, {}, { withCredentials: true });
         
-        const newToken = res.data;
+        // 서버에서 이제 LoginResponse (객체) 를 반환하므로 token 필드를 추출해야 함
+        const newToken = typeof res.data === 'string' ? res.data : res.data?.token;
         
-        if (localStorage.getItem('token')) {
-          localStorage.setItem('token', newToken);
-        } else {
-          sessionStorage.setItem('token', newToken);
+        if (newToken) {
+          if (localStorage.getItem('token')) {
+            localStorage.setItem('token', newToken);
+          } else {
+            sessionStorage.setItem('token', newToken);
+          }
         }
 
         // Retry original request with new token
