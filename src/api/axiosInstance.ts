@@ -79,6 +79,15 @@ axiosInstance.interceptors.response.use(
         return Promise.reject(refreshError);
       }
     }
+
+    // 글로벌 에러 메시지 정제: 백엔드에서 넘겨주는 JSON 에러 메시지가 있다면 최우선으로 적용
+    // 없다면 브라우저 기본 에러(Network Error, Request failed with status 401 등) 대신 한글 안내 문구 적용
+    if (error?.response?.data?.message) {
+      error.message = error.response.data.message;
+    } else if (error?.message?.includes('status code') || error?.message?.includes('Network Error')) {
+      error.message = '서버 통신 중 오류가 발생했습니다.';
+    }
+
     return Promise.reject(error);
   }
 );
