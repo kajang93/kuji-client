@@ -33,26 +33,13 @@ export default function NaverCallback({
     }
   }, []);
 
-  const handleNaverLogin = async (naverAccessToken: string, isTermsAgreed?: boolean, isPrivacyAgreed?: boolean, isMarketingAgreed?: boolean) => {
+  const handleNaverLogin = async (naverAccessToken: string) => {
     try {
-      const data = await loginWithNaver(naverAccessToken, isTermsAgreed, isPrivacyAgreed, isMarketingAgreed);
+      // 카카오와 동일하게 무조건 필수 약관 동의를 true로 넘겨서 가입 처리
+      const data = await loginWithNaver(naverAccessToken, true, true, false);
 
-      // 신규 회원 → 약관 동의 필요
       if ((data as any).isNewUser && !(data as any).token) {
-        const agreed = confirm(
-          `[네이버 로그인 - 약관 동의]\n\n` +
-          `이치방쿠지 서비스 이용을 위해 약관에 동의해 주세요.\n\n` +
-          `• [필수] 이용약관 동의\n` +
-          `• [필수] 개인정보 처리방침 동의\n\n` +
-          `확인을 누르시면 동의하고 가입이 완료됩니다.`
-        );
-        if (!agreed) {
-          onLoginFailure("약관 동의가 필요합니다.");
-          return;
-        }
-        // 약관 동의 후 재시도
-        await handleNaverLogin(naverAccessToken, true, true, false);
-        return;
+        throw new Error("신규 가입 처리에 실패했습니다. 약관 동의를 다시 확인해주세요.");
       }
 
       localStorage.setItem("token", data.token);
