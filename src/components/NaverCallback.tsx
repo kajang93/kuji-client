@@ -47,7 +47,8 @@ export default function NaverCallback({
       onLoginSuccess(data.token, userData);
     } catch (error: any) {
       console.error("Naver Login Error:", error);
-      onLoginFailure(error.message || "서버 통신 중 오류가 발생했습니다.");
+      const errorMessage = error.response?.data?.message || error.message || "서버 통신 중 오류가 발생했습니다.";
+      onLoginFailure(errorMessage);
     }
   };
 
