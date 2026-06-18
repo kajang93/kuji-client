@@ -21,7 +21,7 @@ export default function LiveTicker() {
     // 초기 로드
     loadWinnings();
 
-    const socketUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8080';
+    const socketUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
     
     const client = new Client({
       webSocketFactory: () => new SockJS(`${socketUrl}/ws`),
