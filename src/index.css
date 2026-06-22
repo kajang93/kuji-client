@@ -5,7 +5,34 @@
 @source './**/*.{js,ts,jsx,tsx}';
 
 @layer base {
-  html, body, #root { min-height: 100vh; height: 100%; margin: 0; }
+  html {
+    background-color: #0f172a;
+  }
+
+  body {
+    background-color: #020617; /* 데스크탑 접속 시 양옆 여백 배경색 */
+    display: flex;
+    justify-content: center;
+    margin: 0;
+    min-height: 100vh;
+    /* ✅ iOS Safari 텍스트 크기 자동 조정 방지 */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  #root {
+    width: 100%;
+    max-width: 480px; /* 스마트폰 최대 너비 제한 */
+    min-height: 100vh;
+    height: 100%;
+    margin: 0 auto;
+    position: relative;
+    background-color: #0f172a;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    
+    /* 🚀 핵심: fixed 요소를 브라우저 전체가 아닌 #root 내부에 가두는 마법의 속성 */
+    transform: translateZ(0); 
+    overflow-x: hidden;
+  }
 
   /* ✅ iOS WebView 터치 버그 방지 */
   * {
@@ -23,8 +50,5 @@
     min-width: 44px;
   }
 
-  /* ✅ iOS Safari 텍스트 크기 자동 조정 방지 */
-  body {
-    -webkit-text-size-adjust: 100%;
-  }
+
 }
