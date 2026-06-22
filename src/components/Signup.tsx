@@ -378,7 +378,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                   type="button"
                   onClick={handleBusinessNumberCheck}
                   disabled={formData.businessNumber.length !== 10}
-                  className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap ${
+                  className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap shrink-0 ${
                     formData.businessNumber.length === 10
                       ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                       : 'bg-gray-600 text-gray-400 cursor-not-allowed'
@@ -451,7 +451,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
               type="button"
               onClick={handlePasswordCheck}
               disabled={formData.password.length === 0}
-              className={`flex items-center justify-center px-4 sm:px-6 py-3 rounded-xl whitespace-nowrap text-sm sm:text-base ${
+              className={`flex items-center justify-center px-4 sm:px-6 py-3 rounded-xl whitespace-nowrap shrink-0 text-sm sm:text-base ${
                 formData.password.length > 0
                   ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                   : 'bg-gray-600 text-gray-400 cursor-not-allowed'
@@ -496,7 +496,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                   }
                 }}
                 disabled={!formData.passwordConfirm}
-                className={`flex items-center justify-center px-4 sm:px-6 py-3 rounded-xl whitespace-nowrap text-sm sm:text-base ${
+                className={`flex items-center justify-center px-4 sm:px-6 py-3 rounded-xl whitespace-nowrap shrink-0 text-sm sm:text-base ${
                   formData.passwordConfirm
                     ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
@@ -575,7 +575,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
               type="button"
               onClick={handleEmailCheck}
               disabled={!formData.emailId}
-              className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap font-bold ${
+              className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap shrink-0 font-bold ${
                 formData.emailId
                   ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                   : 'bg-gray-600 text-gray-400 cursor-not-allowed'
@@ -624,7 +624,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                 type="button"
                 onClick={handleSendVerification}
                 disabled={formData.phone.length < 10}
-                className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap ${
+                className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap shrink-0 ${
                   formData.phone.length >= 10
                     ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
@@ -654,7 +654,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                 type="button"
                 onClick={handleVerifyPhone}
                 disabled={formData.verificationCode.length !== 6}
-                className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap ${
+                className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap shrink-0 ${
                   formData.verificationCode.length === 6
                     ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
@@ -690,7 +690,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                 <button
                   type="button"
                   onClick={() => setShowAddressModal(true)}
-                  className="px-4 py-3 bg-amber-500 text-slate-900 rounded-xl hover:bg-amber-400 font-medium whitespace-nowrap"
+                  className="px-4 py-3 bg-amber-500 text-slate-900 rounded-xl hover:bg-amber-400 font-medium whitespace-nowrap shrink-0"
                 >
                   우편번호 검색
                 </button>
@@ -758,7 +758,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                 <button
                   type="button"
                   onClick={() => setShowShippingAddressModal(true)}
-                  className="px-4 py-3 bg-amber-500 text-slate-900 rounded-xl hover:bg-amber-400 font-medium whitespace-nowrap"
+                  className="px-4 py-3 bg-amber-500 text-slate-900 rounded-xl hover:bg-amber-400 font-medium whitespace-nowrap shrink-0"
                 >
                   우편번호 검색
                 </button>

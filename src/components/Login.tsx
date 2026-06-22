@@ -659,7 +659,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                           type="button"
                           onClick={handleSendSms}
                           disabled={isCodeSent}
-                          className="px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl whitespace-nowrap transition-colors disabled:opacity-50"
+                          className="px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl whitespace-nowrap shrink-0 transition-colors disabled:opacity-50"
                         >
                           {isCodeSent ? '발송됨' : '인증요청'}
                         </button>
