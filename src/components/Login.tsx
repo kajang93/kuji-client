@@ -618,17 +618,37 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 </div>
 
                 {foundEmail ? (
-                  <div className="text-center py-8 space-y-6">
-                    <div className="w-16 h-16 bg-pink-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="text-center py-6 space-y-4">
+                    <div className="w-16 h-16 bg-pink-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
                       <Mail className="w-8 h-8 text-pink-400" />
                     </div>
-                    <h3 className="text-white text-lg">고객님의 가입된 이메일입니다</h3>
-                    <div className="bg-white/10 border border-white/20 p-4 rounded-xl text-2xl font-bold text-pink-300">
-                      {foundEmail}
+                    <h3 className="text-white text-lg">가입된 계정 목록입니다<br/><span className="text-sm text-slate-400 mt-2 block">로그인할 계정을 선택해주세요</span></h3>
+                    
+                    <div className="flex flex-col gap-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar text-left mt-4">
+                      {foundEmail.split('\n').map((emailLine, idx) => {
+                        const emailOnly = emailLine.split(' ')[0]; // 이메일 부분만 추출
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setUserId(emailOnly);
+                              setShowFindId(false);
+                              setFoundEmail('');
+                              setFindPhone('');
+                              setVerificationCode('');
+                              setIsCodeSent(false);
+                            }}
+                            className="w-full bg-white/5 border border-white/20 hover:bg-white/10 hover:border-pink-400 p-4 rounded-xl text-left transition-all group flex flex-col items-start"
+                          >
+                            <span className="text-base font-bold text-pink-300 group-hover:text-pink-200 break-all leading-relaxed">
+                              {emailLine}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+
+                    <button
                       onClick={() => {
                         setShowFindId(false);
                         setFoundEmail('');
@@ -636,10 +656,10 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                         setVerificationCode('');
                         setIsCodeSent(false);
                       }}
-                      className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl shadow-xl mt-6"
+                      className="text-slate-400 text-sm hover:text-white underline mt-4"
                     >
-                      로그인하기
-                    </motion.button>
+                      닫기
+                    </button>
                   </div>
                 ) : (
                   <form onSubmit={handleFindId} className="space-y-4">
