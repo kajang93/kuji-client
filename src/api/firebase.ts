@@ -1,5 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -37,6 +39,39 @@ export const onForegroundMessage = (callback: (payload: any) => void) => {
  * Prompts the user for notification permissions if not already granted.
  */
 export const requestFirebaseToken = async (): Promise<string | null> => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      let permStatus = await PushNotifications.checkPermissions();
+      if (permStatus.receive === 'prompt') {
+        permStatus = await PushNotifications.requestPermissions();
+      }
+      if (permStatus.receive !== 'granted') {
+        console.log("앱 푸시 권한이 거부되었습니다.");
+        return null;
+      }
+
+      // Add listener to capture token
+      return new Promise(async (resolve) => {
+        await PushNotifications.removeAllListeners();
+        
+        PushNotifications.addListener('registration', (token) => {
+          console.log("네이티브 FCM 토큰 발급 성공:", token.value);
+          resolve(token.value);
+        });
+
+        PushNotifications.addListener('registrationError', (error) => {
+          console.error("네이티브 FCM 토큰 등록 에러:", error);
+          resolve(null);
+        });
+
+        await PushNotifications.register();
+      });
+    } catch (err) {
+      console.error("네이티브 푸시 설정 실패:", err);
+      return null;
+    }
+  }
+
   if (!messaging) {
     console.warn("이 브라우저에서는 Firebase 메시징이 지원되지 않습니다.");
     return null;

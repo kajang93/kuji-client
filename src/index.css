@@ -29,6 +29,12 @@
     background-color: #0f172a;
     box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
     
+    /* iOS Safe Area 대응 (아이폰 노치/하단 홈바 여백 확보) */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    
     /* 🚀 핵심: fixed 요소를 브라우저 전체가 아닌 #root 내부에 가두는 마법의 속성 */
     transform: translateZ(0); 
     overflow-x: hidden;
@@ -40,6 +46,14 @@
     touch-action: manipulation;
     /* 탭 시 파란 하이라이트 제거 */
     -webkit-tap-highlight-color: transparent;
+    /* 모바일 앱 환경처럼 텍스트 드래그(선택) 방지 (입력창 제외) */
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  input, textarea {
+    -webkit-user-select: auto;
+    user-select: auto;
   }
 
   /* ✅ 버튼 클릭 영역 및 포인터 강제 적용 */

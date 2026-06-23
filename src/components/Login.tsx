@@ -4,6 +4,8 @@ import { ChevronLeft, Mail, Building2, Users, Eye, EyeOff, X, Ticket } from './i
 import { toast } from 'sonner';
 import { login, fetchMyProfile, findId, resetPassword, sendSms } from '../api/auth';
 import Signup from './Signup';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 // Auth Migration: Login.tsx updated.
 
@@ -54,7 +56,12 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       const REDIRECT_URI = `${window.location.origin}/auth/kakao/callback`;
       const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code`;
 
-      window.location.href = KAKAO_AUTH_URL;
+      if (Capacitor.isNativePlatform()) {
+        toast.info("모바일 앱 환경에서는 딥링크(App Link) 설정 전까지 소셜 로그인이 제한됩니다.");
+        // Browser.open({ url: KAKAO_AUTH_URL });
+      } else {
+        window.location.href = KAKAO_AUTH_URL;
+      }
       return;
     }
 
@@ -73,7 +80,13 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       const STATE = "naver_" + Math.random().toString(36).substring(2, 15);
       
       const NAVER_AUTH_URL = `https://nid.naver.com/oauth2.0/authorize?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}`;
-      window.location.href = NAVER_AUTH_URL;
+      
+      if (Capacitor.isNativePlatform()) {
+        toast.info("모바일 앱 환경에서는 딥링크(App Link) 설정 전까지 소셜 로그인이 제한됩니다.");
+        // Browser.open({ url: NAVER_AUTH_URL });
+      } else {
+        window.location.href = NAVER_AUTH_URL;
+      }
       return;
     }
 
@@ -93,7 +106,13 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       const SCOPE = encodeURIComponent("https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile");
       
       const GOOGLE_AUTH_URL = `https://accounts.google.com/o/oauth2/v2/auth?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}&scope=${SCOPE}`;
-      window.location.href = GOOGLE_AUTH_URL;
+      
+      if (Capacitor.isNativePlatform()) {
+        toast.info("모바일 앱 환경에서는 딥링크(App Link) 설정 전까지 소셜 로그인이 제한됩니다.");
+        // Browser.open({ url: GOOGLE_AUTH_URL });
+      } else {
+        window.location.href = GOOGLE_AUTH_URL;
+      }
       return;
     }
 
