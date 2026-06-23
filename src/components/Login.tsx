@@ -106,7 +106,9 @@ export default function Login({ onLogin, onBack }: LoginProps) {
     if (!userId || !userPw) return;
 
     try {
-      const token = await login(userId, userPw);
+      const response = await login(userId, userPw);
+      const token = response?.token || response; // 객체면 token 필드 추출, 아니면 그대로 사용
+      
       // rememberMe 체크 여부에 따라 저장소 분기
       if (token) {
         if (rememberMe) {
