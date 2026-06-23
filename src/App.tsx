@@ -172,6 +172,15 @@ useRefreshOnPageShow(handleRefresh);
 
       setAnimeCollections(mappedCollections);
       
+      // ✅ 상품 썸네일 즉시 프리로딩 (목록 진입 시 지연 없는 이미지 렌더링을 위해)
+      requestAnimationFrame(() => {
+        mappedCollections.forEach(collection => {
+          if (collection.image) {
+            const img = new Image();
+            img.src = collection.image;
+          }
+        });
+      });
       // 게시판 목록을 가져올 때 사용자의 찜 상태가 포함되어 있다면 wishlist ID 목록도 업데이트
       const wishedIds = boards
         .filter((b: KujiBoard) => b.isWished)
