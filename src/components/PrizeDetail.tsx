@@ -287,7 +287,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
               {/* Close Button */}
               <button
                 onClick={() => setShowPurchaseModal(false)}
-                className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"
+                className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors z-10"
               >
                 <X className="w-6 h-6 text-white" />
               </button>
