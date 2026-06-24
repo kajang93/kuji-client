@@ -169,28 +169,6 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
               </button>
             </div>
 
-            {settings.pushEnabled && (
-              <div className="px-5 pb-5 border-t border-white/10 pt-4 space-y-2">
-                <div className="text-white/40 text-xs font-semibold">디버그용 FCM 토큰 (테스트 시 복사하여 사용):</div>
-                <div className="bg-black/40 border border-white/10 rounded-xl p-3 flex items-center justify-between gap-3">
-                  <div className="text-indigo-200 text-xs font-mono truncate select-all flex-1">
-                    {localStorage.getItem('fcm_token') || '토큰 로딩 중...'}
-                  </div>
-                  <button
-                    onClick={() => {
-                      const token = localStorage.getItem('fcm_token');
-                      if (token) {
-                        navigator.clipboard.writeText(token);
-                        toast.success("FCM 토큰이 클립보드에 복사되었습니다! 📋");
-                      }
-                    }}
-                    className="px-3 py-1 bg-white/10 hover:bg-white/20 active:scale-95 text-white/80 hover:text-white rounded-lg text-xs transition-all flex-shrink-0 font-medium"
-                  >
-                    복사
-                  </button>
-                </div>
-              </div>
-            )}
           </motion.div>
 
           {/* Sound & Vibrate */}
