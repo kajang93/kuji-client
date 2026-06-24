@@ -716,9 +716,9 @@ async function handleRefresh() {
 
     setWinningHistory((prev) => [...newWinnings, ...prev]);
 
-    // 포인트 적립: 구매한 쿠지 개수당 100포인트씩
+    // 포인트 적립: 쿠지 판에 설정된 적립 포인트(rewardRate) 반영
     if (user) {
-      const earnedPoints = purchaseCount * 100;
+      const earnedPoints = revealedPrizes.length * (selectedAnime?.rewardRate || 0);
       setUser((prev) => {
         if (!prev) return prev;
         return {

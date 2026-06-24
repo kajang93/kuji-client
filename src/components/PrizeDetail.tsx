@@ -421,7 +421,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                 {/* Points to earn - Compact */}
                 <div className="bg-amber-500/20 rounded-lg p-2 border border-amber-400/30">
                   <div className="text-amber-200 text-xs text-center">
-                    ⭐ <span className="font-bold">{purchaseCount * 100}P</span> 적립 예정
+                    ⭐ <span className="font-bold">{purchaseCount * (collection.rewardRate || 0)}P</span> 적립 예정
                   </div>
                 </div>
               </div>
