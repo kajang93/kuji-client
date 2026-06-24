@@ -28,7 +28,7 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
           representative: data.ceoName || '-',
           phone: user.phone || data.phoneNumber || '-',
           email: user.email,
-          address: user.address || data.shippingAddress || '-',
+          address: data.businessAddress || '-',
           registrationDate: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : '-',
           status: data.status === 'APPROVED' ? '승인됨' : (data.status === 'REJECTED' ? '반려됨' : '심사중'),
         });

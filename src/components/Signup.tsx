@@ -299,6 +299,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       businessNumber: userType === 'business' ? formData.businessNumber : null,
       companyName: userType === 'business' ? formData.businessName : null,
       ceoName: userType === 'business' ? formData.managerName : null,
+      businessAddress: userType === 'business' ? formData.shippingAddress : null,
       isTermsAgreed: agreeTerms,
       isPrivacyAgreed: agreePrivacy,
       isMarketingAgreed: agreeMarketing
