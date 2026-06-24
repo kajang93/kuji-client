@@ -59,6 +59,7 @@ export type AnimeCollection = {
   operationStatus?: "scheduled" | "active" | "ended";
   boardId?: number; // Backend alignment
   isWished?: boolean; // 추가
+  rewardRate?: number; // 적립 포인트 설정용
 };
 
 export type WinningItem = {

@@ -3,7 +3,7 @@ import { motion } from './motion';
 import { ChevronLeft, Save, Upload, X, Plus } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import type { AnimeCollection, Prize } from '@/shared-types';
-import { updateKujiItem, updateKujiItemImage, deleteKujiItem, registerBoardItems, updateKujiBoardStatus, uploadBoardImages } from '../api/kuji';
+import { updateKujiItem, updateKujiItemImage, deleteKujiItem, registerBoardItems, updateKujiBoardStatus, uploadBoardImages, updateKujiBoardRewardRate } from '../api/kuji';
 import { validateImageFile, compressImageFile } from '../api/client';
 import { toast } from 'sonner';
 
@@ -27,6 +27,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave }: Busi
   const [seriesImage, setSeriesImage] = useState(collection.image || '');
   const [seriesFile, setSeriesFile] = useState<File | null>(null);
   const [operationStatus, setOperationStatus] = useState<'scheduled' | 'active' | 'ended'>(collection.operationStatus || 'scheduled');
+  const [rewardRate, setRewardRate] = useState<number>(collection.rewardRate || 0);
   
   // Check if editing is allowed based on current UI selection
   const isEditingAllowed = operationStatus === 'scheduled';
@@ -194,6 +195,11 @@ export default function BusinessProductEdit({ onBack, collection, onSave }: Busi
         await updateKujiBoardStatus(Number(collection.id), backendStatus);
       }
 
+      // Update Reward Rate if changed
+      if (collection.rewardRate !== rewardRate) {
+        await updateKujiBoardRewardRate(Number(collection.id), rewardRate);
+      }
+
       // 5. Update Series Image if changed
       if (seriesFile) {
         await uploadBoardImages(Number(collection.id), 'THUMBNAIL', [seriesFile]);
@@ -329,6 +335,27 @@ export default function BusinessProductEdit({ onBack, collection, onSave }: Busi
                 }`}
                 placeholder="시리즈명 입력"
               />
+            </div>
+
+            <div>
+              <label className="text-white/70 text-sm block mb-2">1장 구매 시 적립 포인트 설정</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={rewardRate === 0 ? '' : rewardRate}
+                  onChange={(e) => setRewardRate(e.target.value === '' ? 0 : parseInt(e.target.value))}
+                  disabled={!isEditingAllowed}
+                  min="0"
+                  className={`w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-cyan-400 ${
+                    !isEditingAllowed ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  placeholder="예: 100"
+                />
+                <span className="text-white/70">P</span>
+              </div>
+              <p className="text-cyan-300 text-xs mt-1">
+                💡 입력하신 포인트가 1장 당첨 시마다 적립됩니다. (0 입력 시 미적립)
+              </p>
             </div>
 
             <div>

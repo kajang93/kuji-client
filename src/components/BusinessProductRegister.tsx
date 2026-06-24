@@ -288,17 +288,20 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
               />
             </div>
             <div>
-              <label className="text-white/70 text-sm block mb-2">환급률 (%)</label>
-              <input
-                type="number"
-                value={rewardRate === 0 || rewardRate === '' ? '' : rewardRate}
-                onChange={(e) => {
-                  const val = e.target.value === '' ? '' : parseInt(e.target.value);
-                  setRewardRate(val as number | '');
-                }}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-teal-400"
-                placeholder="예: 100"
-              />
+              <label className="text-white/70 text-sm block mb-2">1장 구매 시 적립 포인트 설정</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={rewardRate === 0 || rewardRate === '' ? '' : rewardRate}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                    setRewardRate(val as number | '');
+                  }}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-teal-400"
+                  placeholder="예: 100"
+                />
+                <span className="text-white/70">P</span>
+              </div>
             </div>
           </div>
         </motion.div>

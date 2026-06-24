@@ -137,6 +137,7 @@ useRefreshOnPageShow(handleRefresh);
               isWished: board.isWished,
               operationStatus: board.status === 'ACTIVE' ? 'active' : board.status === 'PREPARING' ? 'scheduled' : 'ended',
               pricePerDraw: board.pricePerDraw || 15000,
+              rewardRate: board.rewardRate || 0,
               prizes: []
             };
           });
@@ -166,6 +167,7 @@ useRefreshOnPageShow(handleRefresh);
           operationStatus: board.status === 'ACTIVE' ? 'active' :
             board.status === 'PREPARING' ? 'scheduled' : 'ended',
           pricePerDraw: board.pricePerDraw || 15000, // Added price mapping
+          rewardRate: board.rewardRate || 0,
           prizes: []
         };
       });
@@ -210,6 +212,7 @@ async function handleRefresh() {
           isWished: board.isWished,
           operationStatus: board.status === 'ACTIVE' ? 'active' : board.status === 'PREPARING' ? 'scheduled' : 'ended',
           pricePerDraw: board.pricePerDraw || 15000,
+          rewardRate: board.rewardRate || 0,
           prizes: []
         };
       });

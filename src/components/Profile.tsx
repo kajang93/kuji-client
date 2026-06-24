@@ -191,7 +191,7 @@ export default function Profile({ user, onBack, onEdit, onChargePoints }: Profil
               </div>
               <div className="mt-3 pt-3 border-t border-green-400/30">
                 <div className="text-green-200 text-xs">
-                  💡 쿠지 1장 구매 시 100포인트 적립
+                  💡 쿠지 구매 시 설정된 포인트가 적립됩니다. (상품별 상이)
                 </div>
               </div>
             </div>
