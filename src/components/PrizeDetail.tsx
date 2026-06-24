@@ -8,7 +8,7 @@ type PrizeDetailProps = {
   anime: AnimeCollection;
   onBack: () => void;
   onPurchase: (count: number, pointsUsed?: number) => void;
-  user?: { name: string; email: string; points: number; type: 'customer' | 'business' } | null;
+  user?: { name: string; email: string; points: number; type: 'social' | 'customer' | 'business' | 'admin' } | null;
 };
 
 export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDetailProps) {
@@ -348,7 +348,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                 <div className="h-px bg-white/20" />
                 
                 {/* Points Section - Compact */}
-                {user && user.type === 'customer' && (
+                {user && (user.type === 'customer' || user.type === 'social') && (
                   <>
                     <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-lg p-3 border border-green-400/30">
                       <div className="flex items-center justify-between mb-2">
