@@ -7,7 +7,7 @@ import { validateImageFile, compressImageFile, validatePasswordRules } from '../
 import { toast } from 'sonner';
 
 type ProfileEditProps = {
-  user: { name: string; email: string; type: 'social' | 'business'; phone?: string; address?: string; addressDetail?: string; birthdate?: string };
+  user: { name: string; email: string; type: string; phone?: string; address?: string; addressDetail?: string; birthdate?: string; profileImageUrl?: string };
   onBack: () => void;
   onSave: (userData: UserData) => void;
 };
@@ -30,7 +30,7 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
   const [addressDetail, setAddressDetail] = useState(user.addressDetail || '');
   const [zonecode, setZonecode] = useState('');
   const [birthdate, setBirthdate] = useState(user.birthdate || '1990-01-01');
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(user.profileImageUrl || null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showAddressSearch, setShowAddressSearch] = useState(false);
   const [isSaving, setIsSaving] = useState(false);

@@ -1469,10 +1469,14 @@ async function handleRefresh() {
         {screen === "profileEdit" && user && (
           <ProfileEdit
             user={user}
-            onBack={() => setScreen("profile")}
+            onBack={() => setScreen(user.type === "business" ? "businessProfile" : "profile")}
             onSave={(userData) => {
-              setUser({ ...user, ...userData });
-              setScreen("profile");
+              setUser({ 
+                ...user, 
+                ...userData,
+                profileImageUrl: userData.profileImage || user.profileImageUrl
+              });
+              setScreen(user.type === "business" ? "businessProfile" : "profile");
             }}
           />
         )}
