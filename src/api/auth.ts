@@ -118,8 +118,8 @@ export const verifySms = async (phoneNumber: string, code: string): Promise<void
 /**
  * 아이디 찾기
  */
-export const findId = async (phoneNumber: string, verificationCode: string): Promise<string> => {
-  const response = await axiosInstance.post(`${API_BASE_URL}/find-id`, { phoneNumber, verificationCode });
+export const findId = async (phoneNumber: string, verificationCode: string, type: 'customer' | 'business' = 'customer'): Promise<string> => {
+  const response = await axiosInstance.post(`${API_BASE_URL}/find-id`, { phoneNumber, verificationCode, type });
   const data = response.data;
   if (typeof data === 'string') return data;
   return data.email || data.id || JSON.stringify(data);

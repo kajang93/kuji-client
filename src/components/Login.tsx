@@ -45,6 +45,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [timeLeft, setTimeLeft] = useState(180); // 3 minutes
   const [foundEmail, setFoundEmail] = useState('');
+  const [findIdType, setFindIdType] = useState<'customer' | 'business'>('customer');
   const [isPwVerified, setIsPwVerified] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -225,7 +226,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       return;
     }
     try {
-      const fullEmail = await findId(findPhone, verificationCode);
+      const fullEmail = await findId(findPhone, verificationCode, findIdType);
       setFoundEmail(fullEmail);
     } catch (error: any) {
       toast.error(error.message);
@@ -715,6 +716,32 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                   </div>
                 ) : (
                   <form onSubmit={handleFindId} className="space-y-4">
+                    {/* 일반/사업자 선택 토글 */}
+                    <div className="flex bg-white/10 rounded-xl p-1 mb-4 border border-white/20">
+                      <button
+                        type="button"
+                        onClick={() => setFindIdType('customer')}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                          findIdType === 'customer'
+                            ? 'bg-pink-500 text-white shadow-lg'
+                            : 'text-white/60 hover:text-white'
+                        }`}
+                      >
+                        일반 고객
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFindIdType('business')}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                          findIdType === 'business'
+                            ? 'bg-purple-500 text-white shadow-lg'
+                            : 'text-white/60 hover:text-white'
+                        }`}
+                      >
+                        사업자
+                      </button>
+                    </div>
+
                     <div>
                       <label className="block text-white mb-2">휴대폰 번호</label>
                       <div className="flex gap-2">
