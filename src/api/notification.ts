@@ -7,6 +7,9 @@ export interface NotificationSettingDto {
   kakaoWinning: boolean;
   kakaoDelivery: boolean;
   kakaoInquiry: boolean;
+  kakaoBizOrder: boolean;
+  kakaoBizCancel: boolean;
+  kakaoBizInquiry: boolean;
   marketingOpen: boolean;
   marketingRestock: boolean;
   marketingEvent: boolean;

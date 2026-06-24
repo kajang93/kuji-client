@@ -12,6 +12,9 @@ export type NotificationSettingsState = {
   kakaoWinning: boolean;
   kakaoDelivery: boolean;
   kakaoInquiry: boolean;
+  kakaoBizOrder: boolean;
+  kakaoBizCancel: boolean;
+  kakaoBizInquiry: boolean;
   marketingOpen: boolean;
   marketingRestock: boolean;
   marketingEvent: boolean;
@@ -285,15 +288,15 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                         </div>
                       </div>
                       <button
-                        onClick={() => toggleSetting('kakaoWinning')}
+                        onClick={() => toggleSetting(isBusiness ? 'kakaoBizOrder' : 'kakaoWinning')}
                         className={`relative w-10 h-6 rounded-full transition-colors ${
-                          settings.kakaoWinning ? 'bg-[#FAE100]' : 'bg-white/20'
+                          (isBusiness ? settings.kakaoBizOrder : settings.kakaoWinning) ? 'bg-[#FAE100]' : 'bg-white/20'
                         }`}
                       >
                         <motion.div
-                          animate={{ x: settings.kakaoWinning ? 22 : 2 }}
+                          animate={{ x: (isBusiness ? settings.kakaoBizOrder : settings.kakaoWinning) ? 22 : 2 }}
                           className={`absolute top-1 w-4 h-4 rounded-full shadow-sm ${
-                            settings.kakaoWinning ? 'bg-[#371D1E]' : 'bg-white/60'
+                            (isBusiness ? settings.kakaoBizOrder : settings.kakaoWinning) ? 'bg-[#371D1E]' : 'bg-white/60'
                           }`}
                         />
                       </button>
@@ -315,15 +318,15 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                         </div>
                       </div>
                       <button
-                        onClick={() => toggleSetting('kakaoDelivery')}
+                        onClick={() => toggleSetting(isBusiness ? 'kakaoBizCancel' : 'kakaoDelivery')}
                         className={`relative w-10 h-6 rounded-full transition-colors ${
-                          settings.kakaoDelivery ? 'bg-[#FAE100]' : 'bg-white/20'
+                          (isBusiness ? settings.kakaoBizCancel : settings.kakaoDelivery) ? 'bg-[#FAE100]' : 'bg-white/20'
                         }`}
                       >
                         <motion.div
-                          animate={{ x: settings.kakaoDelivery ? 22 : 2 }}
+                          animate={{ x: (isBusiness ? settings.kakaoBizCancel : settings.kakaoDelivery) ? 22 : 2 }}
                           className={`absolute top-1 w-4 h-4 rounded-full shadow-sm ${
-                            settings.kakaoDelivery ? 'bg-[#371D1E]' : 'bg-white/60'
+                            (isBusiness ? settings.kakaoBizCancel : settings.kakaoDelivery) ? 'bg-[#371D1E]' : 'bg-white/60'
                           }`}
                         />
                       </button>
@@ -345,15 +348,15 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                         </div>
                       </div>
                       <button
-                        onClick={() => toggleSetting('kakaoInquiry')}
+                        onClick={() => toggleSetting(isBusiness ? 'kakaoBizInquiry' : 'kakaoInquiry')}
                         className={`relative w-10 h-6 rounded-full transition-colors ${
-                          settings.kakaoInquiry ? 'bg-[#FAE100]' : 'bg-white/20'
+                          (isBusiness ? settings.kakaoBizInquiry : settings.kakaoInquiry) ? 'bg-[#FAE100]' : 'bg-white/20'
                         }`}
                       >
                         <motion.div
-                          animate={{ x: settings.kakaoInquiry ? 22 : 2 }}
+                          animate={{ x: (isBusiness ? settings.kakaoBizInquiry : settings.kakaoInquiry) ? 22 : 2 }}
                           className={`absolute top-1 w-4 h-4 rounded-full shadow-sm ${
-                            settings.kakaoInquiry ? 'bg-[#371D1E]' : 'bg-white/60'
+                            (isBusiness ? settings.kakaoBizInquiry : settings.kakaoInquiry) ? 'bg-[#371D1E]' : 'bg-white/60'
                           }`}
                         />
                       </button>
