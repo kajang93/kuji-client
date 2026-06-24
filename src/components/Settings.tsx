@@ -269,15 +269,19 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                   className="overflow-hidden"
                 >
                   <div className="px-5 pb-5 space-y-4 border-t border-white/10 pt-4">
-                    {/* Winning Notification */}
+                    {/* Winning/Order Notification */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
                           <Gift className="w-4 h-4 text-[#FAE100]" />
                         </div>
                         <div>
-                          <div className="text-white text-sm">당첨 내역 알림</div>
-                          <div className="text-white/40 text-xs">쿠지 당첨 시 실시간 알림</div>
+                          <div className="text-white text-sm">
+                            {user?.type === 'business' ? '신규 주문 접수 알림' : '당첨 내역 알림'}
+                          </div>
+                          <div className="text-white/40 text-xs">
+                            {user?.type === 'business' ? '고객의 새로운 배송 요청 접수 시' : '쿠지 당첨 시 실시간 알림'}
+                          </div>
                         </div>
                       </div>
                       <button
@@ -295,15 +299,19 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                       </button>
                     </div>
 
-                    {/* Delivery Notification */}
+                    {/* Delivery/Cancellation Notification */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
                           <Truck className="w-4 h-4 text-[#FAE100]" />
                         </div>
                         <div>
-                          <div className="text-white text-sm">배송 현황 알림</div>
-                          <div className="text-white/40 text-xs">배송 시작/완료 알림</div>
+                          <div className="text-white text-sm">
+                            {user?.type === 'business' ? '취소/반품 접수 알림' : '배송 현황 알림'}
+                          </div>
+                          <div className="text-white/40 text-xs">
+                            {user?.type === 'business' ? '고객의 취소 및 반품 요청 발생 시' : '배송 시작/완료 알림'}
+                          </div>
                         </div>
                       </div>
                       <button
@@ -328,8 +336,12 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                           <MessageCircle className="w-4 h-4 text-[#FAE100]" />
                         </div>
                         <div>
-                          <div className="text-white text-sm">문의 답변 알림</div>
-                          <div className="text-white/40 text-xs">1:1 문의 답변 등록 시</div>
+                          <div className="text-white text-sm">
+                            {user?.type === 'business' ? '신규 고객 문의 알림' : '문의 답변 알림'}
+                          </div>
+                          <div className="text-white/40 text-xs">
+                            {user?.type === 'business' ? '내 상품에 1:1 문의 등록 시' : '1:1 문의 답변 등록 시'}
+                          </div>
                         </div>
                       </div>
                       <button
