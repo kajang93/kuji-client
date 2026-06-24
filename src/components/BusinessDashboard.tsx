@@ -147,9 +147,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                if (window.confirm('로그아웃 하시겠습니까?')) {
-                  onLogout?.();
-                }
+                onLogout?.();
               }}
               className="px-3 py-1 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm hover:bg-red-500/30 transition-colors mr-2"
             >

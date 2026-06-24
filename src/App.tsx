@@ -109,6 +109,7 @@ export default function App() {
     title?: string;
     message: string;
     type: "success" | "error" | "warning" | "info";
+    onConfirm?: () => void;
   }>({
     isOpen: false,
     message: "",
@@ -614,11 +615,14 @@ async function handleRefresh() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    sessionStorage.removeItem('token');
-    setUser(null);
-    setIsSidebarOpen(false);
-    setScreen("main");
+    showConfirm("로그아웃 하시겠습니까?", () => {
+      localStorage.removeItem("token");
+      sessionStorage.removeItem("token");
+      setUser(null);
+      setScreen("main");
+      setIsSidebarOpen(false);
+      toast.success("로그아웃 되었습니다.");
+    }, "로그아웃", "info");
   };
 
   const handleKujiReveal = async (kujiIndices: number[]) => {
@@ -1001,7 +1005,16 @@ async function handleRefresh() {
     type: "success" | "error" | "warning" | "info" = "info",
     title?: string,
   ) => {
-    setAlertModal({ isOpen: true, message, type, title });
+    setAlertModal({ isOpen: true, message, type, title, onConfirm: undefined });
+  };
+
+  const showConfirm = (
+    message: string,
+    onConfirm: () => void,
+    title: string = "확인",
+    type: "warning" | "info" = "warning"
+  ) => {
+    setAlertModal({ isOpen: true, message, type, title, onConfirm });
   };
 
   const closeAlert = () => {
@@ -2065,6 +2078,7 @@ async function handleRefresh() {
         title={alertModal.title}
         message={alertModal.message}
         type={alertModal.type}
+        onConfirm={alertModal.onConfirm}
       />
       <Toaster position="top-center" richColors />
     </div>

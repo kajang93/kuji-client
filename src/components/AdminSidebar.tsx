@@ -110,15 +110,13 @@ export default function AdminSidebar({ isOpen, onClose, onNavigate, onLogout, us
             <span>사용자 모드로 전환</span>
           </button>
 
-          <button
-            onClick={() => {
-              if (confirm('로그아웃 하시겠습니까?')) {
+            <button
+              onClick={() => {
                 onLogout();
                 onClose();
-              }
-            }}
-            className="w-full flex items-center gap-3 p-3 text-red-400 hover:bg-red-500/20 rounded-xl transition-colors"
-          >
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors mt-2"
+            >
             <div className="p-2 bg-white/10 rounded-lg">
               <LogOut className="w-5 h-5" />
             </div>

@@ -7,9 +7,10 @@ type AlertModalProps = {
   title?: string;
   message: string;
   type?: 'success' | 'error' | 'warning' | 'info';
+  onConfirm?: () => void;
 };
 
-export default function AlertModal({ isOpen, onClose, title, message, type = 'info' }: AlertModalProps) {
+export default function AlertModal({ isOpen, onClose, title, message, type = 'info', onConfirm }: AlertModalProps) {
   const config = {
     success: {
       icon: CheckCircle,
@@ -68,12 +69,32 @@ export default function AlertModal({ isOpen, onClose, title, message, type = 'in
               
               <p className="text-white/80 mb-6">{message}</p>
 
-              <button
-                onClick={onClose}
-                className="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl hover:from-amber-300 hover:to-amber-400 transition-all"
-              >
-                확인
-              </button>
+              {onConfirm ? (
+                <div className="flex gap-3 w-full">
+                  <button
+                    onClick={onClose}
+                    className="flex-1 py-3 bg-slate-800 text-white rounded-xl hover:bg-slate-700 transition-all border border-slate-700"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={() => {
+                      onConfirm();
+                      onClose();
+                    }}
+                    className="flex-1 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl hover:from-amber-300 hover:to-amber-400 transition-all font-semibold"
+                  >
+                    확인
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={onClose}
+                  className="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-xl hover:from-amber-300 hover:to-amber-400 transition-all font-semibold"
+                >
+                  확인
+                </button>
+              )}
             </div>
           </motion.div>
         </motion.div>
