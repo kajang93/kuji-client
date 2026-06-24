@@ -218,15 +218,18 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
               <div className="w-10 h-10 bg-purple-500/30 rounded-lg flex items-center justify-center">
                 <User className="w-5 h-5 text-purple-300" />
               </div>
-              <div className="text-white/80">이름</div>
+              <div className="text-white/80">{user.type === 'business' ? '사업자명' : '이름'}</div>
             </div>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={12}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-pink-400"
-              placeholder="이름 입력 (최대 12자)"
+              readOnly={user.type === 'business'}
+              className={`w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none ${
+                user.type === 'business' ? 'opacity-60 cursor-not-allowed' : 'focus:border-pink-400'
+              }`}
+              placeholder={user.type === 'business' ? '사업자명' : '이름 입력 (최대 12자)'}
             />
           </div>
 
