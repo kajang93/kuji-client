@@ -2083,7 +2083,7 @@ async function handleRefresh() {
         type={alertModal.type}
         onConfirm={alertModal.onConfirm}
       />
-      <Toaster position="top-center" richColors />
+      <Toaster position="top-center" richColors visibleToasts={1} />
     </div>
   );
 }

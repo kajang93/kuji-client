@@ -49,6 +49,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
   const [isPwVerified, setIsPwVerified] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Refs for input fields
   const customerPwRef = useRef<HTMLInputElement>(null);
@@ -127,8 +128,9 @@ export default function Login({ onLogin, onBack }: LoginProps) {
 
   const handleIdPwLogin = async (e: React.FormEvent, type: 'customer' | 'business') => {
     e.preventDefault();
-    if (!userId || !userPw) return;
+    if (!userId || !userPw || isLoading) return;
 
+    setIsLoading(true);
     try {
       const response = await login(userId, userPw);
       const token = response?.token || response; // 객체면 token 필드 추출, 아니면 그대로 사용
@@ -429,12 +431,15 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 </div>
 
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={isLoading ? {} : { scale: 1.02 }}
+                  whileTap={isLoading ? {} : { scale: 0.98 }}
                   type="submit"
-                  className="w-full py-3 bg-gradient-to-r from-rose-500 to-indigo-600 text-white rounded-xl shadow-xl"
+                  disabled={isLoading}
+                  className={`w-full py-3 rounded-xl shadow-xl ${
+                    isLoading ? 'bg-pink-500/50 text-white/50 cursor-not-allowed' : 'bg-gradient-to-r from-rose-500 to-indigo-600 text-white'
+                  }`}
                 >
-                  로그인
+                  {isLoading ? '로그인 중...' : '로그인'}
                 </motion.button>
               </form>
 
@@ -598,12 +603,15 @@ export default function Login({ onLogin, onBack }: LoginProps) {
               </div>
 
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={isLoading ? {} : { scale: 1.02 }}
+                whileTap={isLoading ? {} : { scale: 0.98 }}
                 type="submit"
-                className="w-full py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-xl text-lg shadow-xl mt-6"
+                disabled={isLoading}
+                className={`w-full py-4 text-purple-900 rounded-xl text-lg shadow-xl mt-6 transition-all ${
+                  isLoading ? 'bg-yellow-500/50 cursor-not-allowed text-purple-900/50' : 'bg-gradient-to-r from-yellow-400 to-yellow-500'
+                }`}
               >
-                사업자 로그인
+                {isLoading ? '로그인 중...' : '사업자 로그인'}
               </motion.button>
 
               <div className="flex justify-between text-sm">
