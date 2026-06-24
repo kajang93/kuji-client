@@ -250,13 +250,24 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="mt-6 bg-teal-500/20 border-2 border-teal-400/50 rounded-xl p-4"
+          className="mt-6 bg-teal-500/10 border-2 border-teal-400/30 rounded-xl p-5"
         >
-          <div className="flex items-start gap-3">
-            <div className="text-xl">ℹ️</div>
-            <div className="text-white/70 text-sm">
-              사업자 정보 변경이 필요한 경우 우측 하단의 카카오톡 채널(쿠지샵)로 문의해 주세요.
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              <div className="text-xl">ℹ️</div>
+              <div className="text-white/80 text-sm leading-relaxed">
+                사업자 정보 변경이 필요한 경우 아래 버튼을 눌러 카카오톡 채널(쿠지샵)로 문의해 주세요.
+              </div>
             </div>
+            <button 
+              onClick={() => window.open('http://pf.kakao.com/_xxxxxxx/chat', '_blank')}
+              className="w-full mt-1 py-3 bg-[#FEE500] text-[#191919] font-bold rounded-xl shadow-md hover:bg-[#F4DC00] transition-transform active:scale-95 flex items-center justify-center gap-2"
+            >
+              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+                <path d="M12 3c-5.52 0-10 3.58-10 8 0 2.86 1.83 5.37 4.6 6.84l-1.07 3.92c-.12.44.38.77.74.52l4.63-3.11c.36.03.73.05 1.1.05 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/>
+              </svg>
+              카카오톡 채널 문의하기
+            </button>
           </div>
         </motion.div>
       </div>
