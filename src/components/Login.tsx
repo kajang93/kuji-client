@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Mail, Building2, Users, Eye, EyeOff, X, Ticket } from './icons';
 import { toast } from 'sonner';
-import { login, fetchMyProfile, findId, resetPassword, sendSms } from '../api/auth';
+import { login, fetchMyProfile, findId, sendSms, verifySms, resetPasswordDirect } from '../api/auth';
+import { validatePasswordRules } from '../api/client';
 import Signup from './Signup';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
@@ -44,6 +45,9 @@ export default function Login({ onLogin, onBack }: LoginProps) {
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [timeLeft, setTimeLeft] = useState(180); // 3 minutes
   const [foundEmail, setFoundEmail] = useState('');
+  const [isPwVerified, setIsPwVerified] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // Refs for input fields
   const customerPwRef = useRef<HTMLInputElement>(null);
@@ -228,20 +232,47 @@ export default function Login({ onLogin, onBack }: LoginProps) {
     }
   };
 
-  const handleFindPw = async (e: React.FormEvent) => {
+  const handleFindPwVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!findEmail || !findPhone) {
-      toast.error('이메일과 휴대폰 번호를 모두 입력해주세요.');
+    if (!findEmail || !findPhone || !verificationCode) {
+      toast.error('이메일, 휴대폰 번호, 인증번호를 모두 입력해주세요.');
       return;
     }
     try {
-      await resetPassword(findEmail, findPhone);
-      toast.success(`비밀번호가 temp1234! 로 초기화되었습니다.`);
+      await verifySms(findPhone, verificationCode);
+      setIsPwVerified(true);
+      toast.success('인증이 완료되었습니다. 새 비밀번호를 입력해주세요.');
+    } catch (error: any) {
+      toast.error(error.message || '인증번호가 일치하지 않습니다.');
+    }
+  };
+
+  const handleResetPwDirect = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error('비밀번호가 일치하지 않습니다.');
+      return;
+    }
+    
+    const pwError = validatePasswordRules(newPassword);
+    if (pwError) {
+      toast.error(pwError);
+      return;
+    }
+
+    try {
+      await resetPasswordDirect(findEmail, findPhone, verificationCode, newPassword);
+      toast.success('비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 로그인해주세요.');
       setShowFindPw(false);
       setFindEmail('');
       setFindPhone('');
+      setVerificationCode('');
+      setIsCodeSent(false);
+      setIsPwVerified(false);
+      setNewPassword('');
+      setConfirmPassword('');
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || '비밀번호 재설정에 실패했습니다.');
     }
   };
 
@@ -775,42 +806,111 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                   </button>
                 </div>
 
-                <form onSubmit={handleFindPw} className="space-y-4">
+                {isPwVerified ? (
+                  <form onSubmit={handleResetPwDirect} className="space-y-4">
+                    <div>
+                      <label className="block text-white mb-2">새 비밀번호</label>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)}
+                        placeholder="영문, 숫자 포함 8자 이상"
+                        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white mb-2">새 비밀번호 확인</label>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
+                        placeholder="비밀번호를 한번 더 입력하세요"
+                        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
+                        required
+                      />
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      type="submit"
+                      className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl shadow-xl mt-4"
+                    >
+                      비밀번호 재설정 완료
+                    </motion.button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleFindPwVerify} className="space-y-4">
+                    <div>
+                      <label className="block text-white mb-2">이메일</label>
+                      <input
+                        type="email"
+                        value={findEmail}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFindEmail(e.target.value)}
+                        placeholder="이메일을 입력하세요"
+                        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
+                        disabled={isCodeSent}
+                        required
+                      />
+                    </div>
 
+                    <div>
+                      <label className="block text-white mb-2">휴대폰 번호</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="tel"
+                          value={findPhone}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFindPhone(formatPhone(e.target.value))}
+                          placeholder="010-0000-0000"
+                          className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
+                          disabled={isCodeSent}
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSendSms}
+                          disabled={isCodeSent}
+                          className="px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl whitespace-nowrap shrink-0 transition-colors disabled:opacity-50"
+                        >
+                          {isCodeSent ? '발송됨' : '인증요청'}
+                        </button>
+                      </div>
+                    </div>
 
-                  <div>
-                    <label className="block text-white mb-2">이메일</label>
-                    <input
-                      type="email"
-                      value={findEmail}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFindEmail(e.target.value)}
-                      placeholder="이메일을 입력하세요"
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
-                      required
-                    />
-                  </div>
+                    {isCodeSent && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                      >
+                        <label className="block text-white mb-2 flex justify-between">
+                          <span>인증번호 6자리</span>
+                          <span className="text-pink-400 text-sm">
+                            {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                          </span>
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={verificationCode}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVerificationCode(e.target.value.replace(/[^0-9]/g, ''))}
+                          placeholder="인증번호 입력"
+                          className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
+                          required
+                        />
+                      </motion.div>
+                    )}
 
-                  <div>
-                    <label className="block text-white mb-2">휴대폰 번호</label>
-                    <input
-                      type="tel"
-                      value={findPhone}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFindPhone(formatPhone(e.target.value))}
-                      placeholder="010-0000-0000"
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
-                      required
-                    />
-                  </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    type="submit"
-                    className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl shadow-xl mt-4"
-                  >
-                    비밀번호 찾기
-                  </motion.button>
-                </form>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      type="submit"
+                      disabled={!isCodeSent}
+                      className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl shadow-xl mt-4 disabled:opacity-50"
+                    >
+                      인증 및 비밀번호 재설정
+                    </motion.button>
+                  </form>
+                )}
               </motion.div>
             </motion.div>
           </>

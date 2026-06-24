@@ -78,3 +78,39 @@ export const extractErrorMessage = (text: string, fallback: string): string => {
     return text;
   }
 };
+
+/**
+ * 공통 비밀번호 규칙 검증
+ * 1. 최소 8자 이상
+ * 2. 영문 대/소문자, 숫자, 특수문자 중 3가지 이상 조합
+ * 3. 흔한 비밀번호(금지어) 차단
+ */
+export const validatePasswordRules = (password: string): string | null => {
+  if (!password || password.length === 0) {
+    return null; // Empty case, usually handled by 'required'
+  }
+  
+  if (password.length < 8) {
+    return '비밀번호는 최소 8자 이상이어야 합니다.';
+  }
+
+  const forbiddenPasswords = ['12345678', 'password', 'kuji1234', 'qwertyui', '12341234'];
+  const lowerPw = password.toLowerCase();
+  if (forbiddenPasswords.includes(lowerPw)) {
+    return '보안에 취약한 흔한 비밀번호는 사용할 수 없습니다.';
+  }
+
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  
+  const validCount = [hasUpperCase, hasLowerCase, hasNumber, hasSpecialChar].filter(Boolean).length;
+  
+  if (validCount < 3) {
+    return '영문 대/소문자, 숫자, 특수문자 중 3가지 이상을 조합해주세요.';
+  }
+
+  return null; // Valid
+};
+

@@ -139,3 +139,17 @@ export const fetchBusinessProfile = async (): Promise<any> => {
   const response = await axiosInstance.get(`${API_BASE_URL}/business-profile`);
   return response.data;
 };
+
+/**
+ * 로그인 유저용 비밀번호 변경 (마이페이지)
+ */
+export const changePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
+  await axiosInstance.patch(`${API_BASE_URL}/password`, { currentPassword, newPassword });
+};
+
+/**
+ * 로그아웃 유저용 비밀번호 즉시 재설정 (비밀번호 찾기 후)
+ */
+export const resetPasswordDirect = async (email: string, phoneNumber: string, verificationCode: string, newPassword: string): Promise<void> => {
+  await axiosInstance.post(`${API_BASE_URL}/reset-password/direct`, { email, phoneNumber, verificationCode, newPassword });
+};

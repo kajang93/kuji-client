@@ -2,8 +2,9 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, User, Mail, Phone, MapPin, Calendar, Save, Search, Camera, ImageIcon, X } from './icons';
 import AddressSearchModal from './AddressSearchModal';
-import { updateMyProfile } from '../api/auth';
-import { validateImageFile, compressImageFile } from '../api/client';
+import { updateMyProfile, changePassword } from '../api/auth';
+import { validateImageFile, compressImageFile, validatePasswordRules } from '../api/client';
+import { toast } from 'sonner';
 
 type ProfileEditProps = {
   user: { name: string; email: string; type: 'social' | 'business'; phone?: string; address?: string; addressDetail?: string; birthdate?: string };
@@ -35,6 +36,41 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
   const [isSaving, setIsSaving] = useState(false);
   const [showImagePicker, setShowImagePicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 비밀번호 변경 관련 상태
+  const [showPwChange, setShowPwChange] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPw, setIsChangingPw] = useState(false);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error('새 비밀번호가 일치하지 않습니다.');
+      return;
+    }
+    
+    const pwError = validatePasswordRules(newPassword);
+    if (pwError) {
+      toast.error(pwError);
+      return;
+    }
+
+    try {
+      setIsChangingPw(true);
+      await changePassword(currentPassword, newPassword);
+      toast.success('비밀번호가 성공적으로 변경되었습니다.');
+      setShowPwChange(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      toast.error(error.message || '비밀번호 변경에 실패했습니다.');
+    } finally {
+      setIsChangingPw(false);
+    }
+  };
 
 
   const handleImageSelect = (type: 'gallery' | 'camera') => {
@@ -286,6 +322,78 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-pink-400"
             />
           </div>
+
+          {/* Password Change Section (only for non-social) */}
+          {user.type !== 'social' && (
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+              <div 
+                className="flex items-center justify-between cursor-pointer"
+                onClick={() => setShowPwChange(!showPwChange)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-500/30 rounded-lg flex items-center justify-center">
+                    <User className="w-5 h-5 text-purple-300" />
+                  </div>
+                  <div className="text-white/80">비밀번호 변경</div>
+                </div>
+                <div className={`transition-transform duration-300 ${showPwChange ? 'rotate-180' : ''}`}>
+                  <ChevronLeft className="w-5 h-5 text-white/50 -rotate-90" />
+                </div>
+              </div>
+              
+              <AnimatePresence>
+                {showPwChange && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                    animate={{ height: 'auto', opacity: 1, marginTop: 16 }}
+                    exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <form onSubmit={handlePasswordChange} className="space-y-4 border-t border-white/10 pt-4">
+                      <div>
+                        <label className="block text-white/60 text-sm mb-1">현재 비밀번호</label>
+                        <input
+                          type="password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-pink-400"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-white/60 text-sm mb-1">새 비밀번호</label>
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-pink-400"
+                          placeholder="8자 이상"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-white/60 text-sm mb-1">새 비밀번호 확인</label>
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-pink-400"
+                          required
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={isChangingPw}
+                        className="w-full py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors disabled:opacity-50 mt-2"
+                      >
+                        {isChangingPw ? '변경 중...' : '비밀번호 변경 저장'}
+                      </button>
+                    </form>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
         </motion.div>
 
         {/* Save Button */}
