@@ -11,6 +11,7 @@ type BusinessProductEditProps = {
   onBack: () => void;
   collection: AnimeCollection;
   onSave: (updatedCollection: AnimeCollection) => void;
+  user?: { name: string; email: string; type: string; points?: number; isActive?: boolean } | null;
 };
 
 type PrizeProduct = {
@@ -22,7 +23,7 @@ type PrizeProduct = {
   file?: File; // Store the file for new items
 };
 
-export default function BusinessProductEdit({ onBack, collection, onSave }: BusinessProductEditProps) {
+export default function BusinessProductEdit({ onBack, collection, onSave, user }: BusinessProductEditProps) {
   const [seriesName, setSeriesName] = useState(collection.name || '');
   const [seriesImage, setSeriesImage] = useState(collection.image || '');
   const [seriesFile, setSeriesFile] = useState<File | null>(null);
@@ -293,7 +294,13 @@ export default function BusinessProductEdit({ onBack, collection, onSave }: Busi
                   운영예정
                 </button>
                 <button
-                  onClick={() => setOperationStatus('active')}
+                  onClick={() => {
+                    if (user && user.isActive === false) {
+                      toast.error('사업자 심사가 완료된 후에만 운영중 상태로 변경할 수 있습니다.');
+                      return;
+                    }
+                    setOperationStatus('active');
+                  }}
                   disabled={collection.operationStatus === 'ended'}
                   className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                     operationStatus === 'active'

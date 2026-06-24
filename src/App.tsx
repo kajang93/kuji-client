@@ -1706,6 +1706,7 @@ async function handleRefresh() {
             <BusinessProductEdit
               onBack={() => setScreen("businessProducts")}
               collection={sellerCollections.find((c) => c.id === editingCollectionId)!}
+              user={user}
               onSave={(updatedCollection) => {
                 // In real app, save to backend
                 showAlert("상품이 수정되었습니다", "success");
