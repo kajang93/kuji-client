@@ -199,7 +199,7 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
                 className="hidden"
               />
             </div>
-            <div className="inline-block px-4 py-1 bg-amber-400/20 border border-amber-400/50 rounded-full text-amber-300">
+            <div className="inline-block mt-8 px-4 py-1 bg-amber-400/20 border border-amber-400/50 rounded-full text-amber-300">
               {user.type === 'business' ? '사업자' : '일반 고객'}
             </div>
           </div>
