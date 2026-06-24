@@ -5,7 +5,7 @@ import { fetchBusinessProfile } from '../api/auth';
 import { validateImageFile, compressImageFile } from '../api/client';
 
 type BusinessProfileProps = {
-  user: { name: string; email: string; type: 'business' };
+  user: { name: string; email: string; type: 'business'; phone?: string; address?: string };
   onBack: () => void;
   onEdit: () => void;
 };
