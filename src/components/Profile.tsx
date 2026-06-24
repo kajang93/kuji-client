@@ -3,7 +3,7 @@ import { ChevronLeft, User, Mail, Phone, MapPin, Calendar, Camera, ImageIcon } f
 import { useState, useRef, useEffect } from 'react';
 
 type ProfileProps = {
-  user: { name: string; email: string; type: 'social' | 'business' | 'admin'; points?: number; profileImageUrl?: string; phone?: string; address?: string; addressDetail?: string; birthdate?: string };
+  user: { name: string; email: string; type: 'social' | 'business' | 'admin'; points?: number; profileImageUrl?: string; phone?: string; address?: string; addressDetail?: string; birthdate?: string; joinDate?: string };
   onBack: () => void;
   onEdit: () => void;
   onChargePoints?: () => void;
@@ -29,6 +29,7 @@ export default function Profile({ user, onBack, onEdit, onChargePoints }: Profil
       address: user.address || prev.address,
       addressDetail: user.addressDetail || prev.addressDetail,
       birthdate: user.birthdate || prev.birthdate,
+      joinDate: user.joinDate || prev.joinDate,
     }));
   }, [user]);
 
@@ -39,7 +40,7 @@ export default function Profile({ user, onBack, onEdit, onChargePoints }: Profil
     address: user.address || '-',
     addressDetail: user.addressDetail || '',
     birthdate: user.birthdate || '-',
-    joinDate: '-',
+    joinDate: user.joinDate || '-',
     type: user.type === 'business' ? '사업자' : '일반 고객',
   });
 

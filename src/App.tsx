@@ -385,6 +385,9 @@ async function handleRefresh() {
         points: userData.points || 0,
         isActive: userData.isActive !== undefined ? userData.isActive : true,
         profileImageUrl: userData.profileImageUrl || "",
+        phone: userData.phoneNumber,
+        birthdate: userData.birthDate,
+        joinDate: userData.createdAt ? String(userData.createdAt).substring(0, 10) : undefined,
       };
 
       setUser(formattedUser);
