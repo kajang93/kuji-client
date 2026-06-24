@@ -26,11 +26,11 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
           businessName: data.companyName || user.name,
           businessNumber: data.businessNumber || '-',
           representative: data.ceoName || '-',
-          phone: data.phoneNumber || '-',
+          phone: user.phone || data.phoneNumber || '-',
           email: user.email,
-          address: data.shippingAddress || '-',
+          address: user.address || data.shippingAddress || '-',
           registrationDate: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : '-',
-          status: data.isApproved ? '승인됨' : '심사중',
+          status: data.status === 'APPROVED' ? '승인됨' : (data.status === 'REJECTED' ? '반려됨' : '심사중'),
         });
       } catch (error) {
         console.error("Failed to load business profile", error);
@@ -255,7 +255,7 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
           <div className="flex items-start gap-3">
             <div className="text-xl">ℹ️</div>
             <div className="text-white/70 text-sm">
-              사업자 정보 변경이 필요한 경우 고객센터(1588-0000)로 문의해주세요.
+              사업자 정보 변경이 필요한 경우 우측 하단의 카카오톡 채널(쿠지샵)로 문의해 주세요.
             </div>
           </div>
         </motion.div>
