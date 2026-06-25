@@ -158,12 +158,12 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
               </div>
               <button
                 onClick={handlePushToggle}
-                className={`relative w-[72px] h-8 rounded-full transition-colors ${
+                className={`relative w-24 h-8 rounded-full transition-colors ${
                   settings.pushEnabled ? 'bg-indigo-500' : 'bg-white/20'
                 }`}
               >
                 <motion.div
-                  animate={{ x: settings.pushEnabled ? 44 : 4 }}
+                  animate={{ x: settings.pushEnabled ? 68 : 4 }}
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   className={`absolute top-1 w-6 h-6 rounded-full shadow-lg ${
                     settings.pushEnabled ? 'bg-white' : 'bg-white/60'
