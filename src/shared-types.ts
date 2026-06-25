@@ -164,6 +164,7 @@ export type ScreenType =
   | "adminInquiryManagement"
   | "adminMainBannerManagement"
   | "adminUserManagement"
+  | "adminPromotionManagement"
   | "adminStatistics"
   | "kakaoCallback"
   | "naverCallback"

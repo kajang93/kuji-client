@@ -16,6 +16,7 @@ import AdminEventManagement from "./components/AdminEventManagement";
 import AdminInquiryManagement from "./components/AdminInquiryManagement";
 import AdminMainBannerManagement from "./components/AdminMainBannerManagement";
 import AdminUserManagement from "./components/AdminUserManagement";
+import AdminPromotionManagement from "./components/AdminPromotionManagement";
 import AdminStatistics from "./components/AdminStatistics";
 import Profile from "./components/Profile";
 import ProfileEdit from "./components/ProfileEdit";
@@ -1931,7 +1932,18 @@ async function handleRefresh() {
         )}
         {screen === "adminUserManagement" && (
           <AdminUserManagement
-            onBack={() => setScreen("adminDashboard")}
+            onBack={() => {
+              setScreen("adminDashboard");
+              setIsSidebarOpen(false);
+            }}
+          />
+        )}
+        {screen === "adminPromotionManagement" && (
+          <AdminPromotionManagement
+            onBack={() => {
+              setScreen("adminDashboard");
+              setIsSidebarOpen(false);
+            }}
           />
         )}
         {screen === "adminStatistics" && (
