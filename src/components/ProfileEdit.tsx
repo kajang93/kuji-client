@@ -100,7 +100,13 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
     try {
       setIsSaving(true);
       const formData = new FormData();
-      const requestData = { nickname: name };
+      const requestData = { 
+        nickname: name,
+        phoneNumber: phone,
+        birthDate: birthdate,
+        address: address,
+        addressDetail: addressDetail
+      };
       formData.append(
         "request", 
         new Blob([JSON.stringify(requestData)], { type: "application/json" })

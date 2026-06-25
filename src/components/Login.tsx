@@ -162,6 +162,11 @@ export default function Login({ onLogin, onBack }: LoginProps) {
         name: userData.nickname || userData.name,
         email: userData.email,
         type: (userRole === "ROLE_BUSINESS" || userRole === "BIZ" ? "business" : userRole === "ROLE_ADMIN" || userRole === "ADMIN" ? "admin" : "social") as any,
+        phone: userData.phoneNumber,
+        birthdate: userData.birthDate,
+        address: userData.address,
+        addressDetail: userData.addressDetail,
+        joinDate: userData.createdAt ? String(userData.createdAt).substring(0, 10) : undefined,
         points: userData.points || 0,
         isActive: userData.isActive !== undefined ? userData.isActive : true,
         profileImageUrl: userData.profileImageUrl || ""

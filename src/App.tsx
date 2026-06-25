@@ -388,6 +388,8 @@ async function handleRefresh() {
         profileImageUrl: userData.profileImageUrl || "",
         phone: userData.phoneNumber,
         birthdate: userData.birthDate,
+        address: userData.address,
+        addressDetail: userData.addressDetail,
         joinDate: userData.createdAt ? String(userData.createdAt).substring(0, 10) : undefined,
       };
 

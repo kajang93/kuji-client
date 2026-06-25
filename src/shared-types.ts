@@ -189,6 +189,11 @@ export interface MemberProfileResponse {
   points: number;
   isActive: boolean;
   profileImageUrl?: string;
+  phoneNumber?: string;
+  birthDate?: string;
+  address?: string;
+  addressDetail?: string;
+  createdAt?: string;
 }
 
 export type PostCategory = "FREE" | "WINNING" | "QNA" | "NOTICE";
