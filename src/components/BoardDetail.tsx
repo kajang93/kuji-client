@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
+import { ImageWithFallback } from './figma/ImageWithFallback';
 import { ChevronLeft, MoreVertical, Trash2, Eye, User, Calendar, Share2, Edit2, Heart, Star, MessageSquare, Send } from './icons';
 import { Post, PostComment } from '../shared-types';
 import { 
@@ -266,7 +267,7 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
                   transition={{ delay: idx * 0.1 }}
                   className="rounded-2xl overflow-hidden border border-white/10 shadow-lg"
                 >
-                  <img 
+                  <ImageWithFallback 
                     src={url} 
                     alt={`Post image ${idx + 1}`} 
                     className="w-full h-auto object-cover"
