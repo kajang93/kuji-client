@@ -44,7 +44,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
       iconColor: 'text-blue-300',
     },
     {
-      title: '예상 정산금',
+      title: '총 수익 발생금',
       value: isLoadingStats ? '-' : `₩${sellerSummary?.estimatedSettlement?.toLocaleString() || '0'}`,
       icon: DollarSign,
       color: 'from-cyan-600 to-cyan-700',
@@ -78,7 +78,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
       fontFamily: 'inherit',
     },
     theme: { mode: 'dark' },
-    colors: ['#F59E0B'], // Amber/Gold color for business sales
+    colors: ['#F59E0B', '#06b6d4'], // Amber(Sales) and Cyan(Revenue)
     dataLabels: { enabled: false },
     stroke: { curve: 'smooth', width: 3 },
     fill: {
@@ -108,7 +108,8 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
   };
 
   const chartSeries = [
-    { name: '일일 판매액', data: dailySales.map(d => d.totalAmount) }
+    { name: '총 발생 매출', data: dailySales.map(d => d.totalAmount) },
+    { name: '총 수익 발생금', data: dailySales.map(d => Math.floor(d.totalAmount * (100 - (sellerSummary?.appliedFeeRate || 8)) / 100)) }
   ];
 
   const quickActions = [
