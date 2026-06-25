@@ -55,7 +55,7 @@ export default function PurchaseHistory({ onBack }: PurchaseHistoryProps) {
           date: d.createdAt ? new Date(d.createdAt).toLocaleDateString() : '-',
           animeName: d.boardTitle || d.title || '쿠지 상품',
           quantity: d.drawnCount || d.count || 1,
-          totalPrice: d.totalAmount || d.amount || 0,
+          totalPrice: d.price || d.totalAmount || d.amount || 0,
           status: d.status?.toLowerCase() === 'pending' ? 'pending' : (d.status?.toLowerCase() === 'cancelled' ? 'cancelled' : 'completed'),
         }));
         setPurchases(mapped);

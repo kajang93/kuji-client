@@ -462,9 +462,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm("상품을 수령하셨습니까? 배송 확정을 진행합니다.")) {
-                                  onConfirmDelivery?.(winning.id);
-                                }
+                                setConfirmDeliveryId(winning.id);
                               }}
                               className="w-full mt-2 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 rounded-lg text-white text-xs font-bold transition-all flex items-center justify-center gap-1"
                             >
@@ -481,6 +479,46 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
           )}
         </AnimatePresence>
       </div>
+
+      {/* Confirm Delivery Modal */}
+      <AnimatePresence>
+        {confirmDeliveryId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gradient-to-b from-indigo-900 to-slate-900 rounded-2xl p-6 w-full max-w-sm shadow-2xl border border-white/20 text-center"
+            >
+              <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">배송 확정</h3>
+              <p className="text-white/70 text-sm mb-6">상품을 수령하셨습니까?<br/>배송 확정을 진행합니다.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmDeliveryId(null)}
+                  className="flex-1 py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={() => {
+                    onConfirmDelivery?.(confirmDeliveryId);
+                    setConfirmDeliveryId(null);
+                  }}
+                  className="flex-1 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors shadow-lg shadow-green-500/30"
+                >
+                  확정
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Bottom Action Bar (Inventory Only) */}
       <AnimatePresence>

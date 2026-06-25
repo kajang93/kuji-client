@@ -194,9 +194,6 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
               >
                 <Camera className="w-4 h-4 text-white" />
               </button>
-              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] text-white/60">
-                최대 10MB
-              </div>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -205,7 +202,10 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
                 className="hidden"
               />
             </div>
-            <div className="inline-block mt-8 px-4 py-1 bg-amber-400/20 border border-amber-400/50 rounded-full text-amber-300">
+            <div className="mt-8 text-[12px] text-white/60">
+              최대 10MB
+            </div>
+            <div className="inline-block mt-4 px-4 py-1 bg-amber-400/20 border border-amber-400/50 rounded-full text-amber-300">
               {user.type === 'business' ? '사업자' : '일반 고객'}
             </div>
           </div>
@@ -250,8 +250,8 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-pink-400"
+              disabled={true}
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white/50 cursor-not-allowed"
               placeholder="이메일 입력"
             />
           </div>
@@ -267,9 +267,18 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
             <input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-pink-400"
+              onChange={(e) => {
+                let val = e.target.value.replace(/[^0-9]/g, '');
+                if (val.length > 3 && val.length <= 7) {
+                  val = `${val.slice(0, 3)}-${val.slice(3)}`;
+                } else if (val.length > 7) {
+                  val = `${val.slice(0, 3)}-${val.slice(3, 7)}-${val.slice(7, 11)}`;
+                }
+                setPhone(val);
+              }}
+              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-green-400"
               placeholder="010-0000-0000"
+              maxLength={13}
             />
           </div>
 
