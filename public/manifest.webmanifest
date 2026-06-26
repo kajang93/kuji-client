@@ -7,7 +7,7 @@
   "theme_color": "#0f172a",
   "icons": [
     {
-      "src": "kuji-icon-v4.png",
+      "src": "app-icon.png",
       "type": "image/png",
       "sizes": "any",
       "purpose": "any maskable"
