@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from './motion';
-import { ChevronLeft, Upload, Save, X, Plus, Check, Loader2 } from './icons';
+import { ChevronLeft, Upload, Save, X, Plus, Check, Loader2, Sparkles } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { createKujiBoard, uploadBoardImages } from '../api/kuji';
 import { validateImageFile, compressImageFile } from '../api/client';
+import { processAiImage } from '../api/admin';
 import { rankColors } from '../constants/rankColors';
 import { toast } from 'sonner';
 
@@ -35,6 +36,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
   const [rankData, setRankData] = useState<Record<string, ProductItem[]>>({});
   const [productFiles, setProductFiles] = useState<Record<string, File>>({}); // Added to track actual File objects
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isAiProcessing, setIsAiProcessing] = useState<Record<string, boolean>>({});
   
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const seriesImageInputRef = useRef<HTMLInputElement>(null);
@@ -114,6 +116,33 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
         p.id === productId ? { ...p, [field]: value } : p
       ) || []
     }));
+  };
+
+  const handleAiAutoComplete = async (productId: string) => {
+    const file = productFiles[productId];
+    if (!file) {
+      toast.error('먼저 이미지를 업로드해주세요');
+      return;
+    }
+
+    setIsAiProcessing(prev => ({ ...prev, [productId]: true }));
+    try {
+      const result = await processAiImage(file);
+      
+      // Update image and name
+      setRankData(prev => ({
+        ...prev,
+        [selectedRank]: prev[selectedRank]?.map(p =>
+          p.id === productId ? { ...p, image: result.imageUrl, name: `[${result.name}] ${result.description}` } : p
+        ) || []
+      }));
+      toast.success('AI가 배경을 지우고 상품 정보를 완성했습니다!');
+    } catch (error) {
+      console.error(error);
+      toast.error('AI 분석 중 오류가 발생했습니다.');
+    } finally {
+      setIsAiProcessing(prev => ({ ...prev, [productId]: false }));
+    }
   };
 
   const handleRegister = async () => {
@@ -390,7 +419,34 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
                           {/* Product Details */}
                           <div className="flex-1 space-y-3">
                             <div>
-                              <label className="text-white/60 text-xs block mb-1">상품명</label>
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="text-white/60 text-xs">상품명</label>
+                                {/* AI Auto Complete Button */}
+                                <button
+                                  onClick={() => handleAiAutoComplete(product.id)}
+                                  disabled={isAiProcessing[product.id] || !productFiles[product.id]}
+                                  className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-colors ${
+                                    isAiProcessing[product.id] 
+                                      ? 'bg-indigo-500/50 cursor-not-allowed' 
+                                      : !productFiles[product.id]
+                                        ? 'bg-white/5 text-white/20 cursor-not-allowed'
+                                        : 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                                  }`}
+                                  title="사진을 올린 후 누르면 AI가 누끼와 설명을 자동 생성합니다"
+                                >
+                                  {isAiProcessing[product.id] ? (
+                                    <>
+                                      <Loader2 className="w-3 h-3 animate-spin text-white" />
+                                      <span className="text-white">AI 생성중...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sparkles className="w-3 h-3" />
+                                      <span>AI 자동완성</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
                               <input
                                 type="text"
                                 value={product.name}
