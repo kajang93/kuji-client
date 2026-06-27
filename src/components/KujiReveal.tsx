@@ -3,19 +3,12 @@ import { motion, AnimatePresence } from './motion';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { ArrowRight, Package, RefreshCw, Home, Sparkles, Trophy } from './icons';
 import type { Prize } from '@/shared-types';
+import confetti from 'canvas-confetti';
+import { Tilt } from 'react-tilt';
 
 type KujiRevealProps = {
   prizes: Prize[];
   onComplete: (destination?: "winning" | "detail") => void;
-};
-
-type Particle = {
-  id: number;
-  x: number;
-  y: number;
-  color: string;
-  angle: number;
-  size: number;
 };
 
 export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
@@ -24,10 +17,8 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
   const [showInstruction, setShowInstruction] = useState(true);
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [particles, setParticles] = useState<Particle[]>([]);
   const [isAutoMode, setIsAutoMode] = useState(false);
   const startX = useRef(0);
-  const particleIdRef = useRef(0);
   const audioContextRef = useRef<AudioContext | null>(null);
   const lastTearSoundTime = useRef(0);
 
@@ -51,59 +42,33 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
   const currentPrize = prizes[currentIndex];
   const dragThreshold = 150;
 
-  // Massive fireworks logic restored
-  const createFirework = (x: number, y: number, isBig: boolean = false) => {
-    const colors = ['#fbbf24', '#f59e0b', '#ec4899', '#a855f7', '#06b6d4', '#10b981', '#f97316', '#8b5cf6'];
-    const newParticles: Particle[] = [];
-    const count = isBig ? 20 : 10;
-    
-    for (let i = 0; i < count; i++) {
-      const angle = (i / count) * Math.PI * 2;
-      newParticles.push({
-        id: particleIdRef.current++,
-        x,
-        y,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        angle,
-        size: isBig ? Math.random() * 10 + 8 : Math.random() * 6 + 4,
-      });
-    }
-    
-    setParticles(prev => [...prev, ...newParticles]);
-    
-    setTimeout(() => {
-      setParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id)));
-    }, 1500);
-  };
-
-  // Fireworks during tearing and revealed
+  // Fireworks using canvas-confetti
   useEffect(() => {
-    if (stage === 'tearing') {
-      // Initial burst
-      const positions = [
-        { x: -50, y: 50 }, { x: 400, y: 50 }, 
-        { x: -50, y: 200 }, { x: 400, y: 200 },
-        { x: 192, y: -50 }, { x: 192, y: 300 }
-      ];
-      
-      positions.forEach((pos, idx) => {
-        setTimeout(() => createFirework(pos.x, pos.y, true), idx * 100);
-      });
-
-      // Continuous sparks
-      const interval = setInterval(() => {
-        createFirework(Math.random() * 384, Math.random() * 224);
-      }, 100);
-
-      return () => clearInterval(interval);
-    }
-    
     if (stage === 'revealed') {
-      // Massive celebration loop
-      const interval = setInterval(() => {
-         createFirework(Math.random() * window.innerWidth, Math.random() * window.innerHeight, true);
-      }, 300);
-      return () => clearInterval(interval);
+      const duration = 3000;
+      const end = Date.now() + duration;
+
+      const frame = () => {
+        confetti({
+          particleCount: 5,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ['#fbbf24', '#f59e0b', '#ec4899', '#a855f7', '#06b6d4']
+        });
+        confetti({
+          particleCount: 5,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ['#fbbf24', '#f59e0b', '#ec4899', '#a855f7', '#06b6d4']
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      };
+      frame();
     }
   }, [stage]);
 
@@ -167,7 +132,7 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
       playTearSound();
       
       if (Math.random() > 0.7) {
-         createFirework(Math.random() * 300, Math.random() * 200);
+         // minimal spark effect removed for canvas-confetti
       }
     }
   };
@@ -250,30 +215,7 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
          }
       `}</style>
 
-      {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
-         {/* Particles Overlay */}
-         {particles.map(p => {
-             const distance = 100 + Math.random() * 100;
-             const tx = Math.cos(p.angle) * distance;
-             const ty = Math.sin(p.angle) * distance;
-             return (
-               <div
-                 key={p.id}
-                 className="particle absolute rounded-full"
-                 style={{
-                   left: p.x,
-                   top: p.y,
-                   width: p.size,
-                   height: p.size,
-                   backgroundColor: p.color,
-                   '--tx': `${tx}px`,
-                   '--ty': `${ty}px`,
-                   zIndex: 100
-                 } as any}
-               />
-             );
-         })}
       </div>
 
       {/* Full Screen Reveal Overlay */}
@@ -294,35 +236,14 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
               />
             </div>
 
-             {/* Particles in revealed stage */}
-            {particles.map(p => {
-                 const distance = 200 + Math.random() * 300;
-                 const tx = Math.cos(p.angle) * distance;
-                 const ty = Math.sin(p.angle) * distance;
-                 return (
-                   <div
-                     key={`rev-${p.id}`}
-                     className="particle absolute rounded-full"
-                     style={{
-                       left: '50%',
-                       top: '50%',
-                       width: p.size * 1.5,
-                       height: p.size * 1.5,
-                       backgroundColor: p.color,
-                       '--tx': `${tx}px`,
-                       '--ty': `${ty}px`,
-                       zIndex: 10
-                     } as any}
-                   />
-                 );
-             })}
-
-            {/* Certificate Card (Traditional Design) */}
+            {/* Certificate Card (Traditional Design) with react-tilt */}
+            <Tilt options={{ max: 15, scale: 1.05, glare: true, 'max-glare': 0.5, speed: 400 }}>
             <motion.div 
               initial={{ scale: 0.8, opacity: 0, rotateY: -90 }}
               animate={{ scale: 1, opacity: 1, rotateY: 0 }}
               transition={{ type: "spring", damping: 15 }}
               className="relative z-20 w-full max-w-xs bg-[#fffcf5] rounded-sm shadow-2xl overflow-hidden"
+              style={{ transformStyle: "preserve-3d" }}
             >
                {/* Gold Frame Border */}
                <div className="absolute inset-2 border-4 border-double border-yellow-600 pointer-events-none z-10" />
@@ -364,11 +285,12 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
                      <ImageWithFallback src={currentPrize.image} className="w-full h-full object-contain" />
                   </div>
                   
-                  <div className="text-xs text-gray-500 font-serif italic">
+                  <div className="text-xs text-gray-500 font-serif italic" style={{ transform: "translateZ(20px)" }}>
                      귀하께서는 위 상품에<br/>당첨되셨음을 증명합니다.
                   </div>
                </div>
             </motion.div>
+            </Tilt>
 
             {/* Buttons (Below Certificate) */}
             <motion.div

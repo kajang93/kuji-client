@@ -83,6 +83,10 @@ export default defineConfig({
   },
   server: {
     host: true, // 로컬 네트워크(192.168.x.x)에서도 접속 가능하도록 설정
+    hmr: {
+      // 모바일이나 외부 도메인에서 접속 시 웹소켓 연결이 localhost로 시도되는 문제 해결
+      protocol: 'ws',
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8080',

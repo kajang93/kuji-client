@@ -31,3 +31,21 @@ export const fetchAdminMembers = async (): Promise<any[]> => {
   const response = await axiosInstance.get("/api/admin/members");
   return response.data;
 };
+
+export const fetchPromotions = async (): Promise<any[]> => {
+  const response = await axiosInstance.get("/api/admin/promotions");
+  return response.data;
+};
+
+export const createPromotion = async (promotionData: any): Promise<void> => {
+  await axiosInstance.post("/api/admin/promotions", promotionData);
+};
+
+export const processAiImage = async (file: File): Promise<{ imageUrl: string; name: string; description: string }> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await axiosInstance.post("/api/admin/ai/process-image", formData, {
+    headers: { "Content-Type": "multipart/form-data" }
+  });
+  return response.data;
+};
