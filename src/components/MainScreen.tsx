@@ -55,8 +55,8 @@ export default function MainScreen({ onStart, banners }: MainScreenProps) {
   }, [activeBanners.length]);
 
   const currentBanner = activeBanners[currentIndex] || {
-    title: '이치방쿠지',
-    subtitle: '一番くじ',
+    title: '오시쿠지',
+    subtitle: '推しクジ',
     imageUrl: 'https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=1920',
     buttonText: '시작하기'
   };

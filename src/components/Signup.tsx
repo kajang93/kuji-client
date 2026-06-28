@@ -671,14 +671,14 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                   value={formData.zonecode}
                   readOnly
                   placeholder="우편번호"
-                  className="w-32 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none cursor-pointer"
+                  className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none cursor-pointer"
                   onClick={() => setShowAddressModal(true)}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowAddressModal(true)}
-                  className="px-4 py-3 bg-amber-500 text-slate-900 rounded-xl hover:bg-amber-400 font-medium whitespace-nowrap shrink-0"
+                  className="px-4 py-3 bg-amber-500 text-slate-900 rounded-xl border border-transparent hover:bg-amber-400 font-medium whitespace-nowrap shrink-0"
                 >
                   우편번호 검색
                 </button>
@@ -739,14 +739,14 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                   value={formData.shippingZonecode}
                   readOnly
                   placeholder="우편번호"
-                  className="w-32 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none cursor-pointer"
+                  className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none cursor-pointer"
                   onClick={() => setShowShippingAddressModal(true)}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowShippingAddressModal(true)}
-                  className="px-4 py-3 bg-amber-500 text-slate-900 rounded-xl hover:bg-amber-400 font-medium whitespace-nowrap shrink-0"
+                  className="px-4 py-3 bg-amber-500 text-slate-900 rounded-xl border border-transparent hover:bg-amber-400 font-medium whitespace-nowrap shrink-0"
                 >
                   우편번호 검색
                 </button>
@@ -904,7 +904,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
               <div className="flex-1 overflow-y-auto bg-white/10 rounded-2xl p-6 space-y-4 text-white/90 text-sm">
                 <section>
                   <h3 className="font-semibold text-yellow-400 mb-2">제1조 (목적)</h3>
-                  <p>본 약관은 일본 이치방 쿠지 서비스(이하 "서비스")의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
+                  <p>본 약관은 일본 오시쿠지 서비스(이하 "서비스")의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
                 </section>
 
                 <section>

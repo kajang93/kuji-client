@@ -39,7 +39,7 @@ export default function BusinessPending({
         <div className="max-w-md bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md mb-8">
           <p className="text-slate-300 leading-relaxed">
             현재 회원님의 계정은 <span className="text-amber-400 font-bold">관리자 승인 대기 중</span>입니다.<br /><br />
-            이치방쿠지 서비스의 신뢰성을 위해 사업자 등록 정보를 검토하고 있습니다. 
+            오시쿠지 서비스의 신뢰성을 위해 사업자 등록 정보를 검토하고 있습니다. 
             승인이 완료되면 대시보드 기능을 정상적으로 이용하실 수 있습니다.
           </p>
         </div>
@@ -60,7 +60,7 @@ export default function BusinessPending({
       </div>
 
       <div className="py-8 text-slate-500 text-sm">
-        문의사항: {process.env.VITE_ADMIN_EMAIL || "admin@ichibankuji.com"}
+        문의사항: {process.env.VITE_ADMIN_EMAIL || "admin@oshikujikuji.com"}
       </div>
     </div>
   );

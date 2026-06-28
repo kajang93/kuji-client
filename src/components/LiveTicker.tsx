@@ -72,7 +72,7 @@ export default function LiveTicker() {
         // 데이터가 없을 경우 표시할 가상 데이터 (개발용/초기용)
         setWinnings([
           { maskedNickname: 'stars***', boardTitle: '원피스 에그헤드편', grade: 'A상', itemName: '루피 피규어', createdAt: '' },
-          { maskedNickname: 'ka****', boardTitle: '귀멸의 칼날', grade: 'B상', itemName: '네즈코 피규어', createdAt: '' },
+          { maskedNickname: 'ka****', boardTitle: '마법학원 아스테리아', grade: 'B상', itemName: '아스테리아 교복 피규어', createdAt: '' },
           { maskedNickname: 'kuji***', boardTitle: '드래곤볼 Z', grade: 'Last One상', itemName: '신룡 피규어', createdAt: '' },
         ]);
       }

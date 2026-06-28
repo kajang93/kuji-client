@@ -209,7 +209,7 @@ export default function Sidebar({ isOpen, onClose, user, onLogout, onLogin, onNa
 
             {/* Footer */}
             <div className="p-6 text-center text-purple-300 text-sm">
-              <p>一番く지 App v1.0</p>
+              <p>오시쿠지 App v1.0</p>
               <p className="mt-2 text-xs opacity-70">© 2024 All rights reserved</p>
             </div>
           </motion.div>

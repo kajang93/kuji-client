@@ -53,7 +53,7 @@ export function KujiCard({ className = '', size = 'normal' }: { className?: stri
           
           <rect width={dim.width} height={40 * scale} fill="rgba(255, 255, 255, 0.15)" />
           <text x={dim.width / 2} y={26 * scale} textAnchor="middle" fill="white" fontSize={16 * scale} fontWeight="bold">
-            ★ 一番くじ ★
+            ★ 推しクジ ★
           </text>
           
           <text x={dim.width / 2} y={dim.height / 2 + 20 * scale} textAnchor="middle" fill="white" fontSize={80 * scale} fontWeight="bold" opacity="0.9">

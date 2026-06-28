@@ -423,7 +423,7 @@ export default function AdminMainBannerManagement({ onBack, banners, setBanners 
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="예: 이치방쿠지"
+                    placeholder="예: 오시쿠지"
                     className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-teal-400"
                   />
                 </div>
@@ -435,7 +435,7 @@ export default function AdminMainBannerManagement({ onBack, banners, setBanners 
                     type="text"
                     value={formData.subtitle}
                     onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                    placeholder="예: 一番くじ"
+                    placeholder="예: 推しクジ"
                     className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-teal-400"
                   />
                 </div>

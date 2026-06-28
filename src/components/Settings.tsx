@@ -534,7 +534,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
           transition={{ delay: 0.7 }}
           className="mt-8 text-center text-white/40 text-sm"
         >
-          <p>一番쿠지 App</p>
+          <p>오시쿠지 App</p>
           <p className="mt-1">Version 1.0.0</p>
         </motion.div>
       </div>
@@ -589,13 +589,13 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                       <div className="flex justify-center mb-4">
                         <Ticket className="w-24 h-24 text-amber-400" />
                       </div>
-                      <h3 className="text-white text-2xl mb-2">一番쿠지</h3>
-                      <p className="text-white/60 mb-4">이치방쿠지</p>
+                      <h3 className="text-white text-2xl mb-2">오시쿠지</h3>
+                      <p className="text-white/60 mb-4">오시쿠지</p>
                     </div>
                     <h3 className="text-white">앱 버전</h3>
                     <p>Version 1.1.0 (Notification Update)</p>
                     <h3 className="text-white">개발사</h3>
-                    <p>Ichiban Kuji Korea</p>
+                    <p>Oshikuji Kuji Korea</p>
                   </>
                 )}
               </div>

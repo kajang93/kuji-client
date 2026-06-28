@@ -441,7 +441,7 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
                   <rect x="20" y="20" width="344" height="184" rx="8" ry="8" fill="none" stroke="white" strokeWidth="2" strokeDasharray="6,6" opacity="0.6" />
                   
                   <text x="192" y="100" textAnchor="middle" fill="white" fontSize="36" fontWeight="bold">KUJI</text>
-                  <text x="192" y="140" textAnchor="middle" fill="white" fontSize="16" opacity="0.8">一番くじ</text>
+                  <text x="192" y="140" textAnchor="middle" fill="white" fontSize="16" opacity="0.8">推しクジ</text>
                 </svg>
               </div>
             </div>

@@ -126,7 +126,7 @@ export default function AdminSidebar({ isOpen, onClose, onNavigate, onLogout, us
 
         {/* Footer */}
         <div className="p-6 text-center text-white/50 text-xs">
-          Ichiban Kuji Admin v1.0
+          Oshikuji Kuji Admin v1.0
         </div>
       </motion.div>
     </>

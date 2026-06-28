@@ -41,7 +41,7 @@ export default function GoogleCallback({
       if ((data as any).isNewUser && !(data as any).token) {
         const agreed = confirm(
           `[구글 로그인 - 약관 동의]\n\n` +
-          `이치방쿠지 서비스 이용을 위해 약관에 동의해 주세요.\n\n` +
+          `오시쿠지 서비스 이용을 위해 약관에 동의해 주세요.\n\n` +
           `• [필수] 이용약관 동의\n` +
           `• [필수] 개인정보 처리방침 동의\n\n` +
           `확인을 누르시면 동의하고 가입이 완료됩니다.`

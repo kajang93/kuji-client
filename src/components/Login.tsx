@@ -299,7 +299,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       setTimeout(() => {
         onLogin({
           name: '시스템 관리자',
-          email: 'admin@ichiban.com',
+          email: 'admin@oshikuji.com',
           type: 'admin' as any
         });
       }, 500);
@@ -351,7 +351,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
             >
               <Ticket className="w-24 h-24 text-amber-400" />
             </motion.button>
-            <h2 className="text-white text-3xl mb-2">一番쿠지</h2>
+            <h2 className="text-white text-3xl mb-2">오시쿠지</h2>
             <p className="text-slate-300">로그인하고 쿠지를 구매하세요</p>
           </div>
 
@@ -763,7 +763,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                           value={findPhone}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFindPhone(formatPhone(e.target.value))}
                           placeholder="010-0000-0000"
-                          className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
+                          className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
                           disabled={isCodeSent}
                           required
                         />
@@ -902,7 +902,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                           value={findPhone}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFindPhone(formatPhone(e.target.value))}
                           placeholder="010-0000-0000"
-                          className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
+                          className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-pink-400"
                           disabled={isCodeSent}
                           required
                         />

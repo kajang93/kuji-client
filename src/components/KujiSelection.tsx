@@ -274,7 +274,7 @@ export default function KujiSelection({ boardId, totalKuji, purchaseCount, point
                           fontSize="3.5"
                           fontWeight="bold"
                         >
-                          ★ 一番く지 ★
+                          ★ 오시쿠지 ★
                         </text>
 
                         {/* Border with dashed style - matching main kuji */}
