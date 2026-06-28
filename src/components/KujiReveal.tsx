@@ -22,15 +22,14 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
   const controls = useAnimation();
   
   // 3D Transforms based on drag distance
-  const rotateZ = useTransform(x, [0, 150], [0, -15]);
-  const rotateY = useTransform(x, [0, 150], [0, 30]);
+  const rotateY = useTransform(x, [0, 150], [0, 60]); // 오른쪽 기준축으로 접히듯 열림
   const opacity = useTransform(x, [100, 200], [1, 0]);
 
   // Reset physics when ready
   useEffect(() => {
     if (stage === 'ready') {
       x.set(0);
-      controls.set({ x: 0, y: 0, rotateZ: 0, rotateY: 0, opacity: 1 });
+      controls.set({ x: 0, y: 0, rotateY: 0, opacity: 1 });
     }
   }, [stage, x, controls]);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -147,25 +146,23 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
       playTearSound();
       if (navigator.vibrate) navigator.vibrate(100);
       
-      // 강력한 스냅(Snap) 애니메이션으로 날려버림
+      // 강력한 스냅(Snap) 애니메이션으로 날려버림 (종이가 찢어져 날아감)
       await controls.start({
         x: typeof window !== 'undefined' ? window.innerWidth : 800,
-        y: -100,
-        rotateZ: 45,
-        rotateY: 60,
+        y: 0,
+        rotateY: 120, // 확 찢어지면서 뒤집힘
         opacity: 0,
         transition: { type: "spring", stiffness: 200, damping: 20 }
       });
       setStage('revealed');
     } else {
-      // 저항감을 이기지 못하면 강력하게 튕겨 돌아감 (Snap back)
+      // 저항감을 이기지 못하면 강력하게 튕겨 돌아감 (원상복구)
       if (navigator.vibrate) navigator.vibrate(30);
       controls.start({ 
         x: 0, 
         y: 0, 
-        rotateZ: 0, 
         rotateY: 0, 
-        transition: { type: "spring", stiffness: 500, damping: 15 } 
+        transition: { type: "spring", stiffness: 600, damping: 15 } 
       });
     }
   };
@@ -187,9 +184,8 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
     playTearSound();
     await controls.start({
       x: typeof window !== 'undefined' ? window.innerWidth : 800,
-      y: -100,
-      rotateZ: 45,
-      rotateY: 60,
+      y: 0,
+      rotateY: 120,
       opacity: 0,
       transition: { type: "spring", stiffness: 200, damping: 20 }
     });
@@ -210,11 +206,10 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
       playTearSound();
       await controls.start({
         x: 800,
-        y: -100,
-        rotateZ: 45,
-        rotateY: 60,
+        y: 0,
+        rotateY: 120,
         opacity: 0,
-        transition: { duration: 0.5, ease: "easeOut" }
+        transition: { duration: 0.4, ease: "easeOut" }
       });
       setStage('revealed');
       await new Promise(resolve => setTimeout(resolve, 1200));
@@ -444,17 +439,17 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
               <motion.div
                 drag={stage === 'ready' && !isAutoMode ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.1} // 강력한 저항감
+                dragElastic={0.05} // 찢어지기 전까지 팽팽하게 버티는 강한 저항
                 onDrag={handleDrag}
                 onDragEnd={handleDragEnd}
                 animate={controls}
                 style={{ 
                   x, 
-                  rotateZ, 
                   rotateY, 
                   opacity,
                   zIndex: 5,
-                  transformOrigin: 'bottom right'
+                  transformOrigin: 'center right', // 실제 쿠지 종이처럼 우측 접착면을 축으로 왼쪽부터 뜯어짐
+                  perspective: '1000px'
                 }}
                 className={`absolute inset-0 ${stage === 'ready' && !isAutoMode ? 'cursor-grab active:cursor-grabbing' : ''}`}
               >
