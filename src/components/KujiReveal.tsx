@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from './motion';
-import { useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { ArrowRight, Package, RefreshCw, Home, Sparkles, Trophy } from './icons';
 import type { Prize } from '@/shared-types';
