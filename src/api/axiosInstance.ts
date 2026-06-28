@@ -9,9 +9,12 @@ export const getToken = (): string | null => {
   return localStorage.getItem('token') || sessionStorage.getItem('token');
 };
 
+// Auto-detect environment: DEV uses proxy (empty string), PROD uses real domain
+export const BASE_URL = import.meta.env.DEV ? '' : 'https://kujishop.shop';
+
 // Create axios instance with credentials
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '',
+  baseURL: import.meta.env.VITE_API_BASE_URL || BASE_URL,
   withCredentials: true,
 });
 
@@ -53,7 +56,7 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       try {
         // Call refresh endpoint; server reads HttpOnly cookie and returns new access token
-        const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL || ''}/api/members/refresh`, {}, { withCredentials: true });
+        const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL || BASE_URL}/api/members/refresh`, {}, { withCredentials: true });
         
         // 서버에서 이제 LoginResponse (객체) 를 반환하므로 token 필드를 추출해야 함
         const newToken = typeof res.data === 'string' ? res.data : res.data?.token;

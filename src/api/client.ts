@@ -4,7 +4,7 @@
 
 import imageCompression from 'browser-image-compression';
 
-export const API_HOST = import.meta.env.VITE_API_BASE_URL || "";
+export const API_HOST = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? "" : "https://kujishop.shop");
 
 export const getHeaders = () => {
   // Token is now handled via HttpOnly cookies; no Authorization header needed
