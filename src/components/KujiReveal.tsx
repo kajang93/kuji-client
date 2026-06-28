@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
+import { Hand } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { ArrowRight, Package, RefreshCw, Home, Sparkles, Trophy } from './icons';
 import type { Prize } from '@/shared-types';
@@ -93,28 +94,33 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
     if (!audioContextRef.current) return;
     
     const audioContext = audioContextRef.current;
-    const bufferSize = audioContext.sampleRate * 0.03;
+    const bufferSize = audioContext.sampleRate * 0.05; // 소리 지속 시간 증가 (더 길게 찢어짐)
     const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
     const data = buffer.getChannelData(0);
     
+    // 더 거친 노이즈 생성 (크런치함 추가)
     for (let i = 0; i < bufferSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.2));
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.15));
     }
     
     const source = audioContext.createBufferSource();
     source.buffer = buffer;
     const gainNode = audioContext.createGain();
-    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.03);
+    // 볼륨과 임팩트 상향
+    gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+    
     const filter = audioContext.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(2500 + Math.random() * 1500, audioContext.currentTime);
-    filter.Q.value = 2;
+    // 주파수를 살짝 낮춰서 묵직하고 두꺼운 종이가 찢어지는 소리로 변경
+    filter.frequency.setValueAtTime(1200 + Math.random() * 800, audioContext.currentTime);
+    filter.Q.value = 1.2;
+    
     source.connect(filter);
     filter.connect(gainNode);
     gainNode.connect(audioContext.destination);
     source.start();
-    source.stop(audioContext.currentTime + 0.03);
+    source.stop(audioContext.currentTime + 0.05);
   };
 
   useEffect(() => {
@@ -132,8 +138,8 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
     }
     
     if (navigator.vibrate && info.offset.x > 10) {
-      const vibrationProgress = Math.min(info.offset.x / dragThreshold, 1);
-      const vibrationIntensity = Math.floor(10 + vibrationProgress * 30);
+      // 진동 강도 상향: 묵직한 질감 전달
+      const vibrationIntensity = Math.floor(15 + Math.min(info.offset.x / dragThreshold, 1) * 35);
       navigator.vibrate(vibrationIntensity);
     }
   };
@@ -144,7 +150,8 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
     if (info.offset.x > dragThreshold || info.velocity.x > 500) {
       setStage('tearing');
       playTearSound();
-      if (navigator.vibrate) navigator.vibrate(100);
+      // 찢어질 때 강렬한 3단 진동 패턴
+      if (navigator.vibrate) navigator.vibrate([50, 30, 100]);
       
       // 강력한 스냅(Snap) 애니메이션으로 날려버림 (종이가 찢어져 날아감)
       await controls.start({
@@ -157,7 +164,7 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
       setStage('revealed');
     } else {
       // 저항감을 이기지 못하면 강력하게 튕겨 돌아감 (원상복구)
-      if (navigator.vibrate) navigator.vibrate(30);
+      if (navigator.vibrate) navigator.vibrate(40);
       controls.start({ 
         x: 0, 
         y: 0, 
@@ -380,9 +387,9 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
                   exit={{ opacity: 0 }}
                   className="absolute -top-24 left-1/2 -translate-x-1/2 whitespace-nowrap z-50"
                 >
-                  <div className="px-6 py-3 rounded-full shadow-lg bg-white/90 text-purple-900 flex items-center gap-2">
-                    <ArrowRight className="w-5 h-5 arrow-slide" />
-                    <span className="font-bold">오른쪽으로 밀어서 뜯기</span>
+                  <div className="px-6 py-3 rounded-full shadow-2xl bg-gradient-to-r from-rose-500 to-pink-600 text-white flex items-center gap-2 border border-rose-400">
+                    <Hand className="w-5 h-5 animate-bounce" />
+                    <span className="font-bold tracking-wide">여기를 잡고 오른쪽으로 뜯으세요</span>
                   </div>
                 </motion.div>
               )}
@@ -439,7 +446,7 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
               <motion.div
                 drag={stage === 'ready' && !isAutoMode ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.05} // 찢어지기 전까지 팽팽하게 버티는 강한 저항
+                dragElastic={0.02} // 극한의 지건 저항감: 두꺼운 골판지를 뜯는 듯한 뻑뻑함
                 onDrag={handleDrag}
                 onDragEnd={handleDragEnd}
                 animate={controls}
