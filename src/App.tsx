@@ -408,7 +408,6 @@ async function handleRefresh() {
     } catch (error) {
       console.error("Session expired or invalid token:", error);
       localStorage.removeItem("token");
-      setIsLoggedIn(false);
       setUser(null);
     }
   };
