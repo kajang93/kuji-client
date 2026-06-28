@@ -152,9 +152,27 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
     }
   };
 
+  const validateBusinessNumber = (number: string): boolean => {
+    const cleanNumber = number.replace(/[^0-9]/g, '');
+    if (cleanNumber.length !== 10) return false;
+
+    const weights = [1, 3, 7, 1, 3, 7, 1, 3, 5];
+    let sum = 0;
+    
+    for (let i = 0; i < 9; i++) {
+      sum += parseInt(cleanNumber.charAt(i)) * weights[i];
+    }
+    
+    sum += Math.floor((parseInt(cleanNumber.charAt(8)) * 5) / 10);
+    
+    const checkDigit = (10 - (sum % 10)) % 10;
+    
+    return checkDigit === parseInt(cleanNumber.charAt(9));
+  };
+
   const handleBusinessNumberCheck = () => {
     if (formData.businessNumber.length === 10) {
-      const isValid = Math.random() > 0.2;
+      const isValid = validateBusinessNumber(formData.businessNumber);
       setBusinessNumberValid(isValid);
       setBusinessNumberChecked(true);
       if (isValid) {
