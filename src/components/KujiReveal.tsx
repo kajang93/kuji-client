@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
+import { useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { ArrowRight, Package, RefreshCw, Home, Sparkles, Trophy } from './icons';
 import type { Prize } from '@/shared-types';
@@ -15,10 +16,24 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [stage, setStage] = useState<'ready' | 'tearing' | 'revealed'>('ready');
   const [showInstruction, setShowInstruction] = useState(true);
-  const [dragX, setDragX] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
   const [isAutoMode, setIsAutoMode] = useState(false);
-  const startX = useRef(0);
+  
+  // Framer Motion Physics
+  const x = useMotionValue(0);
+  const controls = useAnimation();
+  
+  // 3D Transforms based on drag distance
+  const rotateZ = useTransform(x, [0, 150], [0, -15]);
+  const rotateY = useTransform(x, [0, 150], [0, 30]);
+  const opacity = useTransform(x, [100, 200], [1, 0]);
+
+  // Reset physics when ready
+  useEffect(() => {
+    if (stage === 'ready') {
+      x.set(0);
+      controls.set({ x: 0, y: 0, rotateZ: 0, rotateY: 0, opacity: 1 });
+    }
+  }, [stage, x, controls]);
   const audioContextRef = useRef<AudioContext | null>(null);
   const lastTearSoundTime = useRef(0);
 
@@ -111,43 +126,48 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
     return () => clearTimeout(timer);
   }, [currentIndex]);
 
-  const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
-    if (stage !== 'ready') return;
-    setIsDragging(true);
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    startX.current = clientX - dragX;
-  };
-
-  const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging || stage !== 'ready') return;
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const newDragX = clientX - startX.current;
-    if (newDragX >= 0 && newDragX <= 300) {
-      setDragX(newDragX);
-      if (navigator.vibrate && newDragX > 10) {
-        const vibrationProgress = Math.min(newDragX / dragThreshold, 1);
-        const vibrationIntensity = Math.floor(10 + vibrationProgress * 20);
-        navigator.vibrate(vibrationIntensity);
-      }
+  const handleDrag = (event: any, info: PanInfo) => {
+    if (stage !== 'ready' || isAutoMode) return;
+    
+    if (info.velocity.x > 50) {
       playTearSound();
-      
-      if (Math.random() > 0.7) {
-         // minimal spark effect removed for canvas-confetti
-      }
+    }
+    
+    if (navigator.vibrate && info.offset.x > 10) {
+      const vibrationProgress = Math.min(info.offset.x / dragThreshold, 1);
+      const vibrationIntensity = Math.floor(10 + vibrationProgress * 30);
+      navigator.vibrate(vibrationIntensity);
     }
   };
 
-  const handleMouseUp = () => {
-    if (!isDragging || stage !== 'ready') return;
-    setIsDragging(false);
+  const handleDragEnd = async (event: any, info: PanInfo) => {
+    if (stage !== 'ready' || isAutoMode) return;
     
-    if (dragX > dragThreshold) {
+    if (info.offset.x > dragThreshold || info.velocity.x > 500) {
       setStage('tearing');
-      setTimeout(() => {
-        setStage('revealed');
-      }, 1000);
+      playTearSound();
+      if (navigator.vibrate) navigator.vibrate(100);
+      
+      // 강력한 스냅(Snap) 애니메이션으로 날려버림
+      await controls.start({
+        x: typeof window !== 'undefined' ? window.innerWidth : 800,
+        y: -100,
+        rotateZ: 45,
+        rotateY: 60,
+        opacity: 0,
+        transition: { type: "spring", stiffness: 200, damping: 20 }
+      });
+      setStage('revealed');
     } else {
-      setDragX(0);
+      // 저항감을 이기지 못하면 강력하게 튕겨 돌아감 (Snap back)
+      if (navigator.vibrate) navigator.vibrate(30);
+      controls.start({ 
+        x: 0, 
+        y: 0, 
+        rotateZ: 0, 
+        rotateY: 0, 
+        transition: { type: "spring", stiffness: 500, damping: 15 } 
+      });
     }
   };
 
@@ -156,17 +176,25 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
       setCurrentIndex(currentIndex + 1);
       setStage('ready');
       setShowInstruction(true);
-      setDragX(0);
+      x.set(0);
     } else {
       onComplete('detail');
     }
   };
   
-  const handleManualOpen = () => {
+  const handleManualOpen = async () => {
+    if (stage !== 'ready') return;
     setStage('tearing');
-    setTimeout(() => {
-      setStage('revealed');
-    }, 1000);
+    playTearSound();
+    await controls.start({
+      x: typeof window !== 'undefined' ? window.innerWidth : 800,
+      y: -100,
+      rotateZ: 45,
+      rotateY: 60,
+      opacity: 0,
+      transition: { type: "spring", stiffness: 200, damping: 20 }
+    });
+    setStage('revealed');
   };
 
   const handleAutoOpen = async () => {
@@ -180,7 +208,15 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
       }
       
       setStage('tearing');
-      await new Promise(resolve => setTimeout(resolve, 800));
+      playTearSound();
+      await controls.start({
+        x: 800,
+        y: -100,
+        rotateZ: 45,
+        rotateY: 60,
+        opacity: 0,
+        transition: { duration: 0.5, ease: "easeOut" }
+      });
       setStage('revealed');
       await new Promise(resolve => setTimeout(resolve, 1200));
     }
@@ -192,11 +228,6 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
   return (
     <div 
       className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden bg-slate-900"
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onTouchMove={handleMouseMove}
-      onTouchEnd={handleMouseUp}
     >
       <style>{`
          @keyframes slideRight {
@@ -410,14 +441,21 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
                 </svg>
               </div>
 
-              {/* Top Layer (Cover) */}
-              <div
-                onMouseDown={handleMouseDown}
-                onTouchStart={handleMouseDown}
+              {/* Top Layer (Cover) - Framer Motion Physics Applied */}
+              <motion.div
+                drag={stage === 'ready' && !isAutoMode ? "x" : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.1} // 강력한 저항감
+                onDrag={handleDrag}
+                onDragEnd={handleDragEnd}
+                animate={controls}
                 style={{ 
-                  transform: `translateX(${stage === 'tearing' ? '110%' : dragX}px)`,
-                  transition: stage === 'tearing' ? 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
+                  x, 
+                  rotateZ, 
+                  rotateY, 
+                  opacity,
                   zIndex: 5,
+                  transformOrigin: 'bottom right'
                 }}
                 className={`absolute inset-0 ${stage === 'ready' && !isAutoMode ? 'cursor-grab active:cursor-grabbing' : ''}`}
               >
@@ -443,7 +481,7 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
                   <text x="192" y="100" textAnchor="middle" fill="white" fontSize="36" fontWeight="bold">KUJI</text>
                   <text x="192" y="140" textAnchor="middle" fill="white" fontSize="16" opacity="0.8">推しクジ</text>
                 </svg>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         )}
