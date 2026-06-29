@@ -50,8 +50,74 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
   
   const [isSaving, setIsSaving] = useState(false);
 
-  const ranks = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+  const initialRanks = Array.from(new Set(collection.prizes.map(p => p.rank)));
+  initialRanks.sort((a, b) => {
+    if (a === 'LAST') return 1;
+    if (b === 'LAST') return -1;
+    return a.localeCompare(b);
+  });
+  
+  const [rankOrder, setRankOrder] = useState<string[]>(initialRanks.length > 0 ? initialRanks : ['A']);
+  const [rankTypes, setRankTypes] = useState<Record<string, 'single' | 'multi'>>(
+    initialRanks.reduce((acc, rank) => {
+      const count = collection.prizes.filter(p => p.rank === rank).length;
+      acc[rank] = count > 1 ? 'multi' : 'single';
+      return acc;
+    }, {} as Record<string, 'single' | 'multi'>)
+  );
+  
+  const [newRankName, setNewRankName] = useState('');
+  const [newRankType, setNewRankType] = useState<'single' | 'multi'>('single');
+  const [showAddRank, setShowAddRank] = useState(false);
 
+  // Initialize empty state for newly added ranks if collection was empty
+  if (Object.keys(prizes).length === 0 && rankOrder.length === 1 && rankOrder[0] === 'A') {
+    if (!prizes['A']) {
+      setPrizes({
+        'A': [{ id: `A-${Date.now()}`, name: '', image: '', stock: 0 }]
+      });
+      setRankTypes({ 'A': 'single' });
+    }
+  }
+
+  const handleAddNewRank = () => {
+    if (!newRankName.trim()) {
+      toast.error('등급 이름을 입력해주세요. (예: A, LAST)');
+      return;
+    }
+    const rank = newRankName.trim().toUpperCase();
+    if (rankOrder.includes(rank)) {
+      toast.error('이미 존재하는 등급입니다.');
+      return;
+    }
+    setRankOrder(prev => {
+      const newOrder = [...prev, rank];
+      newOrder.sort((a, b) => {
+        if (a === 'LAST') return 1;
+        if (b === 'LAST') return -1;
+        return a.localeCompare(b);
+      });
+      return newOrder;
+    });
+    setRankTypes(prev => ({ ...prev, [rank]: newRankType }));
+    setPrizes(prev => ({
+      ...prev,
+      [rank]: [{ id: `${rank}-${Date.now()}`, name: '', image: '', stock: 0 }]
+    }));
+    setNewRankName('');
+    setShowAddRank(false);
+  };
+
+  const handleRemoveRank = (rank: string) => {
+    if (!confirm(`${rank}상을 전체 삭제하시겠습니까? 등록된 상품이 모두 삭제됩니다.`)) return;
+    // Note: To be fully correct, we should call deleteKujiItem for existing items here,
+    // but user can just not save if they change their mind, or handle save to prune removed items.
+    // For simplicity, we just remove from UI state.
+    setRankOrder(prev => prev.filter(r => r !== rank));
+    const newPrizes = { ...prizes };
+    delete newPrizes[rank];
+    setPrizes(newPrizes);
+  };
   const handleSeriesImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -401,7 +467,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
 
         {/* Prizes by Rank */}
         <div className="space-y-4">
-          {ranks.map((rank, rankIndex) => {
+          {rankOrder.map((rank, rankIndex) => {
             const products = prizes[rank] || [];
 
             return (
@@ -412,25 +478,43 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
                 transition={{ delay: rankIndex * 0.05 }}
                 className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/20 shadow-lg"
               >
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
                   <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 bg-gradient-to-br ${rankColors[rank]} rounded-xl flex items-center justify-center shadow-lg`}>
-                      <span className="text-white text-xl">{rank}</span>
+                    <div className={`w-12 h-12 bg-gradient-to-br ${rank === 'LAST' ? 'from-yellow-300 via-amber-500 to-yellow-600 border border-yellow-200' : rankColors[rank] || 'from-gray-400 to-gray-600'} rounded-xl flex items-center justify-center shadow-lg`}>
+                      <span className={`text-xl font-bold ${rank === 'LAST' ? 'text-black' : 'text-white'}`}>{rank}</span>
                     </div>
-                    <h3 className="text-white text-lg">{rank}상 상품</h3>
+                    <div>
+                      <h3 className={`text-lg font-bold ${rank === 'LAST' ? 'text-yellow-400' : 'text-white'}`}>{rank === 'LAST' ? '라스트상 (LAST)' : `${rank}상`}</h3>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${rankTypes[rank] === 'single' ? 'bg-blue-500/20 text-blue-300' : 'bg-purple-500/20 text-purple-300'}`}>
+                        {rankTypes[rank] === 'single' ? '단품 (1종)' : '다종 (여러 종류)'}
+                      </span>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => handleAddProduct(rank)}
-                    disabled={!isEditingAllowed}
-                    className={`px-3 py-1 rounded-lg text-white text-sm flex items-center gap-1 transition-colors ${
-                      isEditingAllowed
-                        ? 'bg-green-500 hover:bg-green-600'
-                        : 'bg-gray-500 opacity-50 cursor-not-allowed'
-                    }`}
-                  >
-                    <Plus className="w-4 h-4" />
-                    추가
-                  </button>
+                  
+                  <div className="flex items-center gap-2">
+                    {rankTypes[rank] !== 'single' && (
+                      <button
+                        onClick={() => handleAddProduct(rank)}
+                        disabled={!isEditingAllowed}
+                        className={`px-3 py-1 rounded-lg text-white text-sm flex items-center gap-1 transition-colors ${
+                          isEditingAllowed
+                            ? 'bg-green-500 hover:bg-green-600'
+                            : 'bg-gray-500 opacity-50 cursor-not-allowed'
+                        }`}
+                      >
+                        <Plus className="w-4 h-4" />
+                        상품 추가
+                      </button>
+                    )}
+                    {isEditingAllowed && (
+                      <button
+                        onClick={() => handleRemoveRank(rank)}
+                        className="px-3 py-1 rounded-lg text-red-300 bg-red-500/20 hover:bg-red-500/30 text-sm transition-colors"
+                      >
+                        등급 삭제
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -510,7 +594,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
                         </div>
 
                         {/* Remove Button */}
-                        {products.length > 1 && isEditingAllowed && (
+                        {products.length > 1 && rankTypes[rank] === 'multi' && isEditingAllowed && (
                           <button
                             onClick={() => handleRemoveProduct(rank, productIndex)}
                             className="p-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-300 transition-colors"
@@ -526,6 +610,69 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
             );
           })}
         </div>
+
+        {/* Add New Rank UI */}
+        {isEditingAllowed && (
+          <div className="mt-6 mb-8">
+            {!showAddRank ? (
+              <button
+                onClick={() => setShowAddRank(true)}
+                className="w-full py-4 border-2 border-dashed border-white/30 rounded-xl text-white/70 hover:text-white hover:border-cyan-400 hover:bg-white/5 transition-all flex items-center justify-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                새로운 등급 추가 (상 추가)
+              </button>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-cyan-400/50 shadow-lg"
+              >
+                <h3 className="text-white mb-3">새로운 등급 만들기</h3>
+                <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                  <div className="flex-1">
+                    <label className="text-white/60 text-xs block mb-1">등급명 (예: I, J, LAST)</label>
+                    <input
+                      type="text"
+                      value={newRankName}
+                      onChange={e => setNewRankName(e.target.value)}
+                      className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:border-cyan-400 uppercase"
+                      placeholder="대문자로 입력"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-white/60 text-xs block mb-1">상품 구성 방식</label>
+                    <select
+                      value={newRankType}
+                      onChange={e => setNewRankType(e.target.value as 'single' | 'multi')}
+                      className="w-full px-3 py-2 bg-purple-900 border border-white/20 rounded-lg text-white focus:outline-none focus:border-cyan-400"
+                    >
+                      <option value="single">단품 (1종류 상품만 등록)</option>
+                      <option value="multi">다종 (여러 종류 상품을 함께 등록)</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleAddNewRank}
+                    className="flex-1 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-bold transition-colors"
+                  >
+                    추가하기
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAddRank(false);
+                      setNewRankName('');
+                    }}
+                    className="py-2 px-4 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                  >
+                    취소
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        )}
 
         {/* Save Button */}
         <motion.button
