@@ -77,7 +77,18 @@ import {
 
 export default function App() {
 
-  const [screen, setScreen] = useState<ScreenType>("main");
+  const [screen, setScreen] = useState<ScreenType>(() => {
+    const saved = sessionStorage.getItem("currentScreen") as ScreenType;
+    const unsafeScreens = ["detail", "selection", "reveal", "winning", "prizeSelection", "kakaoCallback", "naverCallback", "googleCallback"];
+    if (saved && !unsafeScreens.includes(saved)) {
+      return saved;
+    }
+    return "main";
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem("currentScreen", screen);
+  }, [screen]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [selectedAnime, setSelectedAnime] =
     useState<AnimeCollection | null>(null);
