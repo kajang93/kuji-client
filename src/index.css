@@ -10,7 +10,7 @@
   }
 
   body {
-    background-color: #020617; /* 데스크탑 접속 시 양옆 여백 배경색 */
+    background-color: #000000; /* Deep black for premium look */
     display: flex;
     justify-content: center;
     margin: 0;
@@ -26,8 +26,8 @@
     height: 100%;
     margin: 0 auto;
     position: relative;
-    background-color: #0f172a;
-    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    background-color: #09090b; /* Very dark zinc */
+    box-shadow: 0 0 100px rgba(0, 0, 0, 0.9);
     
     /* iOS Safe Area 대응 (아이폰 노치/하단 홈바 여백 확보) */
     padding-top: env(safe-area-inset-top);
@@ -64,5 +64,39 @@
     min-width: 44px;
   }
 
+  /* 2026 Premium Animations */
+  @keyframes aurora {
+    0% {
+      background-position: 50% 50%, 50% 50%;
+    }
+    50% {
+      background-position: 100% 50%, 0% 50%;
+    }
+    100% {
+      background-position: 50% 50%, 50% 50%;
+    }
+  }
 
+  .aurora-bg {
+    background-image: repeating-linear-gradient(
+      100deg,
+      #0000 0%,
+      #0000 7%,
+      transparent 10%,
+      transparent 12%,
+      #0000 16%
+    ),
+    radial-gradient(ellipse at 100% 0%, #1e1b4b 0%, transparent 50%),
+    radial-gradient(ellipse at 0% 100%, #312e81 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, #000000 0%, #000000 100%);
+    background-size: 200% 200%;
+    animation: aurora 15s ease infinite;
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
 }

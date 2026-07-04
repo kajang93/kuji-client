@@ -62,25 +62,23 @@ export default function MainScreen({ onStart, banners }: MainScreenProps) {
   };
 
   return (
-    <div className="h-full w-full overflow-hidden relative bg-black">
+    <div className="h-full w-full overflow-hidden relative aurora-bg text-white font-sans">
       {/* Background Slider */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentIndex}
-          initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
+          initial={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }}
+          animate={{ opacity: 0.6, scale: 1, filter: "blur(0px)" }}
+          exit={{ opacity: 0, filter: "blur(10px)" }}
           transition={{ duration: 1.5 }}
-          className="absolute inset-0"
+          className="absolute inset-0 mix-blend-screen"
         >
-          <div className="absolute inset-0 bg-black/40 z-10" /> {/* Dim overlay */}
           <ImageWithFallback
             src={currentBanner.imageUrl}
             alt={currentBanner.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover opacity-50"
           />
-          {/* Gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 z-10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent z-10" />
         </motion.div>
       </AnimatePresence>
 
@@ -89,42 +87,45 @@ export default function MainScreen({ onStart, banners }: MainScreenProps) {
         {/* Animated Title */}
         <motion.div
           key={`text-${currentIndex}`}
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.8 }}
-          className="mb-12"
+          initial={{ y: 40, opacity: 0, scale: 0.95 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3, duration: 0.8, type: "spring", bounce: 0.4 }}
+          className="mb-12 glass-panel p-8 rounded-3xl shadow-2xl relative overflow-hidden"
         >
-          <h2 className="text-amber-400 text-2xl md:text-4xl font-bold mb-2 tracking-widest uppercase">
+          {/* Subtle inner glow */}
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent opacity-50 pointer-events-none" />
+          
+          <h2 className="text-cyan-400 text-xl md:text-2xl font-semibold mb-3 tracking-[0.3em] uppercase drop-shadow-md">
             {currentBanner.subtitle}
           </h2>
-          <h1 className="text-white text-5xl md:text-8xl font-black tracking-tight drop-shadow-2xl mb-6">
+          <h1 className="text-white text-5xl md:text-7xl font-black tracking-tighter drop-shadow-2xl mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-white">
             {currentBanner.title}
           </h1>
-          <div className="w-24 h-1 bg-amber-500 mx-auto rounded-full shadow-[0_0_15px_rgba(245,158,11,0.8)]" />
+          <div className="w-20 h-1.5 bg-gradient-to-r from-cyan-400 to-blue-600 mx-auto rounded-full shadow-[0_0_20px_rgba(34,211,238,0.8)]" />
         </motion.div>
 
         {/* Awesome Start Button */}
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 1, duration: 0.5 }}
+          initial={{ scale: 0.8, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.6, type: "spring", bounce: 0.5 }}
           className="relative group"
         >
-          {/* Glow effect */}
-          <div className="absolute -inset-1 bg-gradient-to-r from-pink-600 via-amber-500 to-blue-600 rounded-full blur opacity-70 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+          {/* Super Glow effect */}
+          <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400 via-indigo-500 to-purple-600 rounded-full blur-xl opacity-50 group-hover:opacity-100 transition duration-500 animate-pulse"></div>
           
           <button
             onClick={onStart}
-            className="relative px-16 py-6 bg-black rounded-full leading-none flex items-center gap-4 overflow-hidden"
+            className="relative px-12 py-5 bg-black/80 backdrop-blur-md rounded-full leading-none flex items-center gap-4 overflow-hidden border border-white/20 hover:border-cyan-400/50 transition-colors duration-300"
           >
-            <span className="flex items-center gap-3 text-white text-2xl md:text-3xl font-bold tracking-wide uppercase group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-pink-500 group-hover:to-amber-500 transition-all duration-300">
-              <Ticket className="w-8 h-8 md:w-10 md:h-10 text-amber-500" />
-              {currentBanner.buttonText || 'Start'}
+            <span className="flex items-center gap-3 text-white text-xl md:text-2xl font-bold tracking-wider uppercase group-hover:text-cyan-300 transition-colors duration-300">
+              <Ticket className="w-6 h-6 md:w-8 md:h-8 text-cyan-400 group-hover:rotate-12 transition-transform duration-300" />
+              {currentBanner.buttonText || 'Start Kuji'}
             </span>
-            <ChevronRight className="w-6 h-6 md:w-8 md:h-8 text-white/50 group-hover:translate-x-2 transition-transform duration-300" />
+            <ChevronRight className="w-6 h-6 text-white/50 group-hover:translate-x-2 group-hover:text-cyan-300 transition-all duration-300" />
             
-            {/* Shine effect */}
-            <div className="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-40 group-hover:animate-shine" />
+            {/* Fluid Shine effect */}
+            <div className="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-shine" />
           </button>
         </motion.div>
 
@@ -144,19 +145,29 @@ export default function MainScreen({ onStart, banners }: MainScreenProps) {
         )}
       </div>
 
-      {/* Decoration Elements - Non-intrusive */}
-      <div className="absolute top-10 right-10 z-20 hidden md:block">
-        <div className="flex items-center gap-2 text-white/60 text-sm bg-black/20 backdrop-blur px-4 py-2 rounded-full border border-white/10">
-          <Trophy className="w-4 h-4 text-amber-500" />
-          <span>Premium Collection</span>
-        </div>
+      {/* Decoration Elements - Premium Glass */}
+      <div className="absolute top-10 right-6 z-20">
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 1 }}
+          className="flex items-center gap-2 text-cyan-100 text-xs font-medium glass-panel px-4 py-2 rounded-full shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+        >
+          <Trophy className="w-4 h-4 text-cyan-400" />
+          <span>Premium Draw</span>
+        </motion.div>
       </div>
       
-      <div className="absolute bottom-10 left-10 z-20 hidden md:block">
-        <div className="flex items-center gap-2 text-white/60 text-sm bg-black/20 backdrop-blur px-4 py-2 rounded-full border border-white/10">
-          <Star className="w-4 h-4 text-yellow-400" />
-          <span>Official License</span>
-        </div>
+      <div className="absolute bottom-10 left-6 z-20">
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 1.2 }}
+          className="flex items-center gap-2 text-indigo-100 text-xs font-medium glass-panel px-4 py-2 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+        >
+          <Star className="w-4 h-4 text-indigo-400" />
+          <span>Official Series</span>
+        </motion.div>
       </div>
 
       {/* Brochure Popup */}
