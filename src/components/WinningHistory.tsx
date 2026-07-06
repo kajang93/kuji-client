@@ -27,6 +27,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
   const [showShippingModal, setShowShippingModal] = useState(false);
   const [showAddressSearch, setShowAddressSearch] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmDeliveryId, setConfirmDeliveryId] = useState<string | null>(null);
   const [shippingForm, setShippingForm] = useState({
     recipientName: '',
     phone: '',
