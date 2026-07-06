@@ -632,36 +632,37 @@ async function handleRefresh() {
     }
   };
 
-  const handleRevealComplete = (
+  const handleRevealComplete = async (
     destination: "winning" | "detail" = "winning",
   ) => {
-    // Add revealed prizes to winning history with isNew flag!
-    const now = new Date();
-    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    try {
+      const histories = await fetchMyDrawHistory();
+      const revealedIds = revealedPrizes.map(p => p.drawHistoryId);
 
-    const newWinnings: WinningItem[] = revealedPrizes.map(
-      (prize, index) => ({
-        id: `W${Date.now()}${index}`,
-        drawHistoryId: prize.drawHistoryId,
-        date: dateStr,
-        animeName: selectedAnime?.name || "알 수 없음",
-        rank: prize.rank,
-        prizeName: prize.name,
-        prizeImage: prize.image,
-        deliveryStatus: "stored" as const,
-        // A~D상은 한정판으로 옵션(색상/버전) 선택 필요
-        needsOptionSelection: [
-          "A",
-          "B",
-          "C",
-          "D",
-          "G",
-        ].includes(prize.rank),
-        isNew: true,
-      }),
-    );
-
-    setWinningHistory((prev) => [...newWinnings, ...prev]);
+      if (Array.isArray(histories)) {
+        const mappedWinnings: WinningItem[] = histories.map(h => ({
+          id: `W${h.id}`, // 고유 식별자
+          drawHistoryId: h.id,
+          date: h.createdAt?.replace('T', ' ').substring(0, 16) || '',
+          animeName: h.boardTitle,
+          rank: h.grade,
+          prizeName: h.itemName,
+          prizeImage: h.itemImageUrl,
+          deliveryStatus: 
+            h.status === 'DRAWN' ? 'stored' :
+            h.status === 'SHIPPING_REQUESTED' ? 'preparing' :
+            h.status === 'SHIPPING' ? 'shipped' :
+            h.status === 'DELIVERED' ? 'delivered' : 'stored',
+          needsOptionSelection: !!(h.grade && /^[A-DG]/i.test(h.grade)),
+          isNew: revealedIds.includes(h.id),
+          shippingId: h.shippingId,
+          sellerName: h.sellerName || '알 수 없는 판매처'
+        }));
+        setWinningHistory(mappedWinnings);
+      }
+    } catch (error) {
+      console.error("Failed to update winning history:", error);
+    }
 
     // 포인트 적립: 쿠지 판에 설정된 적립 포인트(rewardRate) 반영
     if (user) {
