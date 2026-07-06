@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
-import { ChevronLeft, Bell, Vibrate, Volume2, MessageCircle, Truck, AlertCircle, Moon, Gift, BellRing, X, ChevronDown } from './icons';
+import { ChevronLeft, Bell, Vibrate, Volume2, MessageCircle, Truck, AlertCircle, Moon, Gift, BellRing, X, ChevronDown, Ticket } from './icons';
 import { toast } from 'sonner';
 import { requestFirebaseToken } from '../api/firebase';
 import { registerDeviceToken, deleteDeviceToken, getNotificationSettings, updateNotificationSettings } from '../api/notification';
@@ -571,18 +571,44 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
               </div>
 
               <div className="flex-1 overflow-y-auto text-white/80 space-y-4 text-sm">
-                {/* Existing modal contents preserved... */}
                 {showModal === 'privacy' && (
-                  <>
-                    <h3 className="text-white">1. 개인정보의 수집 및 이용 목적</h3>
-                    <p>회사는 다음의 목적을 위하여 개인정보를 처리합니다...</p>
-                    {/* ... shortened for brevity, functionality remains same ... */}
-                  </>
+                  <div className="space-y-4">
+                    <section>
+                      <h3 className="font-semibold text-yellow-400 mb-2">개인정보 처리방침</h3>
+                      <p className="mb-2">회사는 개인정보보호법에 따라 이용자의 개인정보를 보호하고 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보 처리방침을 수립·공개합니다.</p>
+                      <p className="text-white/70">수집하는 개인정보 항목: 이메일, 휴대폰번호, 배송주소, 결제정보, 사업자등록증 등</p>
+                      <p className="text-white/70 mt-1">보유 및 이용기간: 회원 탈퇴 시까지 (단, 관계 법령에 따라 보존할 필요가 있는 경우 해당 기간 동안 보관)</p>
+                    </section>
+                    <section>
+                      <h3 className="font-semibold text-yellow-400 mb-2">개인정보의 제3자 제공</h3>
+                      <p>회사는 이용자의 개인정보를 원칙적으로 외부에 제공하지 않습니다. 다만, 상품 배송을 위해 배송업체에 성명, 연락처, 주소가 제공됩니다.</p>
+                    </section>
+                  </div>
                 )}
                 
-                {/* For simplicity in this code block, I'm keeping the modal structure but not repeating all text unless necessary. 
-                    In real file write, I will ensure all original text is there or replaced with better one.
-                */}
+                {showModal === 'terms' && (
+                  <div className="space-y-4">
+                    <section>
+                      <h3 className="font-semibold text-yellow-400 mb-2">제1조 (목적)</h3>
+                      <p>본 약관은 일본 오시쿠지 서비스(이하 "서비스")의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
+                    </section>
+                    <section>
+                      <h3 className="font-semibold text-yellow-400 mb-2">제2조 (서비스의 제공)</h3>
+                      <p>회사는 다음과 같은 서비스를 제공합니다:</p>
+                      <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+                        <li>일본 애니메이션 관련 쿠지 복권 판매</li>
+                        <li>당첨 결과 확인 및 배송 서비스</li>
+                        <li>상품 구매 내역 및 당첨 내역 관리</li>
+                        <li>찜 목록 및 알림 서비스</li>
+                      </ul>
+                    </section>
+                    <section>
+                      <h3 className="font-semibold text-yellow-400 mb-2">제5조 (환불 및 교환)</h3>
+                      <p>쿠지 복권의 특성상 구매 후 환불 및 교환이 불가능합니다. 단, 상품 하자 또는 배송 오류가 있는 경우 교환이 가능합니다.</p>
+                    </section>
+                  </div>
+                )}
+
                  {showModal === 'info' && (
                   <>
                     <div className="text-center">
@@ -590,12 +616,16 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                         <Ticket className="w-24 h-24 text-amber-400" />
                       </div>
                       <h3 className="text-white text-2xl mb-2">오시쿠지</h3>
-                      <p className="text-white/60 mb-4">오시쿠지</p>
+                      <p className="text-white/60 mb-4">가장 빠른 온라인 샵, 오시쿠지</p>
                     </div>
-                    <h3 className="text-white">앱 버전</h3>
-                    <p>Version 1.1.0 (Notification Update)</p>
-                    <h3 className="text-white">개발사</h3>
-                    <p>Oshikuji Kuji Korea</p>
+                    <div className="bg-white/5 rounded-xl p-4 mt-4">
+                      <h3 className="text-white mb-1">앱 버전</h3>
+                      <p className="text-white/60 mb-4">Version 1.0.0 (최신 버전입니다)</p>
+                      <h3 className="text-white mb-1">개발사</h3>
+                      <p className="text-white/60 mb-4">Oshikuji Kuji Korea</p>
+                      <h3 className="text-white mb-1">고객센터</h3>
+                      <p className="text-white/60">help@oshikuji.com</p>
+                    </div>
                   </>
                 )}
               </div>
