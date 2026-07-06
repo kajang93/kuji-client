@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, User, Mail, Phone, MapPin, Calendar, Save, Search, Camera, ImageIcon, X } from './icons';
 import AddressSearchModal from './AddressSearchModal';
-import { updateMyProfile, changePassword } from '../api/auth';
+import { updateMyProfile, changePassword, fetchMyProfile } from '../api/auth';
 import { validateImageFile, compressImageFile, validatePasswordRules } from '../api/client';
 import { toast } from 'sonner';
 
@@ -43,6 +43,27 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPw, setIsChangingPw] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const data = await fetchMyProfile();
+        setName(data.nickname || data.name || user.name);
+        setEmail(data.email || user.email);
+        setPhone(data.phoneNumber || user.phone || '');
+        setAddress(data.address || user.address || '');
+        setAddressDetail(data.addressDetail || user.addressDetail || '');
+        setBirthdate(data.birthDate || user.birthdate || '');
+        setProfileImage(data.profileImageUrl || user.profileImageUrl || null);
+      } catch (error) {
+        console.error("Failed to load profile from DB", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadProfile();
+  }, [user]);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
