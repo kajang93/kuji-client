@@ -183,7 +183,10 @@ export const drawKuji = async (
  */
 export const fetchMyDrawHistory = async (): Promise<any[]> => {
   const response = await axiosInstance.get(`${API_BASE_URL}/draw-history/me`);
-  return normalizeImageUrls(response.data);
+  if (!response.data) return [];
+  
+  const data = normalizeImageUrls(response.data);
+  return Array.isArray(data) ? data : (data.content || []);
 };
 
 /**

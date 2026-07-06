@@ -37,7 +37,7 @@ export default function Profile({ user, onBack, onEdit, onChargePoints }: Profil
     name: user.name,
     email: user.email,
     phone: user.phone || '-',
-    address: user.address || '-',
+    address: user.address || '(주소 등록바람)',
     addressDetail: user.addressDetail || '',
     birthdate: user.birthdate || '-',
     joinDate: user.joinDate || '-',

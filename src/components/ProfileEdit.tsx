@@ -25,11 +25,11 @@ type UserData = {
 export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) {
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
-  const [phone, setPhone] = useState(user.phone || '010-1234-5678');
-  const [address, setAddress] = useState(user.address || '서울특별시 강남구 테헤란로 123');
+  const [phone, setPhone] = useState(user.phone || '');
+  const [address, setAddress] = useState(user.address || '');
   const [addressDetail, setAddressDetail] = useState(user.addressDetail || '');
   const [zonecode, setZonecode] = useState('');
-  const [birthdate, setBirthdate] = useState(user.birthdate || '1990-01-01');
+  const [birthdate, setBirthdate] = useState(user.birthdate || '');
   const [profileImage, setProfileImage] = useState<string | null>(user.profileImageUrl || null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showAddressSearch, setShowAddressSearch] = useState(false);
@@ -202,9 +202,6 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
                 className="hidden"
               />
             </div>
-            <div className="mt-8 text-[12px] text-white/60">
-              최대 10MB
-            </div>
             <div className="inline-block mt-4 px-4 py-1 bg-amber-400/20 border border-amber-400/50 rounded-full text-amber-300">
               {user.type === 'business' ? '사업자' : '일반 고객'}
             </div>
@@ -313,7 +310,7 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
                 readOnly
                 onClick={() => setShowAddressSearch(true)}
                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-pink-400 cursor-pointer"
-                placeholder="기본 주소"
+                placeholder="주소 등록바람"
               />
               <input
                 type="text"

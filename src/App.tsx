@@ -396,6 +396,11 @@ async function handleRefresh() {
       } else {
         const histories = await fetchMyDrawHistory();
         
+        if (!histories || !Array.isArray(histories)) {
+          setWinningHistory([]);
+          return;
+        }
+
         const mappedWinnings: WinningItem[] = histories.map(h => ({
           id: `W${h.id}`, // 고유 식별자
           drawHistoryId: h.id,
@@ -409,10 +414,10 @@ async function handleRefresh() {
             h.status === 'SHIPPING_REQUESTED' ? 'preparing' :
             h.status === 'SHIPPING' ? 'shipped' :
             h.status === 'DELIVERED' ? 'delivered' : 'stored',
-          needsOptionSelection: (h.grade && /^[A-DG]/i.test(h.grade)),
+          needsOptionSelection: !!(h.grade && /^[A-DG]/i.test(h.grade)),
           isNew: false,
           shippingId: h.shippingId,
-          sellerName: h.sellerName
+          sellerName: h.sellerName || '알 수 없는 판매처'
         }));
 
         setWinningHistory(mappedWinnings);
