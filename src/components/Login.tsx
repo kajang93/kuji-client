@@ -149,10 +149,12 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       // Enforce login tab matches user role
       if (type === 'customer' && (userRole === 'ROLE_BUSINESS' || userRole === 'BIZ')) {
         toast.error('사업자 계정은 사업자 탭에서 로그인해주세요.');
+        setIsLoading(false);
         return;
       }
       if (type === 'business' && !(userRole === 'ROLE_BUSINESS' || userRole === 'BIZ')) {
         toast.error('사업자 계정이 아닌 사용자입니다.');
+        setIsLoading(false);
         return;
       }
       
@@ -173,6 +175,8 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       toast.success("로그인 성공!");
     } catch (error: any) {
       toast.error(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
