@@ -97,6 +97,7 @@ export default function App() {
   const [selectedRank, setSelectedRank] = useState<string>("");
   const [editingCollectionId, setEditingCollectionId] =
     useState<string | null>(null);
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [alertModal, setAlertModal] = useState<{
     isOpen: boolean;
     title?: string;
@@ -200,6 +201,7 @@ async function handleRefresh() {
     const paymentKey = urlParams.get("paymentKey");
     const orderId = urlParams.get("orderId");
     const amount = urlParams.get("amount");
+    const sharedPostId = Number(urlParams.get("postId"));
 
     if (payment === "success" && paymentKey && orderId && amount) {
       handlePGPaymentCompletion(paymentKey, orderId, amount);
@@ -215,6 +217,12 @@ async function handleRefresh() {
       localStorage.removeItem("point_charge_pending");
       alert(decodeURIComponent(failMessage));
       window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (Number.isInteger(sharedPostId) && sharedPostId > 0) {
+      setSelectedPostId(sharedPostId);
+      setScreen("communityDetail");
+      if (token && token !== "undefined" && token !== "null") {
+        handleFetchUserInfo(token);
+      }
     } else if (urlParams.get("action") === "signup") {
       setScreen("login");
     } else if (urlParams.has("code")) {
@@ -687,8 +695,6 @@ async function handleRefresh() {
     setRevealedPrizes([]);
     setSelectedKuji([]);
   };
-
-  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
 
   const getSidebarMenuItems = () => {
     const baseMenu = [
@@ -1191,7 +1197,12 @@ async function handleRefresh() {
           <BoardDetail 
             postId={selectedPostId} 
             user={user}
-            onBack={() => setScreen("community")} 
+            onBack={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.delete("postId");
+              window.history.replaceState({}, document.title, url.toString());
+              setScreen("community");
+            }}
             onEdit={() => setScreen("communityWrite")}
           />
         )}

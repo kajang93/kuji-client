@@ -117,6 +117,63 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
     }
   };
 
+  const copyShareUrl = async (shareUrl: string) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        return;
+      } catch {
+        // 클립보드 권한이 없으면 레거시 복사 방식으로 재시도한다.
+      }
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = shareUrl;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const copied = document.execCommand('copy');
+    document.body.removeChild(textarea);
+
+    if (!copied) {
+      throw new Error('링크를 복사하지 못했습니다.');
+    }
+  };
+
+  const handleShare = async () => {
+    if (!post) return;
+
+    const shareUrl = new URL(window.location.href);
+    shareUrl.search = '';
+    shareUrl.hash = '';
+    shareUrl.searchParams.set('postId', String(postId));
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: post.title,
+          text: `${post.authorName}님의 게시글`,
+          url: shareUrl.toString()
+        });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
+      }
+    }
+
+    try {
+      await copyShareUrl(shareUrl.toString());
+      toast.success('게시글 링크를 복사했습니다.');
+    } catch (error) {
+      console.error('Failed to share post:', error);
+      toast.error('게시글을 공유하지 못했습니다.');
+    }
+  };
+
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return toast.error('로그인이 필요합니다.');
@@ -180,7 +237,13 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
           <ChevronLeft className="w-6 h-6 text-white" />
         </button>
         <div className="flex items-center gap-1">
-          <button className="p-2 hover:bg-white/5 rounded-full transition-colors">
+          <button
+            type="button"
+            onClick={handleShare}
+            aria-label="게시글 공유하기"
+            title="게시글 공유하기"
+            className="p-2 hover:bg-white/5 rounded-full transition-colors"
+          >
             <Share2 className="w-5 h-5 text-slate-400" />
           </button>
           
