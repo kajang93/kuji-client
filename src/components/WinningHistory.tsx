@@ -237,32 +237,36 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                  <div className="flex justify-end px-1">
                    <button 
                      onClick={() => {
-                       const allSameSellerItems = (() => {
-                          if (inventoryItems.length === 0) return [];
-                          // If selection exists, use that seller. If not, use first item's seller.
-                          const targetSellerId = selectedItems.length > 0 
-                             ? getSellerInfo(winningHistory.find(w => w.id === selectedItems[0])).id
-                             : getSellerInfo(inventoryItems[0]).id;
-                          
-                          return inventoryItems
-                             .filter(item => getSellerInfo(item).id === targetSellerId)
-                             .map(item => item.id);
-                       })();
+                       if (inventoryItems.length === 0) return;
+                       
+                       const targetSellerId = selectedItems.length > 0 
+                         ? getSellerInfo(winningHistory.find(w => w.id === selectedItems[0])).id
+                         : getSellerInfo(inventoryItems[0]).id;
+                       
+                       const targetItemIds = inventoryItems
+                         .filter(item => getSellerInfo(item).id === targetSellerId)
+                         .map(item => item.id);
 
-                       const areAllTargetSelected = allSameSellerItems.every(id => selectedItems.includes(id));
+                       const areAllSelected = targetItemIds.length > 0 && targetItemIds.every(id => selectedItems.includes(id));
 
-                       if (areAllTargetSelected) {
-                         setSelectedItems([]);
+                       if (areAllSelected) {
+                         setSelectedItems(prev => prev.filter(id => !targetItemIds.includes(id)));
                        } else {
-                         setSelectedItems(allSameSellerItems);
+                         setSelectedItems(prev => Array.from(new Set([...prev, ...targetItemIds])));
                        }
                      }}
                      className="text-xs text-white/70 flex items-center gap-1.5 hover:text-white px-3 py-1.5 bg-white/5 rounded-full border border-white/10 transition-colors"
                    >
                      <CheckCircle className="w-3.5 h-3.5" />
-                     {selectedItems.length > 0 && inventoryItems.filter(i => getSellerInfo(i).id === getSellerInfo(winningHistory.find(w => w.id === selectedItems[0])).id).every(i => selectedItems.includes(i.id)) 
-                        ? '선택 해제' 
-                        : '전체 선택 (동일 판매자)'}
+                     {(() => {
+                       if (inventoryItems.length === 0) return '전체 선택';
+                       const targetSellerId = selectedItems.length > 0 
+                         ? getSellerInfo(winningHistory.find(w => w.id === selectedItems[0])).id
+                         : getSellerInfo(inventoryItems[0]).id;
+                       const targetItemIds = inventoryItems.filter(item => getSellerInfo(item).id === targetSellerId).map(item => item.id);
+                       const areAllSelected = targetItemIds.length > 0 && targetItemIds.every(id => selectedItems.includes(id));
+                       return areAllSelected ? '선택 해제' : '전체 선택 (동일 판매자)';
+                     })()}
                    </button>
                  </div>
                )}
