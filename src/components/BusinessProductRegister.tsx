@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from './motion';
 import { ChevronLeft, Upload, Save, X, Plus, Check, Loader2, Sparkles } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
@@ -21,10 +21,16 @@ type ProductItem = {
   stock: number;
 };
 
-type RankData = {
-  rank: string;
-  products: ProductItem[];
-};
+const ranks = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'LAST'];
+const singleItemRanks = new Set(['A', 'B', 'C', 'LAST']);
+
+const createEmptyProducts = (rank: string, count: number): ProductItem[] =>
+  Array.from({ length: count }, (_, index) => ({
+    id: `${rank}-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+    image: null,
+    name: '',
+    stock: 0
+  }));
 
 export default function BusinessProductRegister({ onBack, onComplete, onTempSave }: BusinessProductRegisterProps) {
   const [seriesName, setSeriesName] = useState('');
@@ -32,16 +38,12 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
   const [seriesFile, setSeriesFile] = useState<File | null>(null);
   const [pricePerDraw, setPricePerDraw] = useState<number | ''>('');
   const [rewardRate, setRewardRate] = useState<number | ''>('');
-  const [selectedRank, setSelectedRank] = useState<string>('A');
   const [rankData, setRankData] = useState<Record<string, ProductItem[]>>({});
   const [productFiles, setProductFiles] = useState<Record<string, File>>({}); // Added to track actual File objects
   const [isRegistering, setIsRegistering] = useState(false);
   const [isAiProcessing, setIsAiProcessing] = useState<Record<string, boolean>>({});
   
-  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const seriesImageInputRef = useRef<HTMLInputElement>(null);
-
-  const ranks = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
   const handleSeriesImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -62,7 +64,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
     }
   };
 
-  const handleProductImageUpload = async (productId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProductImageUpload = async (rank: string, productId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const compressedFile = await compressImageFile(file);
@@ -79,7 +81,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
       reader.onloadend = () => {
         setRankData(prev => ({
           ...prev,
-          [selectedRank]: prev[selectedRank]?.map(p =>
+          [rank]: prev[rank]?.map(p =>
             p.id === productId ? { ...p, image: reader.result as string } : p
           ) || []
         }));
@@ -88,37 +90,48 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
     }
   };
 
-  const handleAddProduct = () => {
-    const newProduct: ProductItem = {
-      id: `${selectedRank}-${Date.now()}`,
-      image: null,
-      name: '',
-      stock: 0
-    };
-
+  const handleAddProducts = (rank: string, count: number) => {
     setRankData(prev => ({
       ...prev,
-      [selectedRank]: [...(prev[selectedRank] || []), newProduct]
+      [rank]: [...(prev[rank] || []), ...createEmptyProducts(rank, count)]
     }));
   };
 
-  const handleRemoveProduct = (productId: string) => {
-    setRankData(prev => ({
-      ...prev,
-      [selectedRank]: prev[selectedRank]?.filter(p => p.id !== productId) || []
-    }));
+  const handleApplyRecommendedStructure = () => {
+    setRankData(prev => {
+      const next = { ...prev };
+      ranks.forEach(rank => {
+        if (!next[rank]?.length) {
+          next[rank] = createEmptyProducts(rank, singleItemRanks.has(rank) ? 1 : 3);
+        }
+      });
+      return next;
+    });
+    toast.success('비어 있는 등급에 추천 상품 구성을 만들었습니다.');
   };
 
-  const handleProductChange = (productId: string, field: 'name' | 'stock', value: string | number) => {
+  const handleRemoveProduct = (rank: string, productId: string) => {
     setRankData(prev => ({
       ...prev,
-      [selectedRank]: prev[selectedRank]?.map(p =>
+      [rank]: prev[rank]?.filter(p => p.id !== productId) || []
+    }));
+    setProductFiles(prev => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
+  };
+
+  const handleProductChange = (rank: string, productId: string, field: 'name' | 'stock', value: string | number) => {
+    setRankData(prev => ({
+      ...prev,
+      [rank]: prev[rank]?.map(p =>
         p.id === productId ? { ...p, [field]: value } : p
       ) || []
     }));
   };
 
-  const handleAiAutoComplete = async (productId: string) => {
+  const handleAiAutoComplete = async (rank: string, productId: string) => {
     const file = productFiles[productId];
     if (!file) {
       toast.error('먼저 이미지를 업로드해주세요');
@@ -132,7 +145,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
       // Update image and name
       setRankData(prev => ({
         ...prev,
-        [selectedRank]: prev[selectedRank]?.map(p =>
+        [rank]: prev[rank]?.map(p =>
           p.id === productId ? { ...p, image: result.imageUrl, name: `[${result.name}] ${result.description}` } : p
         ) || []
       }));
@@ -237,7 +250,6 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
     onTempSave?.('임시 저장되었습니다');
   };
 
-  const currentProducts = rankData[selectedRank] || [];
   const totalProductCount = Object.values(rankData).reduce((sum, products) => sum + products.length, 0);
 
   return (
@@ -343,9 +355,33 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
               총 {totalProductCount}개 상품
             </div>
           </div>
+
+          <div className="rounded-2xl border border-cyan-300/30 bg-gradient-to-r from-cyan-500/15 to-indigo-500/15 p-4 shadow-lg">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <span className="text-white font-medium">추천 구성 빠른 생성</span>
+                  <span className="rounded-md bg-amber-400/20 px-2 py-1 text-xs text-amber-200">A·B·C·라스트 각 1개</span>
+                  <span className="rounded-md bg-cyan-400/20 px-2 py-1 text-xs text-cyan-200">D~H 각 3개</span>
+                </div>
+                <p className="text-sm text-white/55">
+                  이미 입력한 등급은 그대로 두고 비어 있는 등급만 채웁니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleApplyRecommendedStructure}
+                className="flex flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-3 text-sm font-medium text-white shadow-lg transition-transform hover:scale-[1.02]"
+              >
+                <Sparkles className="h-4 w-4" />
+                추천 구성 만들기
+              </button>
+            </div>
+          </div>
           
           {ranks.map((rank) => {
             const currentProducts = rankData[rank] || [];
+            const isSingleItemRank = singleItemRanks.has(rank);
             
             return (
               <motion.div
@@ -354,31 +390,38 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/20 shadow-lg"
               >
-                <div className="flex items-center justify-between mb-4">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`w-12 h-12 bg-gradient-to-br ${rankColors[rank]} rounded-xl flex items-center justify-center shadow-lg`}>
-                      <span className="text-white text-xl">{rank}</span>
+                      <span className={`text-white ${rank === 'LAST' ? 'text-xs font-bold' : 'text-xl'}`}>{rank}</span>
                     </div>
-                    <h3 className="text-white text-lg">{rank}상 상품</h3>
+                    <div>
+                      <h3 className="text-white text-lg">{rank === 'LAST' ? '라스트상 상품' : `${rank}상 상품`}</h3>
+                      <span className={`text-xs ${isSingleItemRank ? 'text-amber-300' : 'text-cyan-300'}`}>
+                        {isSingleItemRank ? '단품 권장' : '다품 권장'}
+                      </span>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      const newProduct: ProductItem = {
-                        id: `${rank}-${Date.now()}`,
-                        image: null,
-                        name: '',
-                        stock: 0
-                      };
-                      setRankData(prev => ({
-                        ...prev,
-                        [rank]: [...(prev[rank] || []), newProduct]
-                      }));
-                    }}
-                    className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg text-white text-sm flex items-center gap-2 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    상품 추가
-                  </button>
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleAddProducts(rank, 1)}
+                      className="px-3 py-2 bg-green-500 hover:bg-green-600 rounded-lg text-white text-sm flex items-center gap-1.5 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      1개 추가
+                    </button>
+                    {!isSingleItemRank && (
+                      <button
+                        type="button"
+                        onClick={() => handleAddProducts(rank, 3)}
+                        className="px-3 py-2 bg-cyan-500/80 hover:bg-cyan-500 rounded-lg text-white text-sm flex items-center gap-1.5 transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                        3개 추가
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {currentProducts.length === 0 ? (
@@ -410,7 +453,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
                               <input
                                 type="file"
                                 accept="image/*"
-                                onChange={(e) => handleProductImageUpload(product.id, e)}
+                                onChange={(e) => handleProductImageUpload(rank, product.id, e)}
                                 className="hidden"
                               />
                             </label>
@@ -423,7 +466,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
                                 <label className="text-white/60 text-xs">상품명</label>
                                 {/* AI Auto Complete Button */}
                                 <button
-                                  onClick={() => handleAiAutoComplete(product.id)}
+                                  onClick={() => handleAiAutoComplete(rank, product.id)}
                                   disabled={isAiProcessing[product.id] || !productFiles[product.id]}
                                   className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-colors ${
                                     isAiProcessing[product.id] 
@@ -450,7 +493,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
                               <input
                                 type="text"
                                 value={product.name}
-                                onChange={(e) => handleProductChange(product.id, 'name', e.target.value)}
+                                onChange={(e) => handleProductChange(rank, product.id, 'name', e.target.value)}
                                 className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/40 focus:outline-none focus:border-teal-400"
                                 placeholder="상품명 입력"
                               />
@@ -462,7 +505,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
                                 value={product.stock === 0 ? '' : product.stock}
                                 onChange={(e) => {
                                   const val = e.target.value === '' ? 0 : parseInt(e.target.value);
-                                  handleProductChange(product.id, 'stock', val);
+                                  handleProductChange(rank, product.id, 'stock', val);
                                 }}
                                 className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/40 focus:outline-none focus:border-teal-400"
                                 placeholder="재고 수량"
@@ -473,7 +516,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
 
                           {/* Remove Button */}
                           <button
-                            onClick={() => handleRemoveProduct(product.id)}
+                            onClick={() => handleRemoveProduct(rank, product.id)}
                             className="p-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-300 transition-colors"
                           >
                             <X className="w-4 h-4" />

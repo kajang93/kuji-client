@@ -8,4 +8,5 @@ export const rankColors: Record<string, string> = {
   F: 'from-orange-400 to-orange-600',
   G: 'from-teal-400 to-teal-600',
   H: 'from-red-400 to-red-600',
+  LAST: 'from-amber-300 to-orange-500',
 };
