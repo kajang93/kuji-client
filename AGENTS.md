@@ -82,6 +82,8 @@ Behavioral guidelines for AI coding agents (Codex, Claude, etc.). This file inte
 - **Checklist** (`checklist.md`) - concrete tasks as checkboxes.
 - **Context Notes** (`context-notes.md`) - decisions made during the work.
 
+**⚠️ 중요: `checklist.md`와 `context-notes.md` 등 계획/작업 추적용 임시 아티팩트 파일들은 절대 Git에 커밋하지 마세요.**
+
 ### 10. Run Tests Before Marking Complete
 **If you touched code, run the relevant tests before saying "done".**
 - Run the smallest relevant check first.

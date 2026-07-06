@@ -189,7 +189,7 @@
 - **[STEP 2] Global State Management**: `Zustand` 도입을 통한 전역 상태(유저 세션 `user`, 토스트 알림, 글로벌 모달 등) 분리 및 Prop Drilling 원천 차단
 - **[STEP 3] Server State Management**: `@tanstack/react-query` 도입을 통한 API 로딩 처리, 캐싱, 에러 핸들링 및 서버 데이터 실시간 동기화 (기존 `useEffect` 데이터 패칭 로직 대체)
 - **[STEP 4] Code Splitting & Lazy Loading**: `React.lazy`와 `Suspense`를 활용한 라우트 단위 코드 스플리팅으로 초기 로딩 속도 극대화
-- **[STEP 5] 컴포넌트 모듈화**: `App.tsx` 내부의 헬퍼 함수 및 거대 컴포넌트들을 기능 단위로 독립된 폴더(`/hooks`, `/utils`, `/layouts`)로 추출
+- **[STEP 5] 컴포넌트 모듈화 (부분 완료 ✅)**: `App.tsx` 내부의 헬퍼 함수(`kujiMappers`) 및 거대 컴포넌트(`AdminScreens`, `BusinessScreens`)들을 독립된 파일로 추출 완료. 추가적인 모듈화 지속 진행.
 
 ---
 
