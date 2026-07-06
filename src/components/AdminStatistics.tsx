@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { fetchAdminSummary, fetchAdminDailySales, AdminSummary, DailySales } from '../api/statistics';
 import { motion } from './motion';
 import { BarChart as BarChartIcon, TrendingUp, Users, DollarSign, ShoppingCart, Package, Calendar, ArrowUp, ArrowDown, ChevronLeft } from './icons';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import Chart from 'react-apexcharts';
+import { ApexOptions } from 'apexcharts';
 
 type PeriodType = 'week' | 'month' | 'year';
 
@@ -53,6 +54,22 @@ export default function AdminStatistics({ onBack }: Props) {
   const prizeRankData: any[] = [];
 
   const COLORS = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#06b6d4', '#f97316'];
+
+  // 관리자 차트 공통 옵션 (BusinessDashboard와 동일한 apexcharts 다크 테마)
+  const axisChartBase: ApexOptions = {
+    chart: { toolbar: { show: false }, background: 'transparent', fontFamily: 'inherit' },
+    theme: { mode: 'dark' },
+    dataLabels: { enabled: false },
+    grid: { borderColor: 'rgba(255,255,255,0.1)', strokeDashArray: 4 },
+    xaxis: {
+      categories: salesData.map(d => d.name),
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+      labels: { style: { colors: '#9ca3af' } },
+    },
+    yaxis: { labels: { style: { colors: '#9ca3af' } } },
+    tooltip: { theme: 'dark' },
+  };
 
   // 주요 통계 카드 (백엔드 연동)
   const mainStats = [
@@ -176,23 +193,23 @@ export default function AdminStatistics({ onBack }: Props) {
               </div>
             </div>
             <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={salesData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="name" stroke="rgba(255,255,255,0.6)" />
-                  <YAxis stroke="rgba(255,255,255,0.6)" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'rgba(30, 41, 59, 0.95)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '12px',
-                      color: '#fff',
-                    }}
-                    formatter={(value: number) => [`₩${value.toLocaleString()}`, '매출']}
-                  />
-                  <Line type="monotone" dataKey="sales" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 5 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              <Chart
+                type="line"
+                height="100%"
+                options={{
+                  ...axisChartBase,
+                  colors: ['#10b981'],
+                  stroke: { curve: 'smooth', width: 3 },
+                  markers: { size: 5 },
+                  yaxis: {
+                    labels: {
+                      style: { colors: '#9ca3af' },
+                      formatter: (val: number) => `₩${val.toLocaleString()}`,
+                    },
+                  },
+                }}
+                series={[{ name: '매출', data: salesData.map(d => d.sales) }]}
+              />
             </div>
           </motion.div>
 
@@ -213,36 +230,23 @@ export default function AdminStatistics({ onBack }: Props) {
               </div>
             </div>
             <div className="h-80 flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={productSalesData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ${value}%`}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {productSalesData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'rgba(30, 41, 59, 0.95)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '12px',
-                      color: '#fff',
-                    }}
-                    formatter={(value: number, name: string, props: any) => [
-                      `¥${props.payload.sales.toLocaleString()}`,
-                      '매출액',
-                    ]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              {productSalesData.length === 0 ? (
+                <div className="text-white/50">상품별 판매 데이터가 없습니다.</div>
+              ) : (
+                <Chart
+                  type="donut"
+                  height="100%"
+                  options={{
+                    chart: { background: 'transparent', fontFamily: 'inherit' },
+                    theme: { mode: 'dark' },
+                    colors: COLORS,
+                    labels: productSalesData.map(d => d.name),
+                    legend: { position: 'bottom', labels: { colors: '#9ca3af' } },
+                    tooltip: { theme: 'dark' },
+                  }}
+                  series={productSalesData.map(d => d.value)}
+                />
+              )}
             </div>
           </motion.div>
         </div>
@@ -266,24 +270,20 @@ export default function AdminStatistics({ onBack }: Props) {
               </div>
             </div>
             <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={salesData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="name" stroke="rgba(255,255,255,0.6)" />
-                  <YAxis stroke="rgba(255,255,255,0.6)" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'rgba(30, 41, 59, 0.95)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '12px',
-                      color: '#fff',
-                    }}
-                  />
-                  <Legend />
-                  <Bar dataKey="users" fill="#3b82f6" name="신규 사용자" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="orders" fill="#ec4899" name="주문 수" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <Chart
+                type="bar"
+                height="100%"
+                options={{
+                  ...axisChartBase,
+                  colors: ['#3b82f6', '#ec4899'],
+                  plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
+                  legend: { position: 'top', horizontalAlign: 'right', labels: { colors: '#9ca3af' } },
+                }}
+                series={[
+                  { name: '신규 사용자', data: salesData.map(d => d.users) },
+                  { name: '주문 수', data: salesData.map(d => d.orders) },
+                ]}
+              />
             </div>
           </motion.div>
 

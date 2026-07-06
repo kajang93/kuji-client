@@ -56,74 +56,29 @@ export default function Login({ onLogin, onBack }: LoginProps) {
   const businessPwRef = useRef<HTMLInputElement>(null);
   const adminPwRef = useRef<HTMLInputElement>(null);
 
-  const handleSocialLogin = (provider: 'kakao' | 'naver' | 'google') => {
+  const handleSocialLogin = (provider: 'kakao' | 'naver' | 'google' | 'apple') => {
     if (provider === 'kakao') {
-      const REST_API_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY || "YOUR_KAKAO_REST_API_KEY";
-      const REDIRECT_URI = `${window.location.origin}/auth/kakao/callback`;
-      const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code`;
+      const CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID;
+      if (!CLIENT_ID) {
+        toast.error("카카오 로그인이 설정되지 않았습니다.");
+        return;
+      }
+      
+      const REDIRECT_URI = import.meta.env.DEV 
+        ? "http://localhost:5173/auth/kakao/callback" 
+        : "https://kujishop.shop/auth/kakao/callback";
 
+      const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code`;
+      
       if (Capacitor.isNativePlatform()) {
         toast.info("모바일 앱 환경에서는 딥링크(App Link) 설정 전까지 소셜 로그인이 제한됩니다.");
-        // Browser.open({ url: KAKAO_AUTH_URL });
       } else {
         window.location.href = KAKAO_AUTH_URL;
       }
       return;
     }
 
-    if (provider === 'naver') {
-      const CLIENT_ID = import.meta.env.VITE_NAVER_CLIENT_ID;
-      if (!CLIENT_ID) {
-        toast.error("네이버 로그인이 설정되지 않았습니다.");
-        return;
-      }
-      
-      const REDIRECT_URI = import.meta.env.DEV 
-        ? "http://localhost:5173/auth/naver/callback" 
-        : "https://kujishop.shop/auth/naver/callback";
-
-      // App.tsx에서 구별하기 위해 접두사 추가
-      const STATE = "naver_" + Math.random().toString(36).substring(2, 15);
-      
-      const NAVER_AUTH_URL = `https://nid.naver.com/oauth2.0/authorize?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}`;
-      
-      if (Capacitor.isNativePlatform()) {
-        toast.info("모바일 앱 환경에서는 딥링크(App Link) 설정 전까지 소셜 로그인이 제한됩니다.");
-        // Browser.open({ url: NAVER_AUTH_URL });
-      } else {
-        window.location.href = NAVER_AUTH_URL;
-      }
-      return;
-    }
-
-    if (provider === 'google') {
-      const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      if (!CLIENT_ID) {
-        toast.error("구글 로그인이 설정되지 않았습니다.");
-        return;
-      }
-
-      const REDIRECT_URI = import.meta.env.DEV 
-        ? "http://localhost:5173/auth/google/callback" 
-        : "https://kujishop.shop/auth/google/callback";
-
-      // App.tsx에서 구별하기 위해 접두사 추가
-      const STATE = "google_" + Math.random().toString(36).substring(2, 15);
-      const SCOPE = encodeURIComponent("https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile");
-      
-      const GOOGLE_AUTH_URL = `https://accounts.google.com/o/oauth2/v2/auth?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}&scope=${SCOPE}`;
-      
-      if (Capacitor.isNativePlatform()) {
-        toast.info("모바일 앱 환경에서는 딥링크(App Link) 설정 전까지 소셜 로그인이 제한됩니다.");
-        // Browser.open({ url: GOOGLE_AUTH_URL });
-      } else {
-        window.location.href = GOOGLE_AUTH_URL;
-      }
-      return;
-    }
-
-    // Other providers mock
-    toast.info(`${provider} 로그인은 준비 중입니다.`);
+    toast.info(`현재 카카오 로그인만 지원합니다. ${provider === 'apple' ? '애플' : provider === 'naver' ? '네이버' : '구글'} 로그인은 심사 중입니다.`);
   };
 
   const handleIdPwLogin = async (e: React.FormEvent, type: 'customer' | 'business') => {

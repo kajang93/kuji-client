@@ -58,11 +58,13 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
     }
   }, []);
 
-  // Mock seller info mapping (since it's not in WinningItem yet)
-  const getSellerInfo = (animeName: string) => {
-    if (animeName.includes('원피스')) return { id: 'seller1', name: '원피스 전문샵' };
-    if (animeName.includes('귀멸')) return { id: 'seller2', name: '애니굿즈샵' };
-    return { id: 'seller1', name: '원피스 전문샵' }; // Default
+  // Real seller info mapping from WinningItem
+  const getSellerInfo = (item: WinningItem | undefined) => {
+    if (!item) return { id: 'unknown', name: '알 수 없는 판매처' };
+    return { 
+      id: item.sellerName || 'default_seller', 
+      name: item.sellerName || '오시쿠지 공식' 
+    };
   };
 
   // Filter items by tab
@@ -81,10 +83,10 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
       const targetItem = winningHistory.find(w => w.id === id);
       if (!targetItem) return prev;
       
-      const targetSeller = getSellerInfo(targetItem.animeName).id;
+      const targetSeller = getSellerInfo(targetItem).id;
       const hasDifferentSeller = prev.some(existingId => {
         const existingItem = winningHistory.find(w => w.id === existingId);
-        return existingItem && getSellerInfo(existingItem.animeName).id !== targetSeller;
+        return existingItem && getSellerInfo(existingItem).id !== targetSeller;
       });
 
       if (hasDifferentSeller) {
@@ -238,11 +240,11 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                           if (inventoryItems.length === 0) return [];
                           // If selection exists, use that seller. If not, use first item's seller.
                           const targetSellerId = selectedItems.length > 0 
-                             ? getSellerInfo(winningHistory.find(w => w.id === selectedItems[0])?.animeName || '').id
-                             : getSellerInfo(inventoryItems[0].animeName).id;
+                             ? getSellerInfo(winningHistory.find(w => w.id === selectedItems[0])).id
+                             : getSellerInfo(inventoryItems[0]).id;
                           
                           return inventoryItems
-                             .filter(item => getSellerInfo(item.animeName).id === targetSellerId)
+                             .filter(item => getSellerInfo(item).id === targetSellerId)
                              .map(item => item.id);
                        })();
 
@@ -257,7 +259,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                      className="text-xs text-white/70 flex items-center gap-1.5 hover:text-white px-3 py-1.5 bg-white/5 rounded-full border border-white/10 transition-colors"
                    >
                      <CheckCircle className="w-3.5 h-3.5" />
-                     {selectedItems.length > 0 && inventoryItems.filter(i => getSellerInfo(i.animeName).id === getSellerInfo(winningHistory.find(w => w.id === selectedItems[0])?.animeName || '').id).every(i => selectedItems.includes(i.id)) 
+                     {selectedItems.length > 0 && inventoryItems.filter(i => getSellerInfo(i).id === getSellerInfo(winningHistory.find(w => w.id === selectedItems[0])).id).every(i => selectedItems.includes(i.id)) 
                         ? '선택 해제' 
                         : '전체 선택 (동일 판매자)'}
                    </button>
@@ -282,7 +284,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                 inventoryItems.map((winning, index) => {
                   const bgGradient = rankColors[winning.rank as keyof typeof rankColors] || 'from-gray-600 to-gray-700';
                   const isSelected = selectedItems.includes(winning.id);
-                  const seller = getSellerInfo(winning.animeName);
+                  const seller = getSellerInfo(winning);
 
                   return (
                     <motion.div
@@ -435,9 +437,8 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
 
                         <div className="flex-1 min-w-0 pt-1">
                           <div className="flex items-center gap-2 mb-1">
-                             {/* Seller Name (Mock) */}
                             <span className="px-2 py-0.5 rounded bg-white/10 text-[10px] text-white/60 border border-white/10">
-                              {getSellerInfo(winning.animeName).name}
+                              {getSellerInfo(winning).name}
                             </span>
                             <span className="text-[10px] text-white/40">{winning.date}</span>
                           </div>
@@ -549,8 +550,8 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
       {selectedDeliveryItem && (
         <DeliveryTracking
           winning={selectedDeliveryItem}
-          sellerName={getSellerInfo(selectedDeliveryItem.animeName).name}
-          sellerId={getSellerInfo(selectedDeliveryItem.animeName).id}
+          sellerName={getSellerInfo(selectedDeliveryItem).name}
+          sellerId={getSellerInfo(selectedDeliveryItem).id}
           deliveryDriverPhone="010-1234-5678"
           onClose={() => setSelectedDeliveryItem(null)}
           onSubmitInquiry={onSubmitInquiry}

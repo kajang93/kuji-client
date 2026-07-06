@@ -8,16 +8,8 @@ import Login from "./components/Login";
 import Sidebar from "./components/Sidebar";
 import BusinessSidebar from "./components/BusinessSidebar";
 import AdminSidebar from "./components/AdminSidebar";
-import BusinessDashboard from "./components/BusinessDashboard";
-import BusinessProfile from "./components/BusinessProfile";
-import AdminDashboard from "./components/AdminDashboard";
-import AdminNoticeManagement from "./components/AdminNoticeManagement";
-import AdminEventManagement from "./components/AdminEventManagement";
-import AdminInquiryManagement from "./components/AdminInquiryManagement";
-import AdminMainBannerManagement from "./components/AdminMainBannerManagement";
-import AdminUserManagement from "./components/AdminUserManagement";
-import AdminPromotionManagement from "./components/AdminPromotionManagement";
-import AdminStatistics from "./components/AdminStatistics";
+import AdminScreens from "./components/screens/AdminScreens";
+import BusinessScreens from "./components/screens/BusinessScreens";
 import Profile from "./components/Profile";
 import ProfileEdit from "./components/ProfileEdit";
 import PurchaseHistory from "./components/PurchaseHistory";
@@ -26,14 +18,8 @@ import Wishlist from "./components/Wishlist";
 import Settings from "./components/Settings";
 import CustomerSupport from "./components/CustomerSupport";
 import PrizeSelection from "./components/PrizeSelection";
-import BusinessProductList from "./components/BusinessProductList";
-import BusinessProductEdit from "./components/BusinessProductEdit";
-import BusinessProductRegister from "./components/BusinessProductRegister";
 import { useGlobalGestures } from "./hooks/useGlobalGestures";
 import { useRefreshOnPageShow } from "./hooks/useRefreshOnPageShow";
-import BusinessShippingManagement from "./components/BusinessShippingManagement";
-import SellerInquiries from "./components/SellerInquiries";
-import Community from "./components/Community";
 import Notice from "./components/Notice";
 import Events from "./components/Events";
 import AlertModal from "./components/AlertModal";
@@ -43,10 +29,8 @@ import { Toaster, toast, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import NaverCallback from "./components/NaverCallback";
 import GoogleCallback from "./components/GoogleCallback";
-import BusinessPending from "./components/BusinessPending";
 import PointCharge from "./components/PointCharge";
-import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory, fetchSellerKujiBoards, deleteKujiBoard } from "./api/kuji";
-import { PullToRefresh } from "./components/PullToRefresh";
+import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory, fetchSellerKujiBoards } from "./api/kuji";
 import BoardList from "./components/BoardList";
 import BoardDetail from "./components/BoardDetail";
 import BoardWrite from "./components/BoardWrite";
@@ -55,21 +39,18 @@ import { toggleWishlist, fetchMyWishlist } from "./api/wishlist";
 import { onForegroundMessage } from "./api/firebase";
 import { fetchSellerShippingList, completeShipping, updateTrackingInfo } from "./api/shipping";
 import { confirmPointCharge } from "./api/points";
-import { toAbsoluteUrl } from "./api/client";
+import { mapBoardToCollection, mapKujiItemToPrize } from "./utils/kujiMappers";
+import { MOCK_PRIZE_OPTIONS } from "./constants/mockPrizeOptions";
 
 import {
   Prize,
   AnimeCollection,
   WinningItem,
   PrizeOption,
-  InquiryComment,
-  Inquiry,
+  CustomerInquiry,
   ScreenType,
   Banner,
   KujiBoard,
-  Post,
-  PostCategory,
-  ShippingInfo
 } from "./shared-types";
 
 
@@ -137,25 +118,7 @@ useRefreshOnPageShow(handleRefresh);
   useEffect(() => {
     if (screen === "businessProducts") {
       fetchSellerKujiBoards()
-        .then(boards => {
-          const mappedCollections = boards.map((board: any) => {
-            return {
-              id: board.id.toString(),
-              name: board.title,
-              image: (board.images?.find((img: any) => img.imageType === 'THUMBNAIL')?.imageUrl || board.images?.[0]?.imageUrl) || "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
-              totalKuji: board.totalCount || 0,
-              remainingKuji: board.remainCount || 0,
-              gradeCount: board.gradeCount || 0,
-              boardId: board.id,
-              isWished: board.isWished,
-              operationStatus: board.status === 'ACTIVE' ? 'active' : board.status === 'PREPARING' ? 'scheduled' : 'ended',
-              pricePerDraw: board.pricePerDraw || 15000,
-              rewardRate: board.rewardRate || 0,
-              prizes: []
-            };
-          });
-          setSellerCollections(mappedCollections);
-        })
+        .then(boards => setSellerCollections(boards.map(mapBoardToCollection)))
         .catch(console.error);
     }
   }, [screen]);
@@ -164,26 +127,7 @@ useRefreshOnPageShow(handleRefresh);
     try {
       const boards = await fetchKujiBoards();
 
-      const mappedCollections: AnimeCollection[] = boards.map((board: KujiBoard) => {
-        return {
-          id: board.id.toString(),
-          name: board.title,
-          image: toAbsoluteUrl(
-            board.images.find((img: any) => img.imageType === 'THUMBNAIL')?.imageUrl ||
-            board.images[0]?.imageUrl
-          ) || "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
-          totalKuji: board.totalCount || 0,
-          remainingKuji: board.remainCount || 0,
-          gradeCount: board.gradeCount || 0,
-          boardId: board.id,
-          isWished: board.isWished, // 서버에서 받은 찜 여부 매핑
-          operationStatus: board.status === 'ACTIVE' ? 'active' :
-            board.status === 'PREPARING' ? 'scheduled' : 'ended',
-          pricePerDraw: board.pricePerDraw || 15000, // Added price mapping
-          rewardRate: board.rewardRate || 0,
-          prizes: []
-        };
-      });
+      const mappedCollections: AnimeCollection[] = boards.map(mapBoardToCollection);
 
       setAnimeCollections(mappedCollections);
       
@@ -210,26 +154,10 @@ useRefreshOnPageShow(handleRefresh);
 
 async function handleRefresh() {
   await handleFetchBoards();
-  if (user?.role === 'ADMIN' || user?.role === 'SELLER') {
+  if (user?.type === 'admin' || user?.type === 'business') {
     try {
       const boards = await fetchSellerKujiBoards();
-      const mappedCollections = boards.map((board: any) => {
-        return {
-          id: board.id.toString(),
-          name: board.title,
-          image: board.images?.find((img: any) => img.imageType === 'THUMBNAIL')?.imageUrl || board.images?.[0]?.imageUrl || "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=400",
-          totalKuji: board.totalCount || 0,
-          remainingKuji: board.remainCount || 0,
-          gradeCount: board.gradeCount || 0,
-          boardId: board.id,
-          isWished: board.isWished,
-          operationStatus: board.status === 'ACTIVE' ? 'active' : board.status === 'PREPARING' ? 'scheduled' : 'ended',
-          pricePerDraw: board.pricePerDraw || 15000,
-          rewardRate: board.rewardRate || 0,
-          prizes: []
-        };
-      });
-      setSellerCollections(mappedCollections);
+      setSellerCollections(boards.map(mapBoardToCollection));
     } catch (e) {
       console.error(e);
     }
@@ -325,18 +253,7 @@ async function handleRefresh() {
         amount: Number(amount)
       });
       
-      const prizes: Prize[] = result.results.map((p: any) => ({
-        ...p,
-        id: p.id?.toString() || Math.random().toString(),
-        rank: p.grade || p.rank,
-        image: toAbsoluteUrl((p.imageUrls && p.imageUrls.length > 0)
-          ? p.imageUrls[0]
-          : p.imageUrl || p.image),
-        totalCount: p.totalQty ?? p.totalCount ?? 0,
-        remainingCount: p.remainQty ?? p.remainingCount ?? 0,
-        opened: p.opened || [],
-        drawHistoryId: p.drawHistoryId
-      }));
+      const prizes: Prize[] = result.results.map(mapKujiItemToPrize);
 
       localStorage.removeItem("kuji_pending_payment");
       setRevealedPrizes(prizes);
@@ -469,7 +386,8 @@ async function handleRefresh() {
                 trackingNumber: s.trackingNumber,
                 courierName: s.courierName,
                 needsOptionSelection: false,
-                isNew: false
+                isNew: false,
+                sellerName: user?.name || '내 상점'
               });
             });
           }
@@ -493,7 +411,8 @@ async function handleRefresh() {
             h.status === 'DELIVERED' ? 'delivered' : 'stored',
           needsOptionSelection: (h.grade && /^[A-DG]/i.test(h.grade)),
           isNew: false,
-          shippingId: h.shippingId
+          shippingId: h.shippingId,
+          sellerName: h.sellerName
         }));
 
         setWinningHistory(mappedWinnings);
@@ -520,7 +439,7 @@ async function handleRefresh() {
   };
 
   // Inquiries state
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [inquiries, setInquiries] = useState<CustomerInquiry[]>([]);
 
   // Remove static animeCollections array
 
@@ -530,27 +449,7 @@ async function handleRefresh() {
       const items = await fetchKujiBoardDetail(Number(anime.id));
 
       // 2. Map backend items to frontend prizes structure
-      const updatedPrizes = items.map(p => {
-        let parsedOptions = [];
-        if ((p as any).options) {
-          try {
-            parsedOptions = typeof (p as any).options === 'string' ? JSON.parse((p as any).options) : (p as any).options;
-          } catch(e) {}
-        }
-        return {
-          ...p,
-          id: (p as any).id?.toString() || Math.random().toString(),
-          rank: (p as any).grade || (p as any).rank,
-          // Match the backend's imageUrls array
-          image: ((p as any).imageUrls && (p as any).imageUrls.length > 0)
-            ? (p as any).imageUrls[0]
-            : (p as any).imageUrl || (p as any).image,
-          totalCount: (p as any).totalQty ?? (p as any).totalCount ?? 0,
-          remainingCount: (p as any).remainQty ?? (p as any).remainingCount ?? 0,
-          opened: (p as any).opened || [],
-          options: parsedOptions
-        };
-      });
+      const updatedPrizes = items.map(mapKujiItemToPrize);
 
       const updatedAnime = {
         ...anime,
@@ -641,6 +540,37 @@ async function handleRefresh() {
     }, "로그아웃", "info");
   };
 
+  // 소셜 로그인(카카오/네이버/구글) 콜백 공통 처리
+  const handleSocialLoginSuccess = (successMessage: string) =>
+    (token: string, userData: any) => {
+      localStorage.setItem("token", token);
+      const formattedUser = {
+        name: userData.nickname || userData.name,
+        email: userData.email,
+        type: (userData.role === "BIZ" ? "business" : "social") as "business" | "social",
+        points: userData.points || 0,
+        profileImageUrl: userData.profileImageUrl || "",
+      };
+      setUser(formattedUser);
+
+      // Remove OAuth params from URL without refreshing
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      if (formattedUser.type === "business") {
+        setScreen("businessDashboard");
+      } else {
+        setScreen("main");
+        handleFetchWishlist();
+      }
+      sonnerToast.success(successMessage);
+    };
+
+  const handleSocialLoginFailure = (error: string) => {
+    setScreen("login");
+    window.history.replaceState({}, document.title, window.location.pathname);
+    sonnerToast.error(`로그인 실패: ${error}`);
+  };
+
   const handleKujiReveal = async (kujiIndices: number[]) => {
     if (!selectedAnime || !user) return;
 
@@ -652,18 +582,7 @@ async function handleRefresh() {
       });
 
       // 2. Map backend results (KujiItemResponse) to frontend prizes structure
-      const prizes: Prize[] = response.results.map((p: any) => ({
-        ...p,
-        id: p.id?.toString() || Math.random().toString(),
-        rank: p.grade || p.rank,
-        image: toAbsoluteUrl((p.imageUrls && p.imageUrls.length > 0)
-          ? p.imageUrls[0]
-          : p.imageUrl || p.image),
-        totalCount: p.totalQty ?? p.totalCount ?? 0,
-        remainingCount: p.remainQty ?? p.remainingCount ?? 0,
-        opened: p.opened || [],
-        drawHistoryId: p.drawHistoryId // 추가
-      }));
+      const prizes: Prize[] = response.results.map(mapKujiItemToPrize);
 
       // 3. Update the board state locally
       const updatedPrizes = selectedAnime.prizes.map(p => {
@@ -1059,369 +978,7 @@ async function handleRefresh() {
       }
     }
 
-    const options: Record<string, PrizeOption[]> = {
-      A: [
-        {
-          id: "A1",
-          name: "루피 마스터피스 피규어",
-          image:
-            "https://images.unsplash.com/photo-1601814933824-fd0b574dd592?w=400",
-          description: "높이 25cm, 프리미엄 도색",
-        },
-        {
-          id: "A2",
-          name: "에이스 불꽃 ver. 피규어",
-          image:
-            "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400",
-          description: "높이 25cm, LED 이펙트 포함",
-        },
-        {
-          id: "A3",
-          name: "샹크스 황제 ver. 피규어",
-          image:
-            "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400",
-          description: "높이 28cm, 망토 실물감",
-        },
-      ],
-      B: [
-        {
-          id: "B1",
-          name: "조로 삼도류 피규어",
-          image:
-            "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400",
-          description: "높이 20cm, 칼 3개 포함",
-        },
-        {
-          id: "B2",
-          name: "나미 기후봉 ver. 피규어",
-          image:
-            "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400",
-          description: "높이 20cm, 기후봉 포함",
-        },
-        {
-          id: "B3",
-          name: "상디 디아블 ver. 피규어",
-          image:
-            "https://images.unsplash.com/photo-1601814933824-fd0b574dd592?w=400",
-          description: "높이 20cm, 불꽃 이펙트",
-        },
-        {
-          id: "B4",
-          name: "로빈 하나하나 ver. 피규어",
-          image:
-            "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400",
-          description: "높이 20cm, 꽃잎 이펙트",
-        },
-      ],
-      C: [
-        {
-          id: "C1",
-          name: "프랑키 장군 피규어",
-          image:
-            "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400",
-          description: "높이 18cm, 변형 가능",
-        },
-        {
-          id: "C2",
-          name: "브룩 소울킹 피규어",
-          image:
-            "https://images.unsplash.com/photo-1601814933824-fd0b574dd592?w=400",
-          description: "높이 18cm, 기타 포함",
-        },
-        {
-          id: "C3",
-          name: "징베 해협의 협객 피규어",
-          image:
-            "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400",
-          description: "높이 18cm, 물 이펙트",
-        },
-        {
-          id: "C4",
-          name: "우솝 저격왕 피규어",
-          image:
-            "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400",
-          description: "높이 18cm, 새총 포함",
-        },
-        {
-          id: "C5",
-          name: "쵸파 몬스터 ver. 피규어",
-          image:
-            "https://images.unsplash.com/photo-1601814933824-fd0b574dd592?w=400",
-          description: "높이 18cm, 특수 도색",
-        },
-      ],
-      D: [
-        {
-          id: "D1",
-          name: "루피 SD 피규어",
-          image:
-            "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=300",
-          description: "높이 12cm, 귀여운 디자인",
-        },
-        {
-          id: "D2",
-          name: "조로 SD 피규어",
-          image:
-            "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300",
-          description: "높이 12cm, 귀여운 디자인",
-        },
-        {
-          id: "D3",
-          name: "나미 SD 피규어",
-          image:
-            "https://images.unsplash.com/photo-1601814933824-fd0b574dd592?w=300",
-          description: "높이 12cm, 귀여운 디자인",
-        },
-        {
-          id: "D4",
-          name: "상디 SD 피규어",
-          image:
-            "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=300",
-          description: "높이 12cm, 귀여운 디자인",
-        },
-        {
-          id: "D5",
-          name: "쵸파 SD 피규어",
-          image:
-            "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300",
-          description: "높이 12cm, 귀여운 디자인",
-        },
-        {
-          id: "D6",
-          name: "로빈 SD 피규어",
-          image:
-            "https://images.unsplash.com/photo-1601814933824-fd0b574dd592?w=300",
-          description: "높이 12cm, 귀여운 디자인",
-        },
-      ],
-      E: [
-        {
-          id: "E1",
-          name: "밀짚모자 해적단 타올",
-          image:
-            "https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=300",
-          description: "60x120cm, 부드러운 소재",
-        },
-        {
-          id: "E2",
-          name: "원피스 로고 티셔츠 (블랙)",
-          image:
-            "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300",
-          description: "M/L/XL 사이즈 선택",
-        },
-        {
-          id: "E3",
-          name: "원피스 로고 티셔츠 (화이트)",
-          image:
-            "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300",
-          description: "M/L/XL 사이즈 선택",
-        },
-        {
-          id: "E4",
-          name: "원피스 후드티 (네이비)",
-          image:
-            "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=300",
-          description: "M/L/XL 사이즈 선택",
-        },
-        {
-          id: "E5",
-          name: "해적왕 머그컵",
-          image:
-            "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=300",
-          description: "350ml, 도자기",
-        },
-        {
-          id: "E6",
-          name: "밀짚모자 캔버스백",
-          image:
-            "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=300",
-          description: "40x35cm, 튼튼한 재질",
-        },
-      ],
-      F: [
-        {
-          id: "F1",
-          name: "루피 클리어파일 세트",
-          image:
-            "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=300",
-          description: "A4 사이즈 5장",
-        },
-        {
-          id: "F2",
-          name: "조로 클리어파일 세트",
-          image:
-            "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=300",
-          description: "A4 사이즈 5장",
-        },
-        {
-          id: "F3",
-          name: "나미 클리어파일 세트",
-          image:
-            "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=300",
-          description: "A4 사이즈 5장",
-        },
-        {
-          id: "F4",
-          name: "상디 클리어파일 세트",
-          image:
-            "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=300",
-          description: "A4 사이즈 5장",
-        },
-        {
-          id: "F5",
-          name: "밀짚모자 메모장",
-          image:
-            "https://images.unsplash.com/photo-1517842645767-c639042777db?w=300",
-          description: "100매, 다양한 디자인",
-        },
-        {
-          id: "F6",
-          name: "원피스 스티커 세트",
-          image:
-            "https://images.unsplash.com/photo-1611532736579-6b16e2b50449?w=300",
-          description: "30종 스티커",
-        },
-        {
-          id: "F7",
-          name: "해적왕 포스터",
-          image:
-            "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=300",
-          description: "A3 사이즈, 고급 인쇄",
-        },
-      ],
-      G: [
-        {
-          id: "G1",
-          name: "루피 아크릴 스탠드",
-          image:
-            "https://images.unsplash.com/photo-1658233427916-2351b655618f?w=300",
-          description: "높이 10cm",
-        },
-        {
-          id: "G2",
-          name: "조로 아크릴 스탠드",
-          image:
-            "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=300",
-          description: "높이 10cm",
-        },
-        {
-          id: "G3",
-          name: "나미 아크릴 스탠드",
-          image:
-            "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300",
-          description: "높이 10cm",
-        },
-        {
-          id: "G4",
-          name: "우솝 아크릴 스탠드",
-          image:
-            "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=300",
-          description: "높이 10cm",
-        },
-        {
-          id: "G5",
-          name: "상디 아크릴 스탠드",
-          image:
-            "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300",
-          description: "높이 10cm",
-        },
-        {
-          id: "G6",
-          name: "쵸파 아크릴 스탠드",
-          image:
-            "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=300",
-          description: "높이 10cm",
-        },
-        {
-          id: "G7",
-          name: "로빈 아크릴 스탠드",
-          image:
-            "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300",
-          description: "높이 10cm",
-        },
-        {
-          id: "G8",
-          name: "프랑키 아크릴 스탠드",
-          image:
-            "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=300",
-          description: "높이 10cm",
-        },
-      ],
-      H: [
-        {
-          id: "H1",
-          name: "원피스 러버 키홀더 - 루피",
-          image:
-            "https://images.unsplash.com/photo-1563299796-17596ed6b017?w=300",
-          description: "5cm, 양면 인쇄",
-        },
-        {
-          id: "H2",
-          name: "원피스 러버 키홀더 - 조로",
-          image:
-            "https://images.unsplash.com/photo-1563299796-17596ed6b017?w=300",
-          description: "5cm, 양면 인쇄",
-        },
-        {
-          id: "H3",
-          name: "원피스 러버 키홀더 - 나미",
-          image:
-            "https://images.unsplash.com/photo-1563299796-17596ed6b017?w=300",
-          description: "5cm, 양면 인쇄",
-        },
-        {
-          id: "H4",
-          name: "원피스 러버 키홀더 - 상디",
-          image:
-            "https://images.unsplash.com/photo-1563299796-17596ed6b017?w=300",
-          description: "5cm, 양면 인쇄",
-        },
-        {
-          id: "H5",
-          name: "원피스 러버 키홀더 - 쵸파",
-          image:
-            "https://images.unsplash.com/photo-1563299796-17596ed6b017?w=300",
-          description: "5cm, 양면 인쇄",
-        },
-        {
-          id: "H6",
-          name: "원피스 러버 키홀더 - 우솝",
-          image:
-            "https://images.unsplash.com/photo-1563299796-17596ed6b017?w=300",
-          description: "5cm, 양면 인쇄",
-        },
-        {
-          id: "H7",
-          name: "원피스 러버 키홀더 - 로빈",
-          image:
-            "https://images.unsplash.com/photo-1563299796-17596ed6b017?w=300",
-          description: "5cm, 양면 인쇄",
-        },
-        {
-          id: "H8",
-          name: "원피스 러버 키홀더 - 브룩",
-          image:
-            "https://images.unsplash.com/photo-1563299796-17596ed6b017?w=300",
-          description: "5cm, 양면 인쇄",
-        },
-        {
-          id: "H9",
-          name: "원피스 러버 키홀더 - 징베",
-          image:
-            "https://images.unsplash.com/photo-1563299796-17596ed6b017?w=300",
-          description: "5cm, 양면 인쇄",
-        },
-        {
-          id: "H10",
-          name: "원피스 러버 키홀더 - 프랑키",
-          image:
-            "https://images.unsplash.com/photo-1563299796-17596ed6b017?w=300",
-          description: "5cm, 양면 인쇄",
-        },
-      ],
-    };
-
-    return options[rank] || [];
+    return MOCK_PRIZE_OPTIONS[rank] || [];
   };
 
   return (
@@ -1548,9 +1105,9 @@ async function handleRefresh() {
               const now = new Date();
               const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-              const newInquiry: Inquiry = {
+              const newInquiry: CustomerInquiry = {
                 id: `INQ${Date.now()}`,
-                customerId: user?.id || "customer1",
+                customerId: user?.email || "customer1",
                 customerName: user?.name || "고객",
                 sellerId,
                 sellerName,
@@ -1610,7 +1167,7 @@ async function handleRefresh() {
             onWrite={() => {
               if (!user) {
                 toast.error("로그인이 필요한 서비스입니다.");
-                setIsLoginModalOpen(true);
+                setScreen("login");
                 return;
               }
               setSelectedPostId(null); // 새 글 작성을 위해 ID 초기화
@@ -1652,410 +1209,50 @@ async function handleRefresh() {
         )}
 
         {/* Business Screens */}
-        {screen === "businessDashboard" && (
-          <BusinessDashboard
-            onOpenSidebar={() => setIsSidebarOpen(true)}
-            onLogout={handleLogout}
-            onNavigate={(screen) => {
-              if (screen === "productList")
-                setScreen("businessProducts");
-              else if (screen === "productRegister")
-                setScreen("businessRegister");
-              else if (screen === "shipping") {
-                handleFetchWinningHistory();
-                setScreen("businessShipping");
-              }
-              else if (screen === "inquiries")
-                setScreen("businessInquiries");
-            }}
-          />
-        )}
-        {screen === "businessProfile" && user && (
-          <BusinessProfile
-            user={user}
-            onBack={() => setScreen("businessDashboard")}
-            onEdit={() => setScreen("profileEdit")}
-          />
-        )}
-        {screen === "businessProducts" && (
-          <BusinessProductList
-            onBack={() => setScreen("businessDashboard")}
-            onOpenSidebar={() => setIsSidebarOpen(true)}
-            collections={sellerCollections}
-            onDelete={async (id) => {
-              if (window.confirm("정말로 이 상품을 삭제하시겠습니까? 삭제된 데이터는 복구할 수 없습니다.")) {
-                try {
-                  await deleteKujiBoard(Number(id));
-                  setSellerCollections(prev => prev.filter(c => c.id !== id));
-                  alert("상품이 성공적으로 삭제되었습니다.");
-                } catch (e) {
-                  console.error(e);
-                  alert("상품 삭제에 실패했습니다.");
-                }
-              }
-            }}
-            onEdit={async (id) => {
-              try {
-                // Fetch full details of items (Backend returns List<KujiItem>)
-                const items = await fetchKujiBoardDetail(Number(id));
-                const updatedPrizes = items.map(p => ({
-                  ...p,
-                  id: (p as any).id?.toString() || Math.random().toString(),
-                  rank: (p as any).grade || (p as any).rank,
-                  // Match the backend's imageUrls array
-                  image: ((p as any).imageUrls && (p as any).imageUrls.length > 0)
-                    ? (p as any).imageUrls[0]
-                    : (p as any).imageUrl || (p as any).image,
-                  totalCount: (p as any).totalQty ?? (p as any).totalCount ?? 0,
-                  remainingCount: (p as any).remainQty ?? (p as any).remainingCount ?? 0,
-                  opened: (p as any).opened || []
-                }));
-
-                // Update the collection in our global state to include prizes
-                setSellerCollections(prev => prev.map(c =>
-                  c.id === id ? {
-                    ...c,
-                    prizes: updatedPrizes,
-                    totalKuji: updatedPrizes.reduce((sum, p) => sum + p.totalCount, 0),
-                    remainingKuji: updatedPrizes.reduce((sum, p) => sum + p.remainingCount, 0)
-                  } : c
-                ));
-
-                setEditingCollectionId(id);
-                setScreen("businessProductEdit");
-              } catch (error) {
-                console.error("Failed to fetch product details for editing:", error);
-                alert("상품 정보를 불러오는데 실패했습니다.");
-              }
-            }}
-          />
-        )}
-        {screen === "businessProductEdit" &&
-          editingCollectionId &&
-          sellerCollections.find(
-            (c) => c.id === editingCollectionId,
-          ) && (
-            <BusinessProductEdit
-              onBack={() => setScreen("businessProducts")}
-              collection={sellerCollections.find((c) => c.id === editingCollectionId)!}
-              user={user}
-              onSave={(updatedCollection) => {
-                // In real app, save to backend
-                showAlert("상품이 수정되었습니다", "success");
-                setScreen("businessProducts");
-              }}
-            />
-          )}
-        {screen === "businessRegister" && (
-          <BusinessProductRegister
-            onBack={() => setScreen("businessDashboard")}
-            onComplete={async () => {
-              showAlert("상품이 등록되었습니다!", "success");
-              await handleRefresh();
-              setScreen("businessProducts");
-            }}
-            onTempSave={(message) => {
-              showAlert(message, "success");
-            }}
-          />
-        )}
-        {screen === "businessShipping" && (
-          <BusinessShippingManagement
-            onBack={() => setScreen("businessDashboard")}
-            winningHistory={winningHistory}
-            onUpdateShipping={handleUpdateShipping}
-          />
-        )}
-        {screen === "businessInquiries" && (
-          <SellerInquiries
-            onBack={() => setScreen("businessDashboard")}
-            inquiries={inquiries}
-            onAddComment={(inquiryId, content) => {
-              const now = new Date();
-              const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-              const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-              setInquiries((prev) =>
-                prev.map((inq) => {
-                  if (inq.id === inquiryId) {
-                    return {
-                      ...inq,
-                      comments: [
-                        ...inq.comments,
-                        {
-                          id: `CMT${Date.now()}`,
-                          author: "seller",
-                          authorName: user?.name || "판매자",
-                          content,
-                          date: dateStr,
-                          time: timeStr,
-                        },
-                      ],
-                      isNew: false,
-                    };
-                  }
-                  return inq;
-                }),
-              );
-              showAlert("답변이 등록되었습니다", "success");
-            }}
-            onEditComment={(inquiryId, commentId, content) => {
-              setInquiries((prev) =>
-                prev.map((inq) => {
-                  if (inq.id === inquiryId) {
-                    return {
-                      ...inq,
-                      comments: inq.comments.map((cmt) =>
-                        cmt.id === commentId
-                          ? { ...cmt, content }
-                          : cmt,
-                      ),
-                    };
-                  }
-                  return inq;
-                }),
-              );
-              showAlert("답변이 수정되었습니다", "success");
-            }}
-            onDeleteComment={(inquiryId, commentId) => {
-              setInquiries((prev) =>
-                prev.map((inq) => {
-                  if (inq.id === inquiryId) {
-                    return {
-                      ...inq,
-                      comments: inq.comments.filter(
-                        (cmt) => cmt.id !== commentId,
-                      ),
-                    };
-                  }
-                  return inq;
-                }),
-              );
-              showAlert("답변이 삭제되었습니다", "success");
-            }}
-            onUpdateStatus={(inquiryId, status) => {
-              setInquiries((prev) =>
-                prev.map((inq) =>
-                  inq.id === inquiryId
-                    ? { ...inq, status }
-                    : inq,
-                ),
-              );
-            }}
-          />
-        )}
+        <BusinessScreens
+          screen={screen}
+          setScreen={setScreen}
+          setIsSidebarOpen={setIsSidebarOpen}
+          user={user}
+          sellerCollections={sellerCollections}
+          setSellerCollections={setSellerCollections}
+          editingCollectionId={editingCollectionId}
+          setEditingCollectionId={setEditingCollectionId}
+          winningHistory={winningHistory}
+          inquiries={inquiries}
+          setInquiries={setInquiries}
+          showAlert={showAlert}
+          onLogout={handleLogout}
+          onRefresh={handleRefresh}
+          onFetchWinningHistory={handleFetchWinningHistory}
+          onUpdateShipping={handleUpdateShipping}
+        />
 
         {/* Admin Screens */}
-        {screen === "adminDashboard" && (
-          <AdminDashboard
-            onNavigate={(screen) => {
-              if (screen === "noticeManagement")
-                setScreen("adminNoticeManagement");
-              else if (screen === "eventManagement")
-                setScreen("adminEventManagement");
-              else if (screen === "inquiryManagement")
-                setScreen("adminInquiryManagement");
-              else if (screen === "mainBannerManagement")
-                setScreen("adminMainBannerManagement");
-              else if (screen === "userManagement")
-                setScreen("adminUserManagement");
-              else if (screen === "users")
-                setScreen("adminUserManagement");
-              else if (screen === "statistics")
-                setScreen("adminStatistics");
-              else if (screen === "mainBanner")
-                setScreen("adminMainBannerManagement");
-            }}
-          />
-        )}
-        {screen === "adminNoticeManagement" && (
-          <AdminNoticeManagement
-            onBack={() => setScreen("adminDashboard")}
-          />
-        )}
-        {screen === "adminEventManagement" && (
-          <AdminEventManagement
-            onBack={() => setScreen("adminDashboard")}
-          />
-        )}
-        {screen === "adminInquiryManagement" && (
-          <AdminInquiryManagement
-            onBack={() => setScreen("adminDashboard")}
-            inquiries={inquiries}
-            onAddComment={(inquiryId, content) => {
-              const now = new Date();
-              const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-              const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+        <AdminScreens
+          screen={screen}
+          setScreen={setScreen}
+          setIsSidebarOpen={setIsSidebarOpen}
+          banners={banners}
+          setBanners={setBanners}
+        />
 
-              setInquiries((prev) =>
-                prev.map((inq) => {
-                  if (inq.id === inquiryId) {
-                    return {
-                      ...inq,
-                      comments: [
-                        ...inq.comments,
-                        {
-                          id: `CMT${Date.now()}`,
-                          author: "seller",
-                          authorName: user?.name || "관리자",
-                          content,
-                          date: dateStr,
-                          time: timeStr,
-                        },
-                      ],
-                      isNew: false,
-                    };
-                  }
-                  return inq;
-                }),
-              );
-              showAlert("답변이 등록되었습니다", "success");
-
-              // Simulate KakaoTalk Notification for Inquiry Reply
-              if (notificationSettings.kakaoInquiry) {
-                setTimeout(() => {
-                  showAlert(
-                    `[카카오톡 알림톡 전송]\n문의하신 내용에 답변이 등록되었습니다.`,
-                    "info",
-                    "알림 발송 완료",
-                  );
-                }, 1500);
-              }
-            }}
-            onUpdateStatus={(inquiryId, status) => {
-              setInquiries((prev) =>
-                prev.map((inq) =>
-                  inq.id === inquiryId
-                    ? { ...inq, status }
-                    : inq,
-                ),
-              );
-            }}
-          />
-        )}
-        {screen === "adminMainBannerManagement" && (
-          <AdminMainBannerManagement
-            onBack={() => setScreen("adminDashboard")}
-            banners={banners}
-            setBanners={setBanners}
-          />
-        )}
-        {screen === "adminUserManagement" && (
-          <AdminUserManagement
-            onBack={() => {
-              setScreen("adminDashboard");
-              setIsSidebarOpen(false);
-            }}
-          />
-        )}
-        {screen === "adminPromotionManagement" && (
-          <AdminPromotionManagement
-            onBack={() => {
-              setScreen("adminDashboard");
-              setIsSidebarOpen(false);
-            }}
-          />
-        )}
-        {screen === "adminStatistics" && (
-          <AdminStatistics
-            onBack={() => setScreen("adminDashboard")}
-          />
-        )}
         {screen === "kakaoCallback" && (
           <KakaoCallback
-            onLoginSuccess={(token, userData) => {
-              localStorage.setItem("token", token);
-              // Format user data to match app state
-              const formattedUser = {
-                name: userData.nickname || userData.name,
-                email: userData.email,
-                type: (userData.role === "BIZ" ? "business" : "social") as any,
-                points: userData.points || 0,
-                profileImageUrl: userData.profileImageUrl || "",
-              };
-              setUser(formattedUser);
-
-              // Remove code from URL without refreshing
-              window.history.replaceState({}, document.title, window.location.pathname);
-
-              if (formattedUser.type === "business") {
-                setScreen("businessDashboard");
-              } else {
-                setScreen("main");
-                // 찜 목록 로드
-                handleFetchWishlist();
-              }
-              sonnerToast.success("로그인에 성공했습니다!");
-            }}
-            onLoginFailure={(error) => {
-              setScreen("login");
-              window.history.replaceState({}, document.title, window.location.pathname);
-              sonnerToast.error(`로그인 실패: ${error}`);
-            }}
+            onLoginSuccess={handleSocialLoginSuccess("로그인에 성공했습니다!")}
+            onLoginFailure={handleSocialLoginFailure}
           />
         )}
         {screen === "naverCallback" && (
           <NaverCallback
-            onLoginSuccess={(token, userData) => {
-              localStorage.setItem("token", token);
-              const formattedUser = {
-                name: userData.nickname || userData.name,
-                email: userData.email,
-                type: (userData.role === "BIZ" ? "business" : "social") as any,
-                points: userData.points || 0,
-                profileImageUrl: userData.profileImageUrl || "",
-              };
-              setUser(formattedUser);
-              window.history.replaceState({}, document.title, window.location.pathname);
-              if (formattedUser.type === "business") {
-                setScreen("businessDashboard");
-              } else {
-                setScreen("main");
-                handleFetchWishlist();
-              }
-              sonnerToast.success("네이버 로그인에 성공했습니다!");
-            }}
-            onLoginFailure={(error) => {
-              setScreen("login");
-              window.history.replaceState({}, document.title, window.location.pathname);
-              sonnerToast.error(`로그인 실패: ${error}`);
-            }}
+            onLoginSuccess={handleSocialLoginSuccess("네이버 로그인에 성공했습니다!")}
+            onLoginFailure={handleSocialLoginFailure}
           />
         )}
         {screen === "googleCallback" && (
           <GoogleCallback
-            onLoginSuccess={(token, userData) => {
-              localStorage.setItem("token", token);
-              const formattedUser = {
-                name: userData.nickname || userData.name,
-                email: userData.email,
-                type: (userData.role === "BIZ" ? "business" : "social") as any,
-                points: userData.points || 0,
-                profileImageUrl: userData.profileImageUrl || "",
-              };
-              setUser(formattedUser);
-              window.history.replaceState({}, document.title, window.location.pathname);
-              if (formattedUser.type === "business") {
-                setScreen("businessDashboard");
-              } else {
-                setScreen("main");
-                handleFetchWishlist();
-              }
-              sonnerToast.success("구글 로그인에 성공했습니다!");
-            }}
-            onLoginFailure={(error) => {
-              setScreen("login");
-              window.history.replaceState({}, document.title, window.location.pathname);
-              sonnerToast.error(`로그인 실패: ${error}`);
-            }}
-          />
-        )}
-        {screen === "businessPending" && (
-          <BusinessPending
-            user={user}
-            onBack={() => {
-              handleLogout();
-            }}
+            onLoginSuccess={handleSocialLoginSuccess("구글 로그인에 성공했습니다!")}
+            onLoginFailure={handleSocialLoginFailure}
           />
         )}
 

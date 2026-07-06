@@ -81,6 +81,7 @@ export type WinningItem = {
   isNew?: boolean;
   shippingId?: number; // 추가
   courierName?: string; // 추가
+  sellerName?: string; // 추가
 };
 
 export interface ShippingInfo {
@@ -115,7 +116,7 @@ export type InquiryComment = {
   time: string;
 };
 
-export type Inquiry = {
+export type CustomerInquiry = {
   id: string;
   customerId: string;
   customerName: string;
@@ -236,6 +237,7 @@ export interface Inquiry {
   createdAt: string;
   answerContent: string | null;
   answeredAt: string | null;
+  memberName?: string;
 }
 
 export interface InquiryCreateRequest {

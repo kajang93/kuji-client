@@ -5,6 +5,8 @@ import { ApexOptions } from 'apexcharts';
 import { motion, AnimatePresence } from './motion';
 import { Users, MessageSquare, Bell, Calendar, FileText, Settings as SettingsIcon, BarChart, Layout, Plus, Send, ChevronLeft, X, DollarSign } from './icons';
 import { fetchAdminSummary, fetchAdminDailySales, AdminSummary, DailySales } from '../api/statistics';
+import { fetchAllInquiries, answerInquiry } from '../api/admin';
+import { Inquiry } from '../shared-types';
 
 type AdminDashboardProps = {
   onNavigate: (screen: 'noticeManagement' | 'eventManagement' | 'inquiryManagement' | 'users' | 'statistics' | 'mainBanner' | 'userManagement') => void;
@@ -20,12 +22,14 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const [summaryData, salesData] = await Promise.all([
+        const [summaryData, salesData, inquiriesData] = await Promise.all([
           fetchAdminSummary(),
-          fetchAdminDailySales(7)
+          fetchAdminDailySales(7),
+          fetchAllInquiries()
         ]);
         setAdminSummary(summaryData);
         setDailySales(salesData);
+        setQuickInquiries(inquiriesData.filter((i: Inquiry) => i.status === 'WAITING'));
       } catch (error) {
         console.error("Failed to load admin stats", error);
       } finally {
@@ -43,14 +47,10 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
   // Quick Inquiry State
   const [inquiryReply, setInquiryReply] = useState('');
-  const [selectedInquiryId, setSelectedInquiryId] = useState<string | null>(null);
+  const [selectedInquiryId, setSelectedInquiryId] = useState<number | null>(null);
 
-  // Mock Pending Inquiries for Quick Action
-  const [quickInquiries, setQuickInquiries] = useState([
-    { id: '1', user: '김철수', subject: '배송 언제 되나요?', date: '2024-11-27', content: '주문번호 12345 배송 조회 부탁드립니다.' },
-    { id: '2', user: '박영희', subject: '포인트 적립 문의', date: '2024-11-26', content: '어제 구매했는데 포인트가 아직 안 들어왔어요.' },
-    { id: '3', user: '이민수', subject: '상품 불량 신고', date: '2024-11-25', content: '도착한 상품 박스가 찌그러져 있습니다.' },
-  ]);
+  // Real Pending Inquiries for Quick Action
+  const [quickInquiries, setQuickInquiries] = useState<Inquiry[]>([]);
 
   const stats = [
     { label: '전체 사용자', value: isLoadingStats ? '-' : adminSummary?.totalMembers?.toLocaleString() || '0', icon: Users, color: 'from-blue-500 to-cyan-500' },
@@ -164,13 +164,17 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     setActiveQuickAction(null);
   };
 
-  const handleInquirySubmit = () => {
+  const handleInquirySubmit = async () => {
     if (!selectedInquiryId) return;
-    alert('답변이 전송되었습니다.');
-    setQuickInquiries(prev => prev.filter(i => i.id !== selectedInquiryId));
-    setSelectedInquiryId(null);
-    setInquiryReply('');
-    // If no more inquiries, close modal? Or stay? keeping it open for next one is better but maybe clear selection
+    try {
+      await answerInquiry(selectedInquiryId, inquiryReply);
+      alert('답변이 전송되었습니다.');
+      setQuickInquiries(prev => prev.filter(i => i.id !== selectedInquiryId));
+      setSelectedInquiryId(null);
+      setInquiryReply('');
+    } catch (e) {
+      alert('답변 전송에 실패했습니다.');
+    }
   };
 
   return (
@@ -424,10 +428,10 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                           className={`w-full text-left p-3 rounded-xl transition-all ${selectedInquiryId === inquiry.id ? 'bg-yellow-500/20 border border-yellow-500/50' : 'bg-white/10 hover:bg-white/20 border border-transparent'}`}
                         >
                           <div className="flex justify-between mb-1">
-                            <span className="text-white font-bold">{inquiry.user}</span>
-                            <span className="text-white/50 text-xs">{inquiry.date}</span>
+                            <span className="text-white font-bold">{inquiry.memberName || '고객'}</span>
+                            <span className="text-white/50 text-xs">{new Date(inquiry.createdAt).toLocaleDateString()}</span>
                           </div>
-                          <div className="text-white/90 text-sm truncate">{inquiry.subject}</div>
+                          <div className="text-white/90 text-sm truncate">{inquiry.title}</div>
                         </button>
                       ))
                     )}
@@ -444,7 +448,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                     <>
                       <div className="bg-white/10 rounded-xl p-4 mb-4 flex-1">
                         <h3 className="text-white font-bold mb-2">
-                          {quickInquiries.find(i => i.id === selectedInquiryId)?.subject}
+                          {quickInquiries.find(i => i.id === selectedInquiryId)?.title}
                         </h3>
                         <p className="text-white/80 text-sm whitespace-pre-wrap">
                           {quickInquiries.find(i => i.id === selectedInquiryId)?.content}
