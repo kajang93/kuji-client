@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from './motion';
-import { Search, PenLine, ChevronRight, Eye, MessageSquare, Filter, Heart } from './icons';
+import { Search, PenLine, ChevronRight, ChevronLeft, Eye, MessageSquare, Filter, Heart } from './icons';
 import { Post, PostCategory } from '../shared-types';
 import { fetchPosts } from '../api/community';
 
@@ -8,6 +8,7 @@ interface BoardListProps {
   user: any;
   onWrite: () => void;
   onDetail: (id: number) => void;
+  onBack: () => void;
 }
 
 const CATEGORIES: { label: string; value: PostCategory | "ALL" }[] = [
@@ -18,7 +19,7 @@ const CATEGORIES: { label: string; value: PostCategory | "ALL" }[] = [
   { label: '공지사항', value: 'NOTICE' },
 ];
 
-export default function BoardList({ user, onWrite, onDetail }: BoardListProps) {
+export default function BoardList({ user, onWrite, onDetail, onBack }: BoardListProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [selectedPostType, setSelectedPostType] = useState<PostCategory | "ALL">('ALL');
   const [isLoading, setIsLoading] = useState(true);
@@ -56,8 +57,16 @@ export default function BoardList({ user, onWrite, onDetail }: BoardListProps) {
   return (
     <div className="flex flex-col h-full bg-slate-900 pb-20">
       {/* Header */}
-      <div className="p-6 pb-2">
-        <h1 className="text-2xl font-bold text-white mb-2">커뮤니티</h1>
+      <div className="p-6 pb-2 flex flex-col gap-4">
+        <div className="flex items-center">
+          <button
+            onClick={onBack}
+            className="p-2 -ml-2 hover:bg-white/10 rounded-full transition-colors"
+          >
+            <ChevronLeft className="w-6 h-6 text-white" />
+          </button>
+          <h1 className="text-2xl font-bold text-white ml-2">커뮤니티</h1>
+        </div>
         <p className="text-slate-400 text-sm">유저들과 자유롭게 소통해보세요.</p>
       </div>
 
