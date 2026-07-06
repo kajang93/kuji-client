@@ -122,7 +122,7 @@
 본 프로젝트는 단순한 뽑기 시뮬레이터를 넘어, 완벽한 커머스 플랫폼으로의 진화를 목표로 합니다.
 
 ### 기반 구축 (완료 ✅)
-- 프론트엔드 프리미엄 UI/UX 테마 구축
+- **2026 트렌디 UI/UX 전면 개편**: 오로라 배경(Aurora Background), 3D 틸트 카드(React-Tilt), 글래스모피즘(Glassmorphism) 및 네온 글로우 버튼 등 초현대적 프리미엄 테마 적용 완료
 - Spring Boot 기반 REST API 및 DB 스키마 설계
 - 카카오 소셜 로그인 및 JWT 보안 적용
 - 핵심 애니메이션 엔진(드래그 뜯기) 구현
@@ -136,6 +136,7 @@
 - **상태 자동화**: Delivery Tracker API 연동을 통한 실시간 배송 추적 자동 업데이트
 
 ### 커뮤니티 및 소셜 기능 고도화 (진행 중 🚀)
+- **커뮤니티 인터페이스 고도화**: 커뮤니티(BoardList) 상단 뒤로가기 버튼 등 UX/UI 디테일 개선 완료 ✅
 - **커뮤니티 상호작용**: 게시글 좋아요, 찜하기(Wishlist), 실시간 댓글 CRUD 연동
 - **당첨 인증 및 공유 기능**: 당첨 증서(Certificate) 및 게시판 SNS 공유 기능
 - **실시간 알림**: FCM 기반의 배송 시작, 재입고 알림, 문의 답변 푸시 알림
@@ -158,6 +159,7 @@
 - **Provably Fair (공정성 증명)**: 추첨 시드 해시값을 블록체인/스마트컨트랙트 원리로 투명하게 공개하여 조작 의혹 원천 차단
 
 ### 보완 작업 (Pending Tasks) 📝
+- **사업자 상품 등록 UI 고도화**: 단품(Single) / 다종(Multi) 구분 기능과 동적 상(Rank) 추가 시스템 구현 완료 ✅
 - **인증 및 보안 고도화**: 아이디 찾기 시 고객/사업자 구분 토글 연동, OTP 인증 후 즉시 비밀번호 재설정 및 로그인 유저 비밀번호 변경 기능 통합 완료 ✅
 - **상거래 기능 고도화**: 상품(쿠지)별 커스텀 적립 포인트 설정 기능 추가 및 구매 시 동적 적립금 계산 로직 완벽 연동 완료 ✅
 - **회원가입 시 SMS 인증 연동**: 회원가입 시 Aligo 기반 본인인증(SMS) 로직 및 UI 연동 완료
@@ -180,14 +182,14 @@
 
 ---
 
-## 🛠 프론트엔드 리팩토링 로드맵 (Frontend Refactoring Roadmap)
-현재 `App.tsx`에 집중된 모놀리식 구조를 현대적인 React 아키텍처로 개편하여 유지보수성 및 성능을 극대화합니다.
+## 🛠 🔥 당면 과제: 프론트엔드 리팩토링 로드맵 (App.tsx 해체 작업)
+현재 클라이언트의 `App.tsx` 파일이 약 2000줄 이상의 거대한 모놀리식 구조로 되어 있어 유지보수성 향상과 확장성을 위해 최우선적으로 리팩토링이 필요합니다.
 
-- **Routing Architecture**: `react-router-dom` 도입을 통한 페이지 분리 및 URL 라우팅 체계 구축
-- **Global State Management**: `Zustand` 도입을 통한 전역 상태 관리 (유저 정보, 장바구니, 모달 제어 등) 및 Prop Drilling 제거
-- **Server State Management**: `@tanstack/react-query` 도입을 통한 API 로딩, 캐싱, 에러 핸들링 및 서버 데이터 동기화 최적화
-- **Code Splitting & Lazy Loading**: `React.lazy`와 `Suspense`를 활용한 페이지 단위 번들 스플리팅으로 초기 로딩 속도(FCP) 극대화
-- **SEO & Meta Tags**: `react-helmet-async`를 도입하여 상품별 동적 타이틀 및 Open Graph 메타 태그 최적화
+- **[STEP 1] Routing Architecture**: `react-router-dom` 도입을 통한 페이지 단위 컴포넌트 분리 (`/login`, `/community`, `/products` 등 URL 기반 라우팅 적용)
+- **[STEP 2] Global State Management**: `Zustand` 도입을 통한 전역 상태(유저 세션 `user`, 토스트 알림, 글로벌 모달 등) 분리 및 Prop Drilling 원천 차단
+- **[STEP 3] Server State Management**: `@tanstack/react-query` 도입을 통한 API 로딩 처리, 캐싱, 에러 핸들링 및 서버 데이터 실시간 동기화 (기존 `useEffect` 데이터 패칭 로직 대체)
+- **[STEP 4] Code Splitting & Lazy Loading**: `React.lazy`와 `Suspense`를 활용한 라우트 단위 코드 스플리팅으로 초기 로딩 속도 극대화
+- **[STEP 5] 컴포넌트 모듈화**: `App.tsx` 내부의 헬퍼 함수 및 거대 컴포넌트들을 기능 단위로 독립된 폴더(`/hooks`, `/utils`, `/layouts`)로 추출
 
 ---
 
