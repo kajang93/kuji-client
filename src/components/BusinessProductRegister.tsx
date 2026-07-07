@@ -268,12 +268,12 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
         </div>
       </div>
 
-      <div className="p-4 max-w-4xl mx-auto">
+      <div className="mx-auto max-w-4xl space-y-4 px-3 py-4 sm:px-4">
         {/* Series Info */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg mb-4"
+          className="rounded-2xl border border-white/15 bg-gradient-to-br from-white/20 to-white/5 p-4 shadow-lg ring-1 ring-white/5 backdrop-blur-sm sm:p-6"
         >
           <h2 className="text-white text-lg mb-4">시리즈 정보</h2>
           
@@ -314,7 +314,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
           </div>
 
           {/* New Fields: Price and Reward Rate */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="text-white/70 text-sm block mb-2">1회 구매 가격 (원)</label>
               <input
@@ -348,15 +348,15 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
         </motion.div>
 
         {/* Product Entry by Rank */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
+        <div className="space-y-5">
+          <div className="flex items-center justify-between gap-3">
             <h2 className="text-white text-lg font-medium">등급별 상품 등록</h2>
             <div className="text-teal-300 text-sm">
               총 {totalProductCount}개 상품
             </div>
           </div>
 
-          <div className="rounded-2xl border border-cyan-300/30 bg-gradient-to-r from-cyan-500/15 to-indigo-500/15 p-4 shadow-lg">
+          <div className="rounded-2xl border border-cyan-300/25 bg-gradient-to-r from-cyan-500/15 to-indigo-500/15 p-4 shadow-lg ring-1 ring-white/5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -388,7 +388,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
                 key={rank}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/20 shadow-lg"
+                className="overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-br from-white/20 to-white/5 p-4 shadow-lg ring-1 ring-white/5 backdrop-blur-sm"
               >
                 <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
@@ -402,11 +402,11 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-end gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:flex sm:items-center sm:justify-end">
                     <button
                       type="button"
                       onClick={() => handleAddProducts(rank, 1)}
-                      className="px-3 py-2 bg-green-500 hover:bg-green-600 rounded-lg text-white text-sm flex items-center gap-1.5 transition-colors"
+                      className="flex items-center justify-center gap-1.5 rounded-xl bg-green-500 px-3 py-2.5 text-sm text-white transition-colors hover:bg-green-600 sm:py-2"
                     >
                       <Plus className="w-4 h-4" />
                       1개 추가
@@ -415,7 +415,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
                       <button
                         type="button"
                         onClick={() => handleAddProducts(rank, 3)}
-                        className="px-3 py-2 bg-cyan-500/80 hover:bg-cyan-500 rounded-lg text-white text-sm flex items-center gap-1.5 transition-colors"
+                        className="flex items-center justify-center gap-1.5 rounded-xl bg-cyan-500/80 px-3 py-2.5 text-sm text-white transition-colors hover:bg-cyan-500 sm:py-2"
                       >
                         <Plus className="w-4 h-4" />
                         3개 추가
@@ -431,12 +431,12 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
                 ) : (
                   <div className="space-y-3">
                     {currentProducts.map((product) => (
-                      <div key={product.id} className="bg-white/10 rounded-xl p-4 border border-white/10">
-                        <div className="flex items-start gap-4">
+                      <div key={product.id} className="rounded-2xl border border-white/10 bg-white/10 p-3 shadow-inner shadow-black/10 sm:p-4">
+                        <div className="grid gap-4 sm:grid-cols-[6rem_minmax(0,1fr)_auto] sm:items-start">
                           {/* Image Upload */}
-                          <div className="flex-shrink-0">
+                          <div className="flex items-start justify-between gap-3 sm:block">
                             <label className="cursor-pointer">
-                              <div className="w-24 h-24 bg-white/10 rounded-lg border-2 border-dashed border-white/30 hover:border-teal-400 transition-colors overflow-hidden">
+                              <div className="h-24 w-24 overflow-hidden rounded-xl border border-dashed border-white/30 bg-white/10 transition-colors hover:border-teal-400">
                                 {product.image ? (
                                   <ImageWithFallback
                                     src={product.image}
@@ -457,18 +457,27 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
                                 className="hidden"
                               />
                             </label>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveProduct(rank, product.id)}
+                              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-red-300/20 bg-red-500/20 text-red-200 transition-colors hover:bg-red-500/30 sm:hidden"
+                              aria-label="상품 삭제"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
 
                           {/* Product Details */}
-                          <div className="flex-1 space-y-3">
+                          <div className="min-w-0 space-y-3">
                             <div>
-                              <div className="flex items-center justify-between mb-1">
+                              <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <label className="text-white/60 text-xs">상품명</label>
                                 {/* AI Auto Complete Button */}
                                 <button
+                                  type="button"
                                   onClick={() => handleAiAutoComplete(rank, product.id)}
                                   disabled={isAiProcessing[product.id] || !productFiles[product.id]}
-                                  className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-colors ${
+                                  className={`inline-flex min-h-9 w-full items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs transition-colors sm:min-h-0 sm:w-auto sm:px-2 sm:py-1 ${
                                     isAiProcessing[product.id] 
                                       ? 'bg-indigo-500/50 cursor-not-allowed' 
                                       : !productFiles[product.id]
@@ -516,8 +525,10 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
 
                           {/* Remove Button */}
                           <button
+                            type="button"
                             onClick={() => handleRemoveProduct(rank, product.id)}
-                            className="p-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-300 transition-colors"
+                            className="hidden h-10 w-10 items-center justify-center rounded-xl border border-red-300/20 bg-red-500/20 text-red-200 transition-colors hover:bg-red-500/30 sm:flex"
+                            aria-label="상품 삭제"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -532,7 +543,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {/* Temp Save Button */}
           <motion.button
             initial={{ opacity: 0, y: 20 }}
@@ -541,7 +552,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleTempSave}
-            className="py-4 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-xl shadow-xl flex items-center justify-center gap-2"
+            className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 py-4 text-white shadow-xl"
           >
             <Save className="w-5 h-5" />
             <span>임시 저장</span>
@@ -555,7 +566,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
             whileTap={{ scale: isRegistering ? 1 : 0.98 }}
             onClick={handleRegister}
             disabled={isRegistering}
-            className={`py-4 bg-gradient-to-r from-teal-400 to-blue-500 text-white rounded-xl shadow-xl flex items-center justify-center gap-2 ${isRegistering ? 'opacity-70 cursor-not-allowed' : ''}`}
+            className={`flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 to-blue-500 py-4 text-white shadow-xl ${isRegistering ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
             {isRegistering ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -571,7 +582,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="mt-4 bg-indigo-500/20 border-2 border-indigo-400/50 rounded-xl p-4"
+          className="rounded-2xl border border-indigo-300/35 bg-indigo-500/20 p-4 ring-1 ring-white/5"
         >
           <div className="flex items-start gap-3">
             <div className="text-xl">💡</div>
