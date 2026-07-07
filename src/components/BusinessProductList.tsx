@@ -1,7 +1,7 @@
 import { motion } from './motion';
 import { ChevronLeft, Edit, Package, TrendingUp, TrendingDown, Menu } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import type { AnimeCollection } from '@/shared-types';
+import type { AnimeCollection, Prize } from '@/shared-types';
 
 type BusinessProductListProps = {
   onBack: () => void;
@@ -12,6 +12,30 @@ type BusinessProductListProps = {
 };
 
 export default function BusinessProductList({ onBack, collections, onEdit, onDelete, onOpenSidebar }: BusinessProductListProps) {
+  const getGroupedPrizes = (prizes: Prize[]) => {
+    return prizes.reduce((acc, prize) => {
+      if (!acc[prize.rank]) acc[prize.rank] = [];
+      acc[prize.rank].push(prize);
+      return acc;
+    }, {} as Record<string, Prize[]>);
+  };
+
+  const getSortedRanks = (groupedPrizes: Record<string, Prize[]>) => {
+    return Object.keys(groupedPrizes).sort((a, b) => {
+      if (a === 'LAST') return 1;
+      if (b === 'LAST') return -1;
+      return a.localeCompare(b);
+    });
+  };
+
+  const getRankColor = (rank: string) => {
+    if (rank === 'A') return 'from-yellow-400 to-amber-600';
+    if (rank === 'B') return 'from-blue-400 to-indigo-600';
+    if (rank === 'C') return 'from-orange-400 to-rose-600';
+    if (rank === 'LAST') return 'from-amber-300 to-yellow-600';
+    return 'from-purple-400 to-fuchsia-600';
+  };
+
   const getStockStatus = (remaining: number, total: number) => {
     const percentage = (remaining / total) * 100;
     if (percentage > 50) return { color: 'text-green-400', icon: TrendingUp, label: '재고 충분' };
@@ -137,42 +161,58 @@ export default function BusinessProductList({ onBack, collections, onEdit, onDel
                       <div className="text-center py-4 bg-white/5 rounded-xl border border-dashed border-white/10">
                         <p className="text-white/30 text-xs">수정 버튼을 눌러 경품을 등록하세요</p>
                       </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2">
-                        {collection.prizes.map((prize) => (
-                          <div
-                            key={prize.id}
-                            className="bg-white/5 rounded-lg p-2 border border-white/10 flex items-center gap-3"
-                          >
-                            <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-white/10">
-                              <ImageWithFallback
-                                src={prize.image}
-                                alt={prize.name}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 mb-0.5">
-                                <span className={`text-[10px] px-1 rounded-sm font-bold text-white ${
-                                  prize.rank === 'A' ? 'bg-yellow-500' :
-                                  prize.rank === 'B' ? 'bg-blue-500' :
-                                  prize.rank === 'C' ? 'bg-orange-500' :
-                                  'bg-purple-500'
-                                }`}>
-                                  {prize.rank}
-                                </span>
-                                <div className="text-white text-xs truncate">
-                                  {prize.name}
+                    ) : (() => {
+                      const groupedPrizes = getGroupedPrizes(collection.prizes);
+                      return (
+                        <div className="space-y-2">
+                          {getSortedRanks(groupedPrizes).map((rank) => {
+                            const rankPrizes = groupedPrizes[rank];
+                            const totalCount = rankPrizes.reduce((sum, prize) => sum + prize.totalCount, 0);
+                            const remainingCount = rankPrizes.reduce((sum, prize) => sum + prize.remainingCount, 0);
+
+                            return (
+                              <div
+                                key={rank}
+                                className="bg-white/5 rounded-xl p-3 border border-white/10"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${getRankColor(rank)} flex flex-col items-center justify-center shadow-lg border border-white/20 flex-shrink-0`}>
+                                    <span className={`text-base font-black leading-none ${rank === 'LAST' ? 'text-black' : 'text-white'}`}>{rank}</span>
+                                    <span className={`text-[9px] font-bold ${rank === 'LAST' ? 'text-black/70' : 'text-white/80'}`}>상</span>
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="text-white text-sm font-semibold truncate">
+                                        {rank === 'LAST' ? '라스트상' : `${rank}상`} 상품 {rankPrizes.length}종
+                                      </div>
+                                      <div className="text-white/50 text-xs flex-shrink-0">
+                                        {remainingCount}/{totalCount}
+                                      </div>
+                                    </div>
+                                    <div className="mt-2 flex items-center gap-2 overflow-hidden">
+                                      <div className="flex -space-x-2 flex-shrink-0">
+                                        {rankPrizes.slice(0, 4).map((prize) => (
+                                          <div key={prize.id} className="w-8 h-8 rounded-lg overflow-hidden bg-white/10 border border-white/20">
+                                            <ImageWithFallback
+                                              src={prize.image}
+                                              alt={prize.name}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          </div>
+                                        ))}
+                                      </div>
+                                      <div className="text-white/60 text-xs truncate">
+                                        {rankPrizes.map((prize) => prize.name).join(', ')}
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                              <div className="text-white/50 text-[10px]">
-                                {prize.remainingCount}/{prize.totalCount}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Action Buttons */}

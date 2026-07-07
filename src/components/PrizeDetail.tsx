@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, X, Plus, Minus, ChevronRight } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import type { AnimeCollection } from '@/shared-types';
+import type { AnimeCollection, Prize } from '@/shared-types';
 
 type PrizeDetailProps = {
   anime: AnimeCollection;
@@ -18,6 +18,16 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
   const [currentImageIndexes, setCurrentImageIndexes] = useState<{ [key: string]: number }>({});
   const [imagePopup, setImagePopup] = useState<{ images: string[]; currentIndex: number; prizeName: string } | null>(null);
   const pricePerKuji = anime.pricePerDraw || 15000; // 1장당 가격 (백엔드 기본값 매핑)
+  const groupedPrizes = anime.prizes.reduce((acc, prize) => {
+    if (!acc[prize.rank]) acc[prize.rank] = [];
+    acc[prize.rank].push(prize);
+    return acc;
+  }, {} as Record<string, Prize[]>);
+  const sortedRanks = Object.keys(groupedPrizes).sort((a, b) => {
+    if (a === 'LAST') return 1;
+    if (b === 'LAST') return -1;
+    return a.localeCompare(b);
+  });
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -133,72 +143,87 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
           </div>
           
           <div className="space-y-3">
-            {anime.prizes.map((prize) => {
-              const rankColors = {
-                'A': 'bg-yellow-500',
-                'B': 'bg-blue-500',
-                'C': 'bg-orange-500',
-                'D': 'bg-purple-500',
-                'E': 'bg-green-500',
-                'F': 'bg-pink-500',
-                'G': 'bg-cyan-500',
-                'H': 'bg-red-500',
-              };
-              const colorClass = rankColors[prize.rank as keyof typeof rankColors] || 'bg-gray-500';
-              
-              return (
-                <div key={prize.id} className="flex items-center gap-3 py-1.5 border-b border-white/5 last:border-0">
-                  {/* Rank Badge - Smaller & Compact */}
-                  <div className={`w-11 h-11 rounded-lg bg-gradient-to-br shadow-md flex flex-col items-center justify-center flex-shrink-0 border border-white/20 ${
-                     prize.rank === 'A' ? 'from-yellow-400 to-orange-600' :
-                     prize.rank === 'B' ? 'from-blue-400 to-indigo-600' :
-                     prize.rank === 'C' ? 'from-orange-400 to-red-600' :
-                     prize.rank === 'D' ? 'from-purple-400 to-purple-700' :
-                     prize.rank === 'E' ? 'from-green-400 to-emerald-700' :
-                     prize.rank === 'F' ? 'from-pink-400 to-rose-700' :
-                     'from-gray-400 to-slate-700'
-                  }`}>
-                    <span className="text-white font-black text-lg leading-none drop-shadow-sm">{prize.rank}</span>
-                    <span className="text-white/90 text-[8px] font-bold -mt-0.5">상</span>
-                  </div>
-                  
-                  {/* Cells */}
-                  <div className="flex-1 flex flex-wrap gap-1">
-                    {Array.from({ length: prize.totalCount }).map((_, i) => {
-                      const isRemaining = i < prize.remainingCount;
-                      
-                      return (
-                        <motion.button
-                          whileHover={isRemaining ? { scale: 1.1, zIndex: 10 } : {}}
-                          whileTap={isRemaining ? { scale: 0.95 } : {}}
-                          key={i}
-                          onClick={() => openImagePopup([prize.image], 0, `${prize.rank}상 - ${prize.name}`)}
-                          className={`
-                            w-9 h-11 rounded border flex items-center justify-center relative overflow-hidden transition-all
-                            ${isRemaining 
-                              ? 'border-white/20 shadow-sm cursor-pointer hover:shadow-md hover:border-white/50' 
-                              : 'bg-slate-900/80 border-white/5 opacity-20 cursor-default'}
-                          `}
-                        >
-                          {/* Product Image Only - No Badge Inside */}
-                          <div className={`w-full h-full ${!isRemaining ? 'grayscale opacity-20' : ''}`}>
-                             <ImageWithFallback
-                               src={prize.image}
-                               alt={prize.name}
-                               className="w-full h-full object-cover"
-                             />
-                          </div>
+            {sortedRanks.map((rank) => {
+              const rankPrizes = groupedPrizes[rank];
+              const totalCount = rankPrizes.reduce((sum, prize) => sum + prize.totalCount, 0);
+              const remainingCount = rankPrizes.reduce((sum, prize) => sum + prize.remainingCount, 0);
+              const previewCells = rankPrizes.flatMap((prize) =>
+                Array.from({ length: prize.totalCount }).map((_, index) => ({
+                  prize,
+                  isRemaining: index < prize.remainingCount,
+                  key: `${prize.id}-${index}`,
+                })),
+              );
 
-                          {/* Sold Out Overlay */}
-                          {!isRemaining && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                              <div className="w-full h-px bg-white/30 rotate-45 absolute" />
-                              <div className="w-full h-px bg-white/30 -rotate-45 absolute" />
+              return (
+                <div key={rank} className="py-3 border-b border-white/5 last:border-0">
+                  {/* Rank Badge - Smaller & Compact */}
+                  <div className="flex items-start gap-3">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br shadow-md flex flex-col items-center justify-center flex-shrink-0 border border-white/20 ${
+                       rank === 'A' ? 'from-yellow-400 to-orange-600' :
+                       rank === 'B' ? 'from-blue-400 to-indigo-600' :
+                       rank === 'C' ? 'from-orange-400 to-red-600' :
+                       rank === 'D' ? 'from-purple-400 to-purple-700' :
+                       rank === 'E' ? 'from-green-400 to-emerald-700' :
+                       rank === 'F' ? 'from-pink-400 to-rose-700' :
+                       rank === 'LAST' ? 'from-yellow-300 to-amber-600' :
+                       'from-gray-400 to-slate-700'
+                    }`}>
+                      <span className={`${rank === 'LAST' ? 'text-black' : 'text-white'} font-black text-lg leading-none drop-shadow-sm`}>{rank}</span>
+                      <span className={`${rank === 'LAST' ? 'text-black/70' : 'text-white/90'} text-[8px] font-bold -mt-0.5`}>상</span>
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="min-w-0">
+                          <div className="text-white font-bold truncate">
+                            {rank === 'LAST' ? '라스트상' : `${rank}상`} {rankPrizes.length}종
+                          </div>
+                          <div className="text-white/50 text-xs truncate">
+                            {rankPrizes.map((prize) => prize.name).join(', ')}
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-cyan-200 text-sm font-bold">{remainingCount}/{totalCount}</div>
+                          <div className="text-white/40 text-[10px]">남은 수량</div>
+                        </div>
+                      </div>
+
+                      {/* Cells */}
+                      <div className="flex flex-wrap gap-1">
+                        {previewCells.map(({ prize, isRemaining, key }) => (
+                          <motion.button
+                            whileHover={isRemaining ? { scale: 1.1, zIndex: 10 } : {}}
+                            whileTap={isRemaining ? { scale: 0.95 } : {}}
+                            key={key}
+                            onClick={() => openImagePopup([prize.image], 0, `${rank}상 - ${prize.name}`)}
+                            className={`
+                              w-9 h-11 rounded border flex items-center justify-center relative overflow-hidden transition-all
+                              ${isRemaining
+                                ? 'border-white/20 shadow-sm cursor-pointer hover:shadow-md hover:border-white/50'
+                                : 'bg-slate-900/80 border-white/5 opacity-20 cursor-default'}
+                            `}
+                          >
+                            {/* Product Image Only - No Badge Inside */}
+                            <div className={`w-full h-full ${!isRemaining ? 'grayscale opacity-20' : ''}`}>
+                               <ImageWithFallback
+                                 src={prize.image}
+                                 alt={prize.name}
+                                 className="w-full h-full object-cover"
+                               />
                             </div>
-                          )}
-                        </motion.button>
-                      );
-                    })}
+
+                            {/* Sold Out Overlay */}
+                            {!isRemaining && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                <div className="w-full h-px bg-white/30 rotate-45 absolute" />
+                                <div className="w-full h-px bg-white/30 -rotate-45 absolute" />
+                              </div>
+                            )}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               );

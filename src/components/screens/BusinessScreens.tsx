@@ -141,8 +141,9 @@ export default function BusinessScreens({
             onBack={() => setScreen("businessProducts")}
             collection={sellerCollections.find((c) => c.id === editingCollectionId)!}
             user={user}
-            onSave={() => {
+            onSave={async () => {
               showAlert("상품이 수정되었습니다", "success");
+              await onRefresh();
               setScreen("businessProducts");
             }}
           />

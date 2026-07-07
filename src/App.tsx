@@ -40,7 +40,6 @@ import { onForegroundMessage } from "./api/firebase";
 import { fetchSellerShippingList, completeShipping, updateTrackingInfo } from "./api/shipping";
 import { confirmPointCharge } from "./api/points";
 import { mapBoardToCollection, mapKujiItemToPrize } from "./utils/kujiMappers";
-import { MOCK_PRIZE_OPTIONS } from "./constants/mockPrizeOptions";
 
 import {
   Prize,
@@ -121,11 +120,32 @@ useRefreshOnPageShow(handleRefresh);
   const [sellerCollections, setSellerCollections] = useState<AnimeCollection[]>([]);
 
   // Fetch Kuji Boards from server
+  const fetchSellerCollectionsWithPrizes = async () => {
+    const boards = await fetchSellerKujiBoards();
+    const collections = await Promise.all(
+      boards.map(async (board) => {
+        const collection = mapBoardToCollection(board);
+        const boardPrizes = board.prizes?.map(mapKujiItemToPrize) || [];
+        const detailPrizes =
+          boardPrizes.length > 0
+            ? boardPrizes
+            : (await fetchKujiBoardDetail(board.id)).map(mapKujiItemToPrize);
+
+        return {
+          ...collection,
+          prizes: detailPrizes,
+          totalKuji: detailPrizes.reduce((sum, prize) => sum + prize.totalCount, 0),
+          remainingKuji: detailPrizes.reduce((sum, prize) => sum + prize.remainingCount, 0),
+        };
+      }),
+    );
+
+    setSellerCollections(collections);
+  };
   
   useEffect(() => {
     if (screen === "businessProducts") {
-      fetchSellerKujiBoards()
-        .then(boards => setSellerCollections(boards.map(mapBoardToCollection)))
+      fetchSellerCollectionsWithPrizes()
         .catch(console.error);
     }
   }, [screen]);
@@ -163,8 +183,7 @@ async function handleRefresh() {
   await handleFetchBoards();
   if (user?.type === 'admin' || user?.type === 'business') {
     try {
-      const boards = await fetchSellerKujiBoards();
-      setSellerCollections(boards.map(mapBoardToCollection));
+      await fetchSellerCollectionsWithPrizes();
     } catch (e) {
       console.error(e);
     }
@@ -1006,7 +1025,7 @@ async function handleRefresh() {
       }
     }
 
-    return MOCK_PRIZE_OPTIONS[rank] || [];
+    return [];
   };
 
   return (

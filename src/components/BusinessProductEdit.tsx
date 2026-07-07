@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from './motion';
-import { ChevronLeft, Save, Upload, X, Plus } from './icons';
+import { ChevronLeft, Save, Upload, X, Plus, Loader2 } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import type { AnimeCollection, Prize } from '@/shared-types';
 import { updateKujiItem, updateKujiItemImage, deleteKujiItem, registerBoardItems, updateKujiBoardStatus, uploadBoardImages, updateKujiBoardRewardRate } from '../api/kuji';
@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 type BusinessProductEditProps = {
   onBack: () => void;
   collection: AnimeCollection;
-  onSave: (updatedCollection: AnimeCollection) => void;
+  onSave: (updatedCollection: AnimeCollection) => void | Promise<void>;
   user?: { name: string; email: string; type: string; points?: number; isActive?: boolean } | null;
 };
 
@@ -255,9 +255,9 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
 
       // 4. Update Board Status if changed
       if (collection.operationStatus !== operationStatus) {
-        let backendStatus: "PREPARING" | "ACTIVE" | "COMPLETED" = "PREPARING";
+        let backendStatus: "PREPARING" | "ACTIVE" | "FINISHED" = "PREPARING";
         if (operationStatus === 'active') backendStatus = "ACTIVE";
-        else if (operationStatus === 'ended') backendStatus = "COMPLETED";
+        else if (operationStatus === 'ended') backendStatus = "FINISHED";
         
         await updateKujiBoardStatus(Number(collection.id), backendStatus);
       }
@@ -273,9 +273,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
       }
 
       toast.success('성공적으로 저장되었습니다.');
-      // Need to tell parent to refresh so status is updated in list
-      // For now, onBack will just go back. We can trigger a reload.
-      window.location.reload();
+      await onSave(collection);
     } catch (error) {
       console.error('Save failed:', error);
       toast.error('저장 도중 오류가 발생했습니다.');
