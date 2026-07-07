@@ -30,5 +30,5 @@ npm-debug.log*
 *.pem
 android/.idea/
 
-.checklist.md
-.context-notes.md
+checklist.md
+context-notes.md
