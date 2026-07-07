@@ -307,7 +307,20 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
             <ChevronLeft className="w-6 h-6 text-white" />
           </button>
           <h1 className="text-white text-xl">상품 수정</h1>
-          <div className="w-10" />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className={`px-3 py-1.5 bg-teal-500 hover:bg-teal-600 rounded-lg text-white text-sm flex items-center gap-1 transition-colors ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
+            >
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">저장</span>
+            </button>
+          </div>
         </div>
       </div>
 

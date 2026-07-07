@@ -264,7 +264,27 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
             <ChevronLeft className="w-6 h-6 text-white" />
           </button>
           <h1 className="text-white text-xl">쿠지 상품 등록</h1>
-          <div className="w-10" />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleTempSave}
+              className="px-3 py-1.5 bg-amber-500/80 hover:bg-amber-500 rounded-lg text-white text-sm flex items-center gap-1 transition-colors"
+            >
+              <Save className="w-4 h-4" />
+              <span className="hidden sm:inline">임시 저장</span>
+            </button>
+            <button
+              onClick={handleRegister}
+              disabled={isRegistering}
+              className={`px-3 py-1.5 bg-teal-500 hover:bg-teal-600 rounded-lg text-white text-sm flex items-center gap-1 transition-colors ${isRegistering ? 'opacity-70 cursor-not-allowed' : ''}`}
+            >
+              {isRegistering ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">등록</span>
+            </button>
+          </div>
         </div>
       </div>
 
