@@ -29,7 +29,7 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
             <ChevronLeft className="w-6 h-6 text-cyan-100" />
           </button>
           <h1 className="flex-1 text-center text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-white text-2xl font-bold tracking-widest uppercase mr-10 drop-shadow-md">
-            Collection
+            시리즈
           </h1>
         </div>
       </div>
@@ -88,7 +88,7 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
                     <div className="flex items-center gap-3 mb-4">
                       <div className="glass-panel rounded-full px-4 py-1.5 shadow-inner">
                         <div className="flex items-center gap-2 text-white/90">
-                          <span className="text-xs uppercase tracking-wider text-cyan-200">Left</span>
+                          <span className="text-xs uppercase tracking-wider text-cyan-200">재고</span>
                           <span className="text-cyan-400 text-lg font-bold drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]">{anime.remainingKuji}</span>
                           <span className="text-white/40">/</span>
                           <span className="text-sm text-white/60">{anime.totalKuji}</span>
@@ -98,8 +98,8 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
                       <div className="glass-panel rounded-full px-4 py-1.5">
                         <span className="text-indigo-200 text-xs font-medium tracking-wide">
                           {anime.gradeCount !== undefined 
-                            ? `${anime.gradeCount} Grades` 
-                            : 'Loading...'}
+                            ? `${anime.gradeCount}개 등급` 
+                            : '로딩중...'}
                         </span>
                       </div>
                     </div>
@@ -114,7 +114,7 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
                       />
                     </div>
                     <div className="text-cyan-400/80 text-[10px] uppercase tracking-widest mt-2 text-right font-bold">
-                      {Math.round((anime.remainingKuji / (anime.totalKuji || 1)) * 100)}% Available
+                      {Math.round((anime.remainingKuji / (anime.totalKuji || 1)) * 100)}% 남음
                     </div>
                   </div>
                 </div>
