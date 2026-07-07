@@ -60,7 +60,13 @@ export default function App() {
 
   const [screen, setScreen] = useState<ScreenType>(() => {
     const saved = sessionStorage.getItem("currentScreen") as ScreenType;
-    const unsafeScreens = ["detail", "selection", "reveal", "winning", "prizeSelection", "kakaoCallback", "naverCallback", "googleCallback"];
+    // 복원 불가 화면: 새로고침 시 사라지는 메모리 상태(선택된 글/상품 ID 등)에 의존해
+    // 화면 이름만 복원하면 아무것도 렌더링되지 않는(빈 화면) 것들
+    const unsafeScreens = [
+      "detail", "selection", "reveal", "winning", "prizeSelection",
+      "kakaoCallback", "naverCallback", "googleCallback",
+      "communityDetail", "communityWrite", "businessProductEdit", "profileEdit",
+    ];
     if (saved && !unsafeScreens.includes(saved)) {
       return saved;
     }
@@ -345,6 +351,16 @@ async function handleRefresh() {
       console.error("Session expired or invalid token:", error);
       localStorage.removeItem("token");
       setUser(null);
+      // 세션이 무효인데 로그인 전제 화면에 머물러 있으면 빈 화면이 되므로 메인으로 복귀
+      setScreen(prev =>
+        ([
+          "profile", "profileEdit", "pointCharge", "purchase", "winning", "wishlist",
+          "businessDashboard", "businessProfile", "businessProducts", "businessRegister",
+          "businessShipping", "businessInquiries", "businessPending", "businessProductEdit",
+          "adminDashboard", "adminNoticeManagement", "adminEventManagement", "adminInquiryManagement",
+          "adminMainBannerManagement", "adminUserManagement", "adminPromotionManagement", "adminStatistics",
+        ] as ScreenType[]).includes(prev) ? "main" : prev
+      );
     }
   };
 

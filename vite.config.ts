@@ -43,6 +43,7 @@ export default defineConfig({
     },
   },
   server: {
+    port: Number(process.env.PORT) || 5173, // PORT 환경변수 지정 시 해당 포트 사용 (기본 5173)
     host: true, // 로컬 네트워크(192.168.x.x)에서도 접속 가능하도록 설정
     hmr: {
       // 모바일이나 외부 도메인에서 접속 시 웹소켓 연결이 localhost로 시도되는 문제 해결
