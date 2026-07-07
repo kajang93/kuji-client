@@ -25,6 +25,8 @@ export interface SellerSummary {
   appliedFeeRate: number;
   isFirstMonthFree: boolean;
   pendingShippingCount: number;
+  totalRegisteredProducts: number;
+  totalWishlistCount: number;
 }
 
 // ================================

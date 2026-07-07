@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Chart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
 import { motion } from './motion';
-import { Package, TrendingUp, ShoppingCart, Truck, DollarSign, Users, Menu } from './icons';
+import { Package, TrendingUp, ShoppingCart, Truck, DollarSign, Users, Menu, Heart } from './icons';
 import { fetchSellerSummary, fetchSellerDailySales, SellerSummary, DailySales } from '../api/statistics';
 
 type BusinessDashboardProps = {
@@ -54,7 +54,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
     {
       title: '적용 수수료율',
       value: isLoadingStats ? '-' : `${sellerSummary?.appliedFeeRate || '0'}%`,
-      icon: Package,
+      icon: TrendingUp,
       color: 'from-purple-600 to-purple-700',
       bgColor: 'bg-purple-500/20',
       iconColor: 'text-purple-300',
@@ -67,6 +67,23 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
       bgColor: 'bg-pink-500/20',
       iconColor: 'text-pink-300',
       onClick: () => onNavigate('shipping') // Click action added
+    },
+    {
+      title: '등록 상품 수',
+      value: isLoadingStats ? '-' : `${sellerSummary?.totalRegisteredProducts?.toLocaleString() || '0'}개`,
+      icon: Package,
+      color: 'from-amber-600 to-amber-700',
+      bgColor: 'bg-amber-500/20',
+      iconColor: 'text-amber-300',
+      onClick: () => onNavigate('productList')
+    },
+    {
+      title: '받은 찜 횟수',
+      value: isLoadingStats ? '-' : `${sellerSummary?.totalWishlistCount?.toLocaleString() || '0'}회`,
+      icon: Heart,
+      color: 'from-rose-600 to-rose-700',
+      bgColor: 'bg-rose-500/20',
+      iconColor: 'text-rose-300',
     },
   ];
 
@@ -166,7 +183,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
 
       <div className="p-4 max-w-6xl mx-auto">
         {/* Statistics Cards - Compact */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
           {stats.map((stat, index) => (
             <motion.div
               key={stat.title}
