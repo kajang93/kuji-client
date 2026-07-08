@@ -11,6 +11,12 @@ type PrizeDetailProps = {
   user?: { name: string; email: string; points: number; type: 'social' | 'customer' | 'business' | 'admin' } | null;
 };
 
+const normalizeRank = (rank: string) => {
+  const trimmedRank = rank?.trim().toUpperCase() || '';
+  if (trimmedRank.includes('LAST') || trimmedRank.includes('라스트')) return 'LAST';
+  return trimmedRank.replace(/상/g, '');
+};
+
 export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDetailProps) {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [purchaseCount, setPurchaseCount] = useState(1);
@@ -19,8 +25,9 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
   const [imagePopup, setImagePopup] = useState<{ images: string[]; currentIndex: number; prizeName: string } | null>(null);
   const pricePerKuji = anime.pricePerDraw || 15000; // 1장당 가격 (백엔드 기본값 매핑)
   const groupedPrizes = anime.prizes.reduce((acc, prize) => {
-    if (!acc[prize.rank]) acc[prize.rank] = [];
-    acc[prize.rank].push(prize);
+    const rank = normalizeRank(prize.rank);
+    if (!acc[rank]) acc[rank] = [];
+    acc[rank].push(prize);
     return acc;
   }, {} as Record<string, Prize[]>);
   const sortedRanks = Object.keys(groupedPrizes).sort((a, b) => {
@@ -147,13 +154,6 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
               const rankPrizes = groupedPrizes[rank];
               const totalCount = rankPrizes.reduce((sum, prize) => sum + prize.totalCount, 0);
               const remainingCount = rankPrizes.reduce((sum, prize) => sum + prize.remainingCount, 0);
-              const previewCells = rankPrizes.flatMap((prize) =>
-                Array.from({ length: prize.totalCount }).map((_, index) => ({
-                  prize,
-                  isRemaining: index < prize.remainingCount,
-                  key: `${prize.id}-${index}`,
-                })),
-              );
 
               return (
                 <div key={rank} className="py-3 border-b border-white/5 last:border-0">
@@ -190,15 +190,18 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                       </div>
 
                       {/* Cells */}
-                      <div className="flex flex-wrap gap-1">
-                        {previewCells.map(({ prize, isRemaining, key }) => (
+                      <div className="grid grid-cols-4 gap-2">
+                        {rankPrizes.map((prize) => {
+                          const isRemaining = prize.remainingCount > 0;
+
+                          return (
                           <motion.button
                             whileHover={isRemaining ? { scale: 1.1, zIndex: 10 } : {}}
                             whileTap={isRemaining ? { scale: 0.95 } : {}}
-                            key={key}
+                            key={prize.id}
                             onClick={() => openImagePopup([prize.image], 0, `${rank}상 - ${prize.name}`)}
                             className={`
-                              w-9 h-11 rounded border flex items-center justify-center relative overflow-hidden transition-all
+                              aspect-square rounded-lg border flex items-center justify-center relative overflow-hidden transition-all
                               ${isRemaining
                                 ? 'border-white/20 shadow-sm cursor-pointer hover:shadow-md hover:border-white/50'
                                 : 'bg-slate-900/80 border-white/5 opacity-20 cursor-default'}
@@ -213,6 +216,10 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                                />
                             </div>
 
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/65 px-1 py-0.5 text-[10px] text-white font-semibold leading-none">
+                              {prize.remainingCount}/{prize.totalCount}
+                            </div>
+
                             {/* Sold Out Overlay */}
                             {!isRemaining && (
                               <div className="absolute inset-0 flex items-center justify-center bg-black/30">
@@ -221,7 +228,8 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                               </div>
                             )}
                           </motion.button>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
