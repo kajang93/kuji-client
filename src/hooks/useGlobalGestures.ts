@@ -5,6 +5,43 @@ import { useEffect } from 'react';
  * - 오른쪽 스와이프(좌측 가장자리에서 시작) → 뒤로가기
  * - Pull-to-Refresh는 PullToRefresh 컴포넌트가 담당
  */
+
+// 화면별 뒤로가기 목적지 (없으면 스와이프 백 미동작)
+const BACK_TARGETS: Record<string, string> = {
+  // 고객 화면
+  list: 'main',
+  detail: 'list',
+  selection: 'detail',
+  community: 'main',
+  communityWrite: 'community',
+  communityDetail: 'community',
+  profile: 'main',
+  profileEdit: 'profile',
+  purchase: 'main',
+  winning: 'main',
+  wishlist: 'main',
+  settings: 'main',
+  support: 'main',
+  notice: 'main',
+  events: 'main',
+  pointCharge: 'main',
+  // 사업자 화면
+  businessProfile: 'businessDashboard',
+  businessProducts: 'businessDashboard',
+  businessProductEdit: 'businessProducts',
+  businessRegister: 'businessDashboard',
+  businessShipping: 'businessDashboard',
+  businessInquiries: 'businessDashboard',
+  // 관리자 화면
+  adminNoticeManagement: 'adminDashboard',
+  adminEventManagement: 'adminDashboard',
+  adminInquiryManagement: 'adminDashboard',
+  adminMainBannerManagement: 'adminDashboard',
+  adminUserManagement: 'adminDashboard',
+  adminPromotionManagement: 'adminDashboard',
+  adminStatistics: 'adminDashboard',
+};
+
 export const useGlobalGestures = (
   screen: string,
   setScreen: (s: string) => void,
@@ -16,31 +53,14 @@ export const useGlobalGestures = (
     let startY = 0;
 
     const handleBack = () => {
-      switch (screen) {
-        case 'list':
-        case 'myPage':
-        case 'businessProducts':
-        case 'businessOrders':
-        case 'inquiries':
-        case 'businessInquiries':
-        case 'community':
-          setScreen('main');
-          break;
-        case 'detail':
-          setScreen('list');
-          break;
-        case 'login':
-          setScreen(returnToScreen || 'main');
-          break;
-        case 'communityWrite':
-        case 'communityDetail':
-          setScreen('community');
-          break;
-        case 'pointCharge':
-          setScreen('myPage');
-          break;
-        default:
-          break;
+      if (screen === 'login') {
+        setScreen(returnToScreen || 'main');
+        return;
+      }
+      // reveal(뽑기 연출) 등 매핑에 없는 화면은 스와이프 백 미동작
+      const target = BACK_TARGETS[screen];
+      if (target) {
+        setScreen(target);
       }
     };
 

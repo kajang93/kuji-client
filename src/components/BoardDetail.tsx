@@ -152,9 +152,9 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
 
     if (navigator.share) {
       try {
+        // text 필드를 넣으면 카카오톡 등에서 링크와 별도로 텍스트 메시지가 한 번 더 전송됨
         await navigator.share({
           title: post.title,
-          text: `${post.authorName}님의 게시글`,
           url: shareUrl.toString()
         });
         return;
@@ -454,8 +454,8 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
         </div>
       </div>
 
-      {/* Comment Input Sticky Bottom */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-slate-900/90 backdrop-blur-lg border-t border-white/10 z-20">
+      {/* Comment Input Sticky Bottom (fixed: 스크롤 위치와 무관하게 항상 화면 하단에 고정) */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-slate-900/90 backdrop-blur-lg border-t border-white/10 z-20">
         {user ? (
           <form onSubmit={handleCommentSubmit} className="flex gap-2">
             <input

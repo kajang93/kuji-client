@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { Trophy, Zap } from './icons';
 import { fetchRecentDrawHistory } from '../api/kuji';
+import { BASE_URL } from '../api/axiosInstance';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
@@ -21,7 +22,8 @@ export default function LiveTicker() {
     // 초기 로드
     loadWinnings();
 
-    const socketUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    // 운영에서는 현재 도메인(BASE_URL) 기준으로 /ws 프록시에 연결 (localhost 고정 시 모바일에서 연결 불가)
+    const socketUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:8080' : BASE_URL);
     
     const client = new Client({
       webSocketFactory: () => new SockJS(`${socketUrl}/ws`),
