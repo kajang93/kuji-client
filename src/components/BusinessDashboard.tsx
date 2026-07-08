@@ -33,7 +33,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
     };
     loadStats();
   }, []);
-  // Mock data for demo
+  // 판매자 요약 통계 (fetchSellerSummary 실데이터 기반)
   const stats = [
     {
       title: '총 발생 매출',

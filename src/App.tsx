@@ -198,6 +198,12 @@ async function handleRefresh() {
   useEffect(() => {
     const unsubscribe = onForegroundMessage((payload) => {
       console.log("Foreground push notification received:", payload);
+      
+      // 당첨 알림(WINNING)은 KujiReveal에서 개별적으로 토스트를 띄우므로(스포일러 방지) 여기서 무시
+      if (payload.data?.subType === 'WINNING') {
+        return;
+      }
+      
       const title = payload.notification?.title || payload.data?.title || "알림";
       const body = payload.notification?.body || payload.data?.body || "";
       

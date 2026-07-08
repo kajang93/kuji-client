@@ -17,26 +17,8 @@ type AdminEventManagementProps = {
 };
 
 export default function AdminEventManagement({ onBack }: AdminEventManagementProps) {
-  const [events, setEvents] = useState<Event[]>([
-    {
-      id: 'E001',
-      title: '신규 가입 이벤트',
-      description: '신규 가입 시 5,000 포인트 지급',
-      startDate: '2024-11-01',
-      endDate: '2024-12-31',
-      status: 'ongoing',
-      participants: 456,
-    },
-    {
-      id: 'E002',
-      title: '원피스 특별 이벤트',
-      description: '원피스 시리즈 구매 시 추가 포인트 적립',
-      startDate: '2024-11-15',
-      endDate: '2024-11-30',
-      status: 'ongoing',
-      participants: 234,
-    },
-  ]);
+  // 이벤트 백엔드 연동 전까지 빈 목록으로 시작 (목데이터 제거)
+  const [events, setEvents] = useState<Event[]>([]);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
