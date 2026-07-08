@@ -68,24 +68,14 @@ export default function LiveTicker() {
   const loadWinnings = async () => {
     try {
       const data = await fetchRecentDrawHistory();
-      if (data && data.length > 0) {
-        setWinnings(data);
-      } else {
-        // 데이터가 없을 경우 표시할 가상 데이터 (개발용/초기용)
-        setWinnings([
-          { maskedNickname: 'stars***', boardTitle: '원피스 에그헤드편', grade: 'A상', itemName: '루피 피규어', createdAt: '' },
-          { maskedNickname: 'ka****', boardTitle: '마법학원 아스테리아', grade: 'B상', itemName: '아스테리아 교복 피규어', createdAt: '' },
-          { maskedNickname: 'kuji***', boardTitle: '드래곤볼 Z', grade: 'Last One상', itemName: '신룡 피규어', createdAt: '' },
-        ]);
-      }
+      // 실제 당첨 내역만 표시 (가상 목데이터 없음 → 없으면 안내 문구 노출)
+      setWinnings(data && data.length > 0 ? data : []);
     } catch (error) {
       console.error('Failed to load winnings:', error);
     }
   };
 
-  if (winnings.length === 0) return null;
-
-  const current = winnings[currentIndex];
+  const current = winnings.length > 0 ? winnings[currentIndex] : null;
 
   return (
     <div className="h-10 bg-slate-900/80 backdrop-blur-md border-b border-white/5 overflow-hidden flex items-center px-4 relative w-full z-20">
@@ -95,24 +85,32 @@ export default function LiveTicker() {
       </div>
 
       <div className="flex-1 h-full relative overflow-hidden">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentIndex}
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -20, opacity: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="absolute inset-0 flex items-center"
-          >
-            <p className="text-xs sm:text-sm text-slate-300 truncate">
-              <span className="text-white font-medium">{current.maskedNickname}</span>님 
-              <span className="mx-2 text-rose-400 font-bold">{current.grade}</span> 당첨!
-              <span className="mx-1 text-slate-600">|</span>
-              <span className="text-indigo-300">{current.boardTitle}</span>
-              <span className="ml-1 text-slate-400 text-[10px] sm:text-xs font-normal">({current.itemName})</span>
+        {current === null ? (
+          <div className="absolute inset-0 flex items-center">
+            <p className="text-xs sm:text-sm text-slate-400 truncate">
+              아직 당첨 소식이 없어요. 첫 번째 주인공이 되어보세요! 🎉
             </p>
-          </motion.div>
-        </AnimatePresence>
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentIndex}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="absolute inset-0 flex items-center"
+            >
+              <p className="text-xs sm:text-sm text-slate-300 truncate">
+                <span className="text-white font-medium">{current.maskedNickname}</span>님
+                <span className="mx-2 text-rose-400 font-bold">{current.grade}</span> 당첨!
+                <span className="mx-1 text-slate-600">|</span>
+                <span className="text-indigo-300">{current.boardTitle}</span>
+                <span className="ml-1 text-slate-400 text-[10px] sm:text-xs font-normal">({current.itemName})</span>
+              </p>
+            </motion.div>
+          </AnimatePresence>
+        )}
       </div>
 
       <div className="flex items-center gap-1 shrink-0 ml-2">

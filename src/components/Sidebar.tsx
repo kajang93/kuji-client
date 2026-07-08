@@ -54,7 +54,7 @@ export default function Sidebar({ isOpen, onClose, user, onLogout, onLogin, onNa
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 bottom-0 w-80 bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 shadow-2xl z-50 overflow-y-auto"
+            className="fixed top-0 right-0 bottom-0 w-80 bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 shadow-2xl z-50 overflow-y-auto overscroll-none"
           >
             {/* Header */}
             <div className="p-6 border-b border-white/20">

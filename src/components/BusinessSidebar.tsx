@@ -79,7 +79,7 @@ export default function BusinessSidebar({ isOpen, onClose, user, onLogout, onNav
             </div>
 
             {/* Menu Items */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto overscroll-none p-4">
               <div className="space-y-2">
                 {menuItems.map((item, index) => {
                   const Icon = item.icon;

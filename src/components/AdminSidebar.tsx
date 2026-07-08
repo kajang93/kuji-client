@@ -45,7 +45,7 @@ export default function AdminSidebar({ isOpen, onClose, onNavigate, onLogout, us
         animate={{ x: 0 }}
         exit={{ x: '-100%' }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="fixed left-0 top-0 h-full w-80 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 z-50 shadow-2xl overflow-y-auto"
+        className="fixed left-0 top-0 h-full w-80 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 z-50 shadow-2xl overflow-y-auto overscroll-none"
       >
         {/* Header */}
         <div className="p-6 border-b border-white/20">
