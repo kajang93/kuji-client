@@ -623,8 +623,16 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                       <p className="text-white/60 mb-4">Version 1.0.0 (최신 버전입니다)</p>
                       <h3 className="text-white mb-1">개발사</h3>
                       <p className="text-white/60 mb-4">Oshikuji Kuji Korea</p>
-                      <h3 className="text-white mb-1">고객센터</h3>
-                      <p className="text-white/60">help@oshikuji.com</p>
+                      <h3 className="text-white mb-2">고객센터</h3>
+                      <button 
+                        onClick={() => window.open('http://pf.kakao.com/_xxxxxxx/chat', '_blank')}
+                        className="w-full py-3 bg-[#FEE500] text-[#191919] font-bold rounded-xl shadow-md hover:bg-[#F4DC00] transition-transform active:scale-95 flex items-center justify-center gap-2"
+                      >
+                        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+                          <path d="M12 3c-5.52 0-10 3.58-10 8 0 2.86 1.83 5.37 4.6 6.84l-1.07 3.92c-.12.44.38.77.74.52l4.63-3.11c.36.03.73.05 1.1.05 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/>
+                        </svg>
+                        카카오톡 채널 문의하기
+                      </button>
                     </div>
                   </>
                 )}
