@@ -49,3 +49,8 @@ export const processAiImage = async (file: File): Promise<{ imageUrl: string; na
   });
   return response.data;
 };
+
+export const fetchItemSuggestion = async (grade: string): Promise<{ grade: string; suggestedName: string; suggestedTotalQty: number; confidence: number; sampleCount: number; nameCandidates: string[] }> => {
+  const response = await axiosInstance.get(`/api/admin/ai/item-suggestion?grade=${grade}`);
+  return response.data;
+};
