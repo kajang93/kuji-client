@@ -56,6 +56,12 @@
     user-select: auto;
   }
 
+  /* ✅ iOS Safari/WebView는 폰트가 16px 미만인 입력창에 포커스하면 화면을 자동 확대한다.
+     (댓글창 등이 확대되며 전송 버튼/사진이 가려지는 문제 방지 — text-sm이어도 실측 16px 강제) */
+  input, textarea, select {
+    font-size: 16px;
+  }
+
   /* ✅ 버튼 클릭 영역 및 포인터 강제 적용 */
   button, a, [role="button"] {
     cursor: pointer;

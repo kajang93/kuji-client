@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Bell, Vibrate, Volume2, MessageCircle, Truck, AlertCircle, Moon, Gift, BellRing, X, ChevronDown, Ticket } from './icons';
 import { toast } from 'sonner';
 import { requestFirebaseToken } from '../api/firebase';
+import { openKakaoChannel } from '../constants/support';
 import { registerDeviceToken, deleteDeviceToken, getNotificationSettings, updateNotificationSettings } from '../api/notification';
 
 export type NotificationSettingsState = {
@@ -625,7 +626,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                       <p className="text-white/60 mb-4">Oshikuji Kuji Korea</p>
                       <h3 className="text-white mb-2">고객센터</h3>
                       <button 
-                        onClick={() => window.open('http://pf.kakao.com/_xxxxxxx/chat', '_blank')}
+                        onClick={openKakaoChannel}
                         className="w-full py-3 bg-[#FEE500] text-[#191919] font-bold rounded-xl shadow-md hover:bg-[#F4DC00] transition-transform active:scale-95 flex items-center justify-center gap-2"
                       >
                         <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">

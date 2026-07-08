@@ -3,6 +3,7 @@ import { ChevronLeft, Building2, Mail, Phone, MapPin, FileText, Calendar, Camera
 import { useState, useRef, useEffect } from 'react';
 import { fetchBusinessProfile } from '../api/auth';
 import { validateImageFile, compressImageFile } from '../api/client';
+import { openKakaoChannel } from '../constants/support';
 
 type BusinessProfileProps = {
   user: { name: string; email: string; type: 'business'; phone?: string; address?: string };
@@ -260,7 +261,7 @@ export default function BusinessProfile({ user, onBack, onEdit }: BusinessProfil
               </div>
             </div>
             <button 
-              onClick={() => window.open('http://pf.kakao.com/_xxxxxxx/chat', '_blank')}
+              onClick={openKakaoChannel}
               className="w-full mt-1 py-3 bg-[#FEE500] text-[#191919] font-bold rounded-xl shadow-md hover:bg-[#F4DC00] transition-transform active:scale-95 flex items-center justify-center gap-2"
             >
               <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">

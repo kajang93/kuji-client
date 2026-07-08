@@ -1,5 +1,6 @@
 import { motion } from "./motion";
 import { Shield, Clock, ChevronLeft } from "./icons";
+import { openKakaoChannel } from "../constants/support";
 
 type BusinessPendingProps = {
   onBack: () => void;
@@ -59,8 +60,14 @@ export default function BusinessPending({
         </motion.button>
       </div>
 
-      <div className="py-8 text-slate-500 text-sm">
-        문의사항: {process.env.VITE_ADMIN_EMAIL || "admin@oshikujikuji.com"}
+      <div className="py-8 flex flex-col items-center gap-3">
+        <span className="text-slate-500 text-sm">궁금한 점이 있으신가요?</span>
+        <button
+          onClick={openKakaoChannel}
+          className="px-6 py-3 bg-[#FEE500] text-[#3C1E1E] rounded-xl font-bold text-sm shadow-lg hover:brightness-95 transition-all"
+        >
+          카카오톡으로 문의하기
+        </button>
       </div>
     </div>
   );
