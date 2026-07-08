@@ -299,7 +299,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-6"
             onClick={() => setShowPurchaseModal(false)}
           >
             <motion.div
@@ -307,15 +307,20 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-gradient-to-br from-purple-800 to-blue-900 rounded-3xl p-6 max-w-md w-full border-2 border-cyan-400/50 shadow-2xl relative max-h-[90vh] overflow-y-auto"
+              className="bg-gradient-to-br from-purple-800 to-blue-900 rounded-3xl max-w-md w-full border-2 border-cyan-400/50 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden"
             >
-              {/* Close Button */}
-              <button
-                onClick={() => setShowPurchaseModal(false)}
-                className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors z-10"
-              >
-                <X className="w-6 h-6 text-white" />
-              </button>
+              {/* Close Button - Fixed Position */}
+              <div className="absolute top-4 right-4 z-20">
+                <button
+                  onClick={() => setShowPurchaseModal(false)}
+                  className="p-2 bg-black/20 hover:bg-white/10 backdrop-blur-md rounded-full transition-colors"
+                >
+                  <X className="w-6 h-6 text-white" />
+                </button>
+              </div>
+
+              {/* Scrollable Content Area */}
+              <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
 
               {/* Cute Character - Smaller */}
               <motion.div
@@ -398,14 +403,14 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                             setPointsToUse(Math.max(0, Math.min(value, maxPoints)));
                           }}
                           placeholder="0"
-                          className="flex-1 px-2 py-1.5 bg-white/10 border border-white/20 rounded-lg text-white text-center text-sm placeholder-white/40 focus:outline-none focus:border-green-400"
+                          className="flex-1 min-w-0 px-2 py-1.5 bg-white/10 border border-white/20 rounded-lg text-white text-center text-sm placeholder-white/40 focus:outline-none focus:border-green-400"
                         />
                         <button
                           onClick={() => {
                             const maxPoints = Math.min(user.points, pricePerKuji * purchaseCount);
                             setPointsToUse(maxPoints);
                           }}
-                          className="px-3 py-1.5 bg-green-500/30 hover:bg-green-500/40 text-green-200 rounded-lg text-xs transition-colors border border-green-400/30"
+                          className="flex-shrink-0 whitespace-nowrap px-3 py-1.5 bg-green-500/30 hover:bg-green-500/40 text-green-200 rounded-lg text-xs transition-colors border border-green-400/30"
                         >
                           전액
                         </button>
@@ -470,6 +475,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                 >
                   구매하기
                 </motion.button>
+              </div>
               </div>
             </motion.div>
           </motion.div>
