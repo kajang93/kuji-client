@@ -1005,27 +1005,15 @@ async function handleRefresh() {
 
   // Real prize options from backend data
   const getPrizeOptions = (rank: string): PrizeOption[] => {
-    const prize = selectedAnime?.prizes.find((p) => p.rank === rank);
-    if (prize && prize.options && Array.isArray(prize.options) && prize.options.length > 0) {
-      if (typeof prize.options[0] === 'string') {
-        return prize.options.map((opt: string, i: number) => ({
-          id: `${prize.id}_opt_${i}`,
-          name: opt,
-          image: prize.image,
-          description: ""
-        }));
-      }
-      if (prize.options[0].name) {
-        return prize.options.map((opt: any, i: number) => ({
-          id: opt.id || `${prize.id}_opt_${i}`,
-          name: opt.name,
-          image: opt.image || prize.image,
-          description: opt.description || ""
-        }));
-      }
-    }
-
-    return [];
+    const prizesForRank = selectedAnime?.prizes.filter((p) => p.rank === rank) || [];
+    
+    // 해당 등급(rank)에 등록된 모든 상품들을 옵션으로 매핑하여 반환합니다.
+    return prizesForRank.map((prize) => ({
+      id: prize.id,
+      name: prize.name,
+      image: prize.image,
+      description: `남은 수량: ${prize.remainingCount}개`
+    }));
   };
 
   return (
@@ -1357,7 +1345,7 @@ async function handleRefresh() {
         type={alertModal.type}
         onConfirm={alertModal.onConfirm}
       />
-      <Toaster position="top-center" richColors visibleToasts={1} />
+      <Toaster position="top-center" richColors visibleToasts={1} duration={2500} />
     </div>
   );
 }
