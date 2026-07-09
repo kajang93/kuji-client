@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from './motion';
 import { X, User, ShoppingBag, Heart, Settings, LogOut, History, MessageCircle, Users, Gift, ChevronDown, ChevronUp, Bell, MessageSquare } from './icons';
 import { useState } from 'react';
+import { APP_COPYRIGHT_YEAR, APP_DISPLAY_VERSION } from '../constants/appInfo';
 
 type SidebarProps = {
   isOpen: boolean;
@@ -54,10 +55,10 @@ export default function Sidebar({ isOpen, onClose, user, onLogout, onLogin, onNa
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 bottom-0 w-80 bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 shadow-2xl z-50 overflow-y-auto overscroll-none"
+            className="fixed top-0 right-0 bottom-0 w-[min(20rem,calc(100vw-env(safe-area-inset-left)))] bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 shadow-2xl z-50 overflow-y-auto overscroll-contain"
           >
             {/* Header */}
-            <div className="p-6 border-b border-white/20">
+            <div className="p-5 pt-[max(1.25rem,env(safe-area-inset-top))] pr-[max(1.25rem,env(safe-area-inset-right))] border-b border-white/20">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-white text-2xl">메뉴</h2>
                 <button
@@ -103,7 +104,7 @@ export default function Sidebar({ isOpen, onClose, user, onLogout, onLogin, onNa
             </div>
 
             {/* Menu Items */}
-            <div className="p-4">
+            <div className="p-4 space-y-1">
               {!user ? (
                 <motion.button
                   initial={{ opacity: 0, y: 20 }}
@@ -124,7 +125,7 @@ export default function Sidebar({ isOpen, onClose, user, onLogout, onLogin, onNa
                       transition={{ delay: index * 0.05 }}
                       onClick={() => handleMenuClick(item.screen)}
                       disabled={isDisabled}
-                      className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-colors text-white group mb-2 ${
+                      className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-colors text-white group ${
                         isDisabled 
                           ? 'opacity-40 cursor-not-allowed' 
                           : 'hover:bg-white/10'
@@ -142,13 +143,13 @@ export default function Sidebar({ isOpen, onClose, user, onLogout, onLogin, onNa
             </div>
 
             {/* Community Menu */}
-            <div className="p-4">
+            <div className="p-4 pt-0">
               <motion.button
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: menuItems.length * 0.05 }}
                 onClick={handleCommunityToggle}
-                className="w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-colors text-white group mb-2 hover:bg-white/10"
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-colors text-white group mb-2 hover:bg-white/10"
               >
                 <Users className="w-5 h-5 text-purple-300 transition-colors group-hover:text-amber-400" />
                 <span className="text-lg">커뮤니티</span>
@@ -208,9 +209,9 @@ export default function Sidebar({ isOpen, onClose, user, onLogout, onLogin, onNa
             )}
 
             {/* Footer */}
-            <div className="p-6 text-center text-purple-300 text-sm">
-              <p>오시쿠지 App v1.0</p>
-              <p className="mt-2 text-xs opacity-70">© 2024 All rights reserved</p>
+            <div className="p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-center text-purple-300 text-sm">
+              <p>오시쿠지 App {APP_DISPLAY_VERSION}</p>
+              <p className="mt-2 text-xs opacity-70">© {APP_COPYRIGHT_YEAR} All rights reserved</p>
             </div>
           </motion.div>
         </>

@@ -29,6 +29,7 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
   const [isLoading, setIsLoading] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
         content: data.content,
         category: data.category
       });
+      setExistingImageUrls(data.imageUrls || []);
     } catch (error) {
       toast.error('기존 내용을 불러올 수 없습니다.');
       onBack();
@@ -56,7 +58,7 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (images.length + files.length > 3) {
+    if (existingImageUrls.length + images.length + files.length > 3) {
       toast.error('사진은 최대 3장까지 등록 가능합니다.');
       return;
     }
@@ -81,6 +83,7 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
 
     const newPreviews = validFiles.map(file => URL.createObjectURL(file));
     setPreviews([...previews, ...newPreviews]);
+    e.target.value = '';
   };
 
   const removeImage = (index: number) => {
@@ -107,7 +110,7 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
       const requestBlob = new Blob([JSON.stringify(formData)], { type: 'application/json' });
       formDataObj.append('request', requestBlob);
       
-      // Files
+      // 새 파일을 선택한 경우 서버는 기존 이미지를 새 이미지로 교체하고, 없으면 기존 이미지를 유지합니다.
       images.forEach(image => {
         formDataObj.append('files', image);
       });
@@ -139,7 +142,7 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
   return (
     <div className="flex flex-col h-full bg-slate-900">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-white/5 sticky top-0 bg-slate-900/80 backdrop-blur-md z-10">
+      <div className="flex items-center justify-between p-4 pr-[max(1rem,env(safe-area-inset-right))] border-b border-white/5 sticky top-0 bg-slate-900/80 backdrop-blur-md z-10">
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="p-2 hover:bg-white/5 rounded-full transition-colors">
             <ChevronLeft className="w-6 h-6 text-white" />
@@ -160,7 +163,7 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
         {/* Category Selector */}
         <div>
           <label className="block text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">카테고리 선택</label>
@@ -208,10 +211,18 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
         {/* Action Bar & Previews */}
         <div className="space-y-4 py-4 border-t border-white/5">
           {/* Previews */}
-          {previews.length > 0 && (
-            <div className="flex gap-3">
+          {(existingImageUrls.length > 0 || previews.length > 0) && (
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {existingImageUrls.map((preview, idx) => (
+                <div key={`existing-${idx}`} className="relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border border-cyan-400/40 bg-white/5">
+                  <img src={preview} alt={`기존 이미지 ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                  <span className="absolute left-1 bottom-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] text-cyan-200">
+                    기존
+                  </span>
+                </div>
+              ))}
               {previews.map((preview, idx) => (
-                <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10">
+                <div key={idx} className="relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border border-white/10">
                   <img src={preview} alt="preview" className="w-full h-full object-cover" />
                   <button 
                     type="button"
@@ -240,8 +251,13 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
             className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
           >
             <ImageIcon className="w-5 h-5" />
-            <span className="text-sm">사진 추가 ({images.length}/3)</span>
+            <span className="text-sm">사진 추가 ({existingImageUrls.length + images.length}/3)</span>
           </button>
+          {postId && existingImageUrls.length > 0 && images.length === 0 && (
+            <div className="text-[10px] text-cyan-300/80">
+              새 사진을 선택하지 않으면 기존 사진이 그대로 유지됩니다.
+            </div>
+          )}
           <div className="text-[10px] text-slate-500 mt-2">
             ※ 최대 10MB 이하의 이미지 파일만 업로드 가능합니다.
           </div>

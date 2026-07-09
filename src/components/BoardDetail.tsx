@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { ChevronLeft, MoreVertical, Trash2, Eye, User, Calendar, Share2, Edit2, Heart, Star, MessageSquare, Send } from './icons';
+import { ChevronLeft, MoreVertical, Trash2, Eye, User, Calendar, Share2, Edit2, Heart, Star, MessageSquare, Send, X } from './icons';
 import { Post, PostComment } from '../shared-types';
 import { 
   fetchPostDetail, deletePost, 
@@ -22,6 +22,7 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
   const [comments, setComments] = useState<PostComment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
+  const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
   
   // Comment states
   const newCommentRef = useRef<HTMLInputElement>(null);
@@ -280,7 +281,7 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto pb-32">
+      <div className="flex-1 overflow-y-auto pb-36">
         <div className="p-6">
           <div className="mb-6">
             <div className="flex justify-between items-start mb-3">
@@ -321,20 +322,27 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
 
           {/* Images */}
           {post.imageUrls && post.imageUrls.length > 0 && (
-            <div className="mb-8 space-y-4">
+            <div className="mb-8 grid grid-cols-2 gap-3">
               {post.imageUrls.map((url, idx) => (
                 <motion.div
                   key={idx}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1 }}
-                  className="rounded-2xl overflow-hidden border border-white/10 shadow-lg"
+                  className="aspect-square rounded-2xl overflow-hidden border border-white/10 bg-white/5 shadow-lg"
                 >
-                  <ImageWithFallback 
-                    src={url} 
-                    alt={`Post image ${idx + 1}`} 
-                    className="w-full h-auto object-cover"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setExpandedImageUrl(url)}
+                    className="block w-full h-full min-h-0 min-w-0"
+                    aria-label={`게시글 이미지 ${idx + 1} 확대`}
+                  >
+                    <ImageWithFallback
+                      src={url}
+                      alt={`게시글 이미지 ${idx + 1}`}
+                      className="w-full h-full"
+                    />
+                  </button>
                 </motion.div>
               ))}
             </div>
@@ -463,7 +471,7 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
               ref={newCommentRef}
               onChange={(e) => setHasNewComment(e.target.value.trim().length > 0)}
               placeholder="댓글을 입력하세요..."
-              className="flex-1 bg-white/10 border border-white/20 rounded-full px-5 py-3 text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors"
+              className="flex-1 min-w-0 bg-white/10 border border-white/20 rounded-full px-5 py-3 text-base text-white focus:outline-none focus:border-cyan-400 transition-colors"
             />
             <button
               type="submit"
@@ -483,6 +491,33 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {expandedImageUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setExpandedImageUrl(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          >
+            <button
+              type="button"
+              onClick={() => setExpandedImageUrl(null)}
+              className="absolute right-[max(1rem,env(safe-area-inset-right))] top-[max(1rem,env(safe-area-inset-top))] rounded-full bg-white/10 p-2 text-white"
+              aria-label="이미지 닫기"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img
+              src={expandedImageUrl}
+              alt="확대된 게시글 이미지"
+              className="max-h-[86vh] max-w-full rounded-xl object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

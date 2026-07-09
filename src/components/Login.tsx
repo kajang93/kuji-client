@@ -337,21 +337,21 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex items-center justify-center p-6">
+      <div className="flex-1 flex items-center justify-center p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className="w-full max-w-md"
         >
           {/* Logo/Title */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-5">
             <motion.button
               onClick={handleLogoClick}
               animate={{ rotate: [0, 5, -5, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="mb-4 flex justify-center mx-auto"
+              className="mb-3 flex justify-center mx-auto"
             >
-              <Ticket className="w-24 h-24 text-amber-400" />
+              <Ticket className="w-20 h-20 text-amber-400" />
             </motion.button>
             <h2 className="text-white text-3xl mb-2">오시쿠지</h2>
             <p className="text-slate-300">로그인하고 쿠지를 구매하세요</p>
@@ -480,18 +480,19 @@ export default function Login({ onLogin, onBack }: LoginProps) {
               </div>
 
               {/* Social Login Buttons */}
-              <div className="space-y-3">
+              <div className="flex items-center justify-center gap-3">
                 {/* Kakao Login */}
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleSocialLogin('kakao')}
-                  className="w-full py-3 bg-[#FEE500] text-[#000000] rounded-xl flex items-center justify-center gap-3 shadow-xl"
+                  className="w-12 h-12 rounded-full bg-[#FEE500] text-[#000000] flex items-center justify-center shadow-xl"
+                  aria-label="카카오 로그인"
+                  title="카카오 로그인"
                 >
-                  <div className="w-5 h-5 bg-[#000000] rounded-full flex items-center justify-center text-[#FEE500] text-xs">
+                  <div className="w-6 h-6 bg-[#000000] rounded-full flex items-center justify-center text-[#FEE500] text-xs font-bold">
                     K
                   </div>
-                  <span>카카오 로그인</span>
                 </motion.button>
 
                 {/* Naver Login */}
@@ -499,12 +500,13 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleSocialLogin('naver')}
-                  className="w-full py-3 bg-[#03C75A] text-white rounded-xl flex items-center justify-center gap-3 shadow-xl"
+                  className="w-12 h-12 rounded-full bg-[#03C75A] text-white flex items-center justify-center shadow-xl"
+                  aria-label="네이버 로그인"
+                  title="네이버 로그인"
                 >
-                  <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[#03C75A] text-xs">
+                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-[#03C75A] text-xs font-bold">
                     N
                   </div>
-                  <span>네이버 로그인</span>
                 </motion.button>
 
                 {/* Google Login */}
@@ -512,7 +514,9 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleSocialLogin('google')}
-                  className="w-full py-3 bg-white text-gray-700 rounded-xl flex items-center justify-center gap-3 shadow-xl"
+                  className="w-12 h-12 rounded-full bg-white text-gray-700 flex items-center justify-center shadow-xl"
+                  aria-label="구글 로그인"
+                  title="구글 로그인"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path
@@ -532,12 +536,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  <span>구글 로그인</span>
                 </motion.button>
-              </div>
-
-              <div className="text-center text-white/50 text-xs mt-4">
-                ※ OAuth 연동은 데모 환경에서 모의 로그인으로 처리됩니다
               </div>
 
               {/* Signup Button */}

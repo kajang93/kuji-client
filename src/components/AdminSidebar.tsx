@@ -1,5 +1,6 @@
 import { motion } from './motion';
 import { X, Home, Bell, Calendar, MessageSquare, Users, LogOut, Shield, ImageIcon, TrendingUp } from './icons';
+import { APP_DISPLAY_VERSION } from '../constants/appInfo';
 
 type AdminSidebarProps = {
   isOpen: boolean;
@@ -41,14 +42,14 @@ export default function AdminSidebar({ isOpen, onClose, onNavigate, onLogout, us
 
       {/* Sidebar */}
       <motion.div
-        initial={{ x: '-100%' }}
+        initial={{ x: '100%' }}
         animate={{ x: 0 }}
-        exit={{ x: '-100%' }}
+        exit={{ x: '100%' }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="fixed left-0 top-0 h-full w-80 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 z-50 shadow-2xl overflow-y-auto overscroll-none"
+        className="fixed right-0 top-0 h-full w-[min(20rem,calc(100vw-env(safe-area-inset-left)))] bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 z-50 shadow-2xl overflow-y-auto overscroll-contain"
       >
         {/* Header */}
-        <div className="p-6 border-b border-white/20">
+        <div className="p-5 pt-[max(1.25rem,env(safe-area-inset-top))] pr-[max(1.25rem,env(safe-area-inset-right))] border-b border-white/20">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-white text-xl">관리자 메뉴</h2>
             <button
@@ -125,8 +126,8 @@ export default function AdminSidebar({ isOpen, onClose, onNavigate, onLogout, us
         </div>
 
         {/* Footer */}
-        <div className="p-6 text-center text-white/50 text-xs">
-          Oshikuji Kuji Admin v1.0
+        <div className="p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-center text-white/50 text-xs">
+          Oshikuji Kuji Admin {APP_DISPLAY_VERSION}
         </div>
       </motion.div>
     </>

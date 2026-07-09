@@ -45,10 +45,10 @@ export default function BusinessSidebar({ isOpen, onClose, user, onLogout, onNav
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-80 bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 z-50 shadow-2xl flex flex-col"
+            className="fixed right-0 top-0 h-full w-[min(20rem,calc(100vw-env(safe-area-inset-left)))] bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 z-50 shadow-2xl flex flex-col"
           >
             {/* Header */}
-            <div className="p-6 border-b border-white/20">
+            <div className="p-5 pt-[max(1.25rem,env(safe-area-inset-top))] pr-[max(1.25rem,env(safe-area-inset-right))] border-b border-white/20">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl text-white">사업자 메뉴</h2>
                 <button
@@ -79,7 +79,7 @@ export default function BusinessSidebar({ isOpen, onClose, user, onLogout, onNav
             </div>
 
             {/* Menu Items */}
-            <div className="flex-1 overflow-y-auto overscroll-none p-4">
+            <div className="flex-1 overflow-y-auto overscroll-contain p-4">
               <div className="space-y-2">
                 {menuItems.map((item, index) => {
                   const Icon = item.icon;
@@ -109,7 +109,7 @@ export default function BusinessSidebar({ isOpen, onClose, user, onLogout, onNav
 
             {/* Logout Button - Consistent with regular Sidebar */}
             {user && (
-              <div className="p-4 border-t border-white/20">
+              <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-white/20">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}

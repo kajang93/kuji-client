@@ -1353,7 +1353,13 @@ async function handleRefresh() {
         type={alertModal.type}
         onConfirm={alertModal.onConfirm}
       />
-      <Toaster position="top-center" richColors visibleToasts={1} duration={2500} />
+      <Toaster
+        position="top-center"
+        richColors
+        visibleToasts={1}
+        duration={2500}
+        offset="calc(env(safe-area-inset-top) + 12px)"
+      />
     </div>
   );
 }
