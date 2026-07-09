@@ -41,6 +41,7 @@ type BusinessScreensProps = {
     status: "preparing" | "shipped" | "delivered",
     trackingNumber?: string,
     courierName?: string,
+    courierPhone?: string,
   ) => void;
 };
 

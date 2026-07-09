@@ -26,7 +26,7 @@ export default function DeliveryTracking({
   courier,
   recipientAddress,
   deliveryDriver = '미배정',
-  deliveryDriverPhone = '010-1234-5678',
+  deliveryDriverPhone,
   sellerContact = '1588-0000',
   sellerName = '판매자',
   sellerId = 'seller1',
@@ -142,10 +142,12 @@ export default function DeliveryTracking({
               <span className="text-white/70">배송기사</span>
               <span className="text-white">{finalDeliveryDriver}</span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-white/70">배송기사 연락처</span>
-              <span className="text-white">{finalDeliveryDriverPhone}</span>
-            </div>
+            {finalDeliveryDriverPhone && (
+              <div className="flex justify-between items-center">
+                <span className="text-white/70">배송기사 연락처</span>
+                <span className="text-white">{finalDeliveryDriverPhone}</span>
+              </div>
+            )}
           </div>
 
           {/* Delivery Stage Progress */}
@@ -291,14 +293,16 @@ export default function DeliveryTracking({
           </div>
 
           {/* Contact Buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => window.location.href = `tel:${finalDeliveryDriverPhone}`}
-              className="py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl flex items-center justify-center gap-2 hover:from-blue-600 hover:to-cyan-600 transition-all"
-            >
-              <Phone className="w-4 h-4" />
-              <span>배송기사 연락</span>
-            </button>
+          <div className={`grid gap-3 ${finalDeliveryDriverPhone ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {finalDeliveryDriverPhone && (
+              <button
+                onClick={() => window.location.href = `tel:${finalDeliveryDriverPhone}`}
+                className="py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl flex items-center justify-center gap-2 hover:from-blue-600 hover:to-cyan-600 transition-all"
+              >
+                <Phone className="w-4 h-4" />
+                <span>배송기사 연락</span>
+              </button>
+            )}
             <button
               onClick={() => setShowInquiryModal(true)}
               className="py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl flex items-center justify-center gap-2 hover:from-purple-600 hover:to-pink-600 transition-all"

@@ -557,7 +557,6 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
           winning={selectedDeliveryItem}
           sellerName={getSellerInfo(selectedDeliveryItem).name}
           sellerId={getSellerInfo(selectedDeliveryItem).id}
-          deliveryDriverPhone="010-1234-5678"
           onClose={() => setSelectedDeliveryItem(null)}
           onSubmitInquiry={onSubmitInquiry}
         />

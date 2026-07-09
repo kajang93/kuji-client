@@ -42,6 +42,7 @@ export async function fetchAllShippingList(): Promise<ShippingInfo[]> {
 export async function updateTrackingInfo(shippingId: number, data: {
   courierName: string;
   trackingNumber: string;
+  courierPhone?: string;
 }) {
   await axiosInstance.patch(`${API_BASE_URL}/${shippingId}/tracking`, data);
 }

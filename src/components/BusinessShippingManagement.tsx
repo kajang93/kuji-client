@@ -7,7 +7,7 @@ import type { WinningItem } from '@/shared-types';
 type BusinessShippingManagementProps = {
   onBack: () => void;
   winningHistory: WinningItem[];
-  onUpdateShipping?: (winningId: string, status: 'preparing' | 'shipped' | 'delivered', trackingNumber?: string, courierName?: string) => void;
+  onUpdateShipping?: (winningId: string, status: 'preparing' | 'shipped' | 'delivered', trackingNumber?: string, courierName?: string, courierPhone?: string) => void;
 };
 
 type GroupedWinnings = {
@@ -22,6 +22,7 @@ export default function BusinessShippingManagement({
   const [selectedSeries, setSelectedSeries] = useState<string | null>(null);
   const [trackingNumbers, setTrackingNumbers] = useState<Record<string, string>>({});
   const [courierNames, setCourierNames] = useState<Record<string, string>>({});
+  const [courierPhones, setCourierPhones] = useState<Record<string, string>>({});
 
   // Group winnings by series
   const groupedWinnings: GroupedWinnings = winningHistory.reduce((acc, winning) => {
@@ -70,7 +71,8 @@ export default function BusinessShippingManagement({
     const existingTracking = winning?.trackingNumber;
     const trackingNum = (trackingNumbers[winningId] !== undefined ? trackingNumbers[winningId] : (existingTracking || '')).trim();
     const courierName = courierNames[winningId];
-    
+    const courierPhone = courierPhones[winningId];
+
     if (newStatus === 'shipped') {
       if (!courierName) {
         alert('택배사를 선택해주세요');
@@ -82,7 +84,7 @@ export default function BusinessShippingManagement({
       }
     }
 
-    onUpdateShipping?.(winningId, newStatus, trackingNum || undefined, courierName);
+    onUpdateShipping?.(winningId, newStatus, trackingNum || undefined, courierName, courierPhone);
     
     // Clear tracking number after update
     setTrackingNumbers(prev => {
@@ -193,6 +195,13 @@ export default function BusinessShippingManagement({
                           value={trackingNumbers[winning.id] !== undefined ? trackingNumbers[winning.id] : (winning.trackingNumber || '')}
                           onChange={(e) => handleTrackingNumberChange(winning.id, e.target.value)}
                           placeholder="운송장 번호 입력"
+                          className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-teal-400"
+                        />
+                        <input
+                          type="tel"
+                          value={courierPhones[winning.id] || ''}
+                          onChange={(e) => setCourierPhones(prev => ({ ...prev, [winning.id]: e.target.value }))}
+                          placeholder="택배사/기사 연락처 (선택)"
                           className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-teal-400"
                         />
                       </div>

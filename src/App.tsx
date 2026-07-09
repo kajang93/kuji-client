@@ -802,7 +802,8 @@ async function handleRefresh() {
     winningId: string,
     status: "preparing" | "shipped" | "delivered",
     trackingNumber?: string,
-    courierName?: string
+    courierName?: string,
+    courierPhone?: string
   ) => {
     // winningId is structured as "shippingId-drawHistoryId"
     const parts = winningId.split('-');
@@ -824,7 +825,8 @@ async function handleRefresh() {
         }
         await updateTrackingInfo(shippingId, {
           courierName: courierName,
-          trackingNumber: trackingNumber
+          trackingNumber: trackingNumber,
+          courierPhone: courierPhone?.trim() || undefined
         });
         toast.success("송장 등록 및 배송이 시작되었습니다!");
       } else if (status === "delivered") {
