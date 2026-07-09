@@ -3,6 +3,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation, Pa
 import { Hand } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { ArrowRight, Package, RefreshCw, Home, Sparkles, Trophy } from './icons';
+import { toast } from 'sonner';
 import type { Prize } from '@/shared-types';
 import confetti from 'canvas-confetti';
 import { Tilt } from 'react-tilt';
@@ -162,6 +163,7 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
         transition: { type: "spring", stiffness: 200, damping: 20 }
       });
       setStage('revealed');
+      toast.success(`축하합니다! [${currentPrize.rank}상]에 당첨되셨습니다.`, { duration: 4000 });
     } else {
       // 저항감을 이기지 못하면 강력하게 튕겨 돌아감 (원상복구)
       if (navigator.vibrate) navigator.vibrate(40);
@@ -197,6 +199,7 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
       transition: { type: "spring", stiffness: 200, damping: 20 }
     });
     setStage('revealed');
+    toast.success(`축하합니다! [${currentPrize.rank}상]에 당첨되셨습니다.`, { duration: 4000 });
   };
 
   const handleAutoOpen = async () => {
@@ -219,6 +222,7 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
         transition: { duration: 0.4, ease: "easeOut" }
       });
       setStage('revealed');
+      toast.success(`축하합니다! [${prizes[i].rank}상]에 당첨되셨습니다.`, { duration: 4000 });
       await new Promise(resolve => setTimeout(resolve, 1200));
     }
     
