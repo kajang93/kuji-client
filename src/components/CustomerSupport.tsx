@@ -149,7 +149,7 @@ export default function CustomerSupport({ onBack }: CustomerSupportProps) {
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 placeholder="문의하실 내용을 자세히 작성해주세요"
-                rows={8}
+                rows={5}
                 className="w-full px-4 py-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 focus:outline-none focus:border-cyan-400 resize-none transition-colors"
                 required
               />
