@@ -194,6 +194,20 @@ async function handleRefresh() {
     handleFetchBoards();
   }, []);
 
+  // 브라우저 뒤로가기(iOS 가장자리 스와이프 포함) 흡수(trap)
+  // - 카카오 등 소셜 로그인 후 히스토리에 남는 ?code= URL이나 로그인 이전 상태로
+  //   되돌아가 로그아웃처럼 보이던 문제 방지.
+  // - 화면 간 뒤로가기는 앱 자체 스와이프 제스처(useGlobalGestures)가 담당하므로,
+  //   여기서는 브라우저가 앱 밖으로 나가지 않도록 히스토리 상태만 다시 밀어넣는다.
+  useEffect(() => {
+    const trap = () => {
+      window.history.pushState(null, "", window.location.pathname);
+    };
+    window.history.pushState(null, "", window.location.pathname);
+    window.addEventListener("popstate", trap);
+    return () => window.removeEventListener("popstate", trap);
+  }, []);
+
   // Foreground FCM message handler
   useEffect(() => {
     const unsubscribe = onForegroundMessage((payload) => {
