@@ -252,7 +252,7 @@ export default function AdminEventManagement({ onBack }: AdminEventManagementPro
                       type="date"
                       value={formData.startDate}
                       onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                      className="w-full px-4 py-3 bg-white/10 text-white rounded-xl border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                      className="w-full min-w-0 min-h-[48px] px-3 py-3 bg-white/10 text-white rounded-xl border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-500 appearance-none [color-scheme:dark]"
                     />
                   </div>
                   <div>
@@ -261,7 +261,7 @@ export default function AdminEventManagement({ onBack }: AdminEventManagementPro
                       type="date"
                       value={formData.endDate}
                       onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      className="w-full px-4 py-3 bg-white/10 text-white rounded-xl border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                      className="w-full min-w-0 min-h-[48px] px-3 py-3 bg-white/10 text-white rounded-xl border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-500 appearance-none [color-scheme:dark]"
                     />
                   </div>
                 </div>
