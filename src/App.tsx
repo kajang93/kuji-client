@@ -1031,11 +1031,11 @@ async function handleRefresh() {
         screen !== "reveal" &&
         screen !== "detail" && <LiveTicker />}
 
-      {/* Hamburger Menu Button - Fixed position */}
-      {screen !== "reveal" && screen !== "login" && screen !== "communityWrite" && screen !== "communityDetail" && (
+      {/* Hamburger Menu Button - Fixed position (사이드바 열리면 숨김: X 버튼과 겹침 방지) */}
+      {!isSidebarOpen && screen !== "reveal" && screen !== "login" && screen !== "communityWrite" && screen !== "communityDetail" && (
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="fixed top-12 right-4 z-30 p-3 bg-rose-500 rounded-full shadow-lg hover:bg-rose-600 transition-colors"
+          className="fixed top-[max(3rem,calc(env(safe-area-inset-top)+0.75rem))] right-4 z-30 p-3 bg-rose-500 rounded-full shadow-lg hover:bg-rose-600 transition-colors"
         >
           <Menu className="w-6 h-6 text-white" />
         </button>
