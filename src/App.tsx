@@ -19,7 +19,6 @@ import Wishlist from "./components/Wishlist";
 import Settings from "./components/Settings";
 import CustomerSupport from "./components/CustomerSupport";
 import PrizeSelection from "./components/PrizeSelection";
-import { useGlobalGestures } from "./hooks/useGlobalGestures";
 import { useRefreshOnPageShow } from "./hooks/useRefreshOnPageShow";
 import Notice from "./components/Notice";
 import Events from "./components/Events";
@@ -62,54 +61,74 @@ export default function App() {
   const location = useLocation();
   const [screen, setInternalScreen] = useState<ScreenType>("main");
 
-  // URL -> State 동기화 (사파리 뒤로가기 스와이프 감지용)
+  // 화면 ↔ URL 양방향 매핑 (동적 경로 /board/:id, /community/:id 는 별도 처리)
+  const SCREEN_PATHS: Partial<Record<ScreenType, string>> = {
+    main: "/",
+    list: "/list",
+    login: "/login",
+    profile: "/profile",
+    profileEdit: "/profile/edit",
+    winning: "/history",
+    purchase: "/purchases",
+    wishlist: "/wishlist",
+    pointCharge: "/points",
+    support: "/support",
+    settings: "/settings",
+    community: "/community",
+    communityWrite: "/community/write",
+    notice: "/notice",
+    events: "/events",
+    businessDashboard: "/business",
+    businessProfile: "/business/profile",
+    businessProducts: "/business/products",
+    businessProductEdit: "/business/products/edit",
+    businessRegister: "/business/register",
+    businessShipping: "/business/shipping",
+    businessInquiries: "/business/inquiries",
+    businessPending: "/business/pending",
+    adminDashboard: "/admin",
+    adminNoticeManagement: "/admin/notices",
+    adminEventManagement: "/admin/events",
+    adminInquiryManagement: "/admin/inquiries",
+    adminMainBannerManagement: "/admin/banners",
+    adminUserManagement: "/admin/users",
+    adminPromotionManagement: "/admin/promotions",
+    adminStatistics: "/admin/stats",
+  };
+  const PATH_SCREENS: Record<string, ScreenType> = Object.fromEntries(
+    Object.entries(SCREEN_PATHS).map(([s, p]) => [p, s as ScreenType]),
+  );
+
+  // URL -> State 동기화 (사파리 네이티브 뒤로가기 스와이프가 URL을 바꾸면 화면도 따라감)
   useEffect(() => {
     const p = location.pathname;
-    if (p === "/") setInternalScreen("main");
-    else if (p === "/list") setInternalScreen("list");
-    else if (p.startsWith("/board/")) setInternalScreen("detail");
-    else if (p === "/login") setInternalScreen("login");
-    else if (p === "/profile") setInternalScreen("profile");
-    else if (p === "/profile/edit") setInternalScreen("profileEdit");
-    else if (p === "/history") setInternalScreen("winning");
-    else if (p === "/points") setInternalScreen("pointCharge");
-    else if (p === "/wishlist") setInternalScreen("wishlist");
-    else if (p === "/support") setInternalScreen("support");
-    else if (p === "/settings") setInternalScreen("settings");
-    else if (p.startsWith("/community/write")) setInternalScreen("communityWrite");
-    else if (p.startsWith("/community/")) setInternalScreen("communityDetail");
-    else if (p === "/community") setInternalScreen("community");
-    else if (p === "/notice") setInternalScreen("notice");
-    else if (p === "/events") setInternalScreen("events");
-    // 그 외 복잡한 라우트는 기존 상태 유지 (점진적 전환)
+    const mapped = PATH_SCREENS[p];
+    if (mapped) {
+      setInternalScreen(mapped);
+      return;
+    }
+    if (p.startsWith("/board/")) {
+      setInternalScreen("detail");
+      return;
+    }
+    if (p.startsWith("/community/")) {
+      // 직링크/새로고침 시 글 ID 복원 (BoardDetail이 postId로 자체 로딩)
+      const postId = Number(p.split("/community/")[1]);
+      if (Number.isInteger(postId) && postId > 0) setSelectedPostId(postId);
+      setInternalScreen("communityDetail");
+      return;
+    }
+    // 그 외(뽑기 진행 selection/reveal, OAuth 콜백 등)는 내부 전용 화면 → 상태 유지
   }, [location.pathname]);
 
-  // State -> URL 변경 (기존 setScreen 호출 호환성 유지)
+  // State -> URL 변경 (기존 setScreen 호출부 호환 유지)
   const setScreen = (s: ScreenType) => {
-    if (s === "main") navigate("/");
-    else if (s === "list") navigate("/list");
-    else if (s === "login") navigate("/login");
-    else if (s === "profile") navigate("/profile");
-    else if (s === "profileEdit") navigate("/profile/edit");
-    else if (s === "winning") navigate("/history");
-    else if (s === "wishlist") navigate("/wishlist");
-    else if (s === "pointCharge") navigate("/points");
-    else if (s === "support") navigate("/support");
-    else if (s === "settings") navigate("/settings");
-    else if (s === "community") navigate("/community");
-    else if (s === "communityWrite") navigate("/community/write");
-    else if (s === "notice") navigate("/notice");
-    else if (s === "events") navigate("/events");
-    else if (s === "detail") navigate(`/board/${selectedAnime?.id || 1}`);
-    else {
-      // 매핑 안된 라우트는 임시로 내부 상태만 변경 (URL 미변경)
-      setInternalScreen(s);
-    }
+    const path = SCREEN_PATHS[s];
+    if (path) navigate(path);
+    else if (s === "detail") navigate(`/board/${selectedAnime?.id || ""}`);
+    else if (s === "communityDetail") navigate(`/community/${selectedPostId || ""}`);
+    else setInternalScreen(s); // selection/reveal 등 URL 없는 플로우 화면
   };
-
-
-  useEffect(() => {
-      }, [screen]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [selectedAnime, setSelectedAnime] =
     useState<AnimeCollection | null>(null);
@@ -149,8 +168,9 @@ export default function App() {
     message: "",
     type: "info",
   });
-  useGlobalGestures(screen, setScreen, returnToScreen, setReturnToScreen);
-useRefreshOnPageShow(handleRefresh);
+  // (제거됨) useGlobalGestures 커스텀 스와이프: 네이티브 브라우저 뒤로가기와
+  // 이중 발동되어 "느리게 두 번 이동하는" 문제를 만들었음. URL 라우팅이 대체.
+  useRefreshOnPageShow(handleRefresh);
   const [animeCollections, setAnimeCollections] = useState<AnimeCollection[]>([]);
   const [sellerCollections, setSellerCollections] = useState<AnimeCollection[]>([]);
 
@@ -229,19 +249,8 @@ async function handleRefresh() {
     handleFetchBoards();
   }, []);
 
-  // 브라우저 뒤로가기(iOS 가장자리 스와이프 포함) 흡수(trap)
-  // - 카카오 등 소셜 로그인 후 히스토리에 남는 ?code= URL이나 로그인 이전 상태로
-  //   되돌아가 로그아웃처럼 보이던 문제 방지.
-  // - 화면 간 뒤로가기는 앱 자체 스와이프 제스처(useGlobalGestures)가 담당하므로,
-  //   여기서는 브라우저가 앱 밖으로 나가지 않도록 히스토리 상태만 다시 밀어넣는다.
-  useEffect(() => {
-    const trap = () => {
-      window.history.pushState(null, "", window.location.pathname);
-    };
-    window.history.pushState(null, "", window.location.pathname);
-    window.addEventListener("popstate", trap);
-    return () => window.removeEventListener("popstate", trap);
-  }, []);
+  // (제거됨) 예전 popstate trap: react-router 도입으로 네이티브 뒤로가기가
+  // URL 히스토리를 정상 사용하므로 trap이 있으면 오히려 히스토리가 오염된다.
 
   // Foreground FCM message handler
   useEffect(() => {
@@ -562,7 +571,9 @@ async function handleRefresh() {
       };
 
       setSelectedAnime(updatedAnime);
-      setScreen("detail");
+      // setScreen("detail")은 아직 반영 전인 selectedAnime state를 읽어 /board/1 로
+      // 잘못 이동할 수 있으므로, 방금 선택한 id로 직접 이동한다.
+      navigate(`/board/${anime.id}`);
 
       // Initialize kuji status from backend data
       const status: boolean[] = [];
@@ -585,6 +596,20 @@ async function handleRefresh() {
       alert("상품 상세 정보를 가져오는데 실패했습니다.");
     }
   };
+
+  // /board/:id 직링크·새로고침 시 상세 데이터 복원 (없으면 목록으로)
+  useEffect(() => {
+    if (screen !== "detail" || selectedAnime) return;
+    const idStr = location.pathname.split("/board/")[1];
+    const target = animeCollections.find((c) => String(c.id) === idStr);
+    if (target) {
+      handleAnimeSelect(target);
+    } else if (animeCollections.length > 0) {
+      // 목록은 로딩됐는데 해당 상품이 없음 (판매종료/잘못된 링크)
+      navigate("/list", { replace: true });
+    }
+    // animeCollections 로딩 전이면 로딩 완료 후 이 effect가 다시 실행됨
+  }, [screen, selectedAnime, animeCollections, location.pathname]);
 
   const handlePurchase = (count: number, pointsUsed = 0) => {
     if (!user) {
@@ -616,19 +641,20 @@ async function handleRefresh() {
     }
 
     // Business users go to dashboard (if active) or pending screen
+    // replace: /login 히스토리를 대체 → 로그인 직후 스와이프 백해도 로그인 화면으로 안 돌아감
     if (userData.type === "business") {
       if (userData.isActive === false) {
-        setScreen("businessPending");
+        navigate("/business/pending", { replace: true });
       } else {
-        setScreen("businessDashboard");
+        navigate("/business", { replace: true });
       }
     } else if (userData.type === "admin") {
-      setScreen("adminDashboard");
+      navigate("/admin", { replace: true });
     } else if (returnToScreen === "detail") {
       setScreen("selection");
       setReturnToScreen(null);
     } else {
-      setScreen("main");
+      navigate("/", { replace: true });
     }
   };
 
@@ -656,13 +682,12 @@ async function handleRefresh() {
       };
       setUser(formattedUser);
 
-      // Remove OAuth params from URL without refreshing
-      window.history.replaceState({}, document.title, window.location.pathname);
-
+      // replace: OAuth 콜백(?code=) URL을 히스토리에서 대체
+      // → 로그인 직후 스와이프 백해도 콜백/로그인 화면으로 안 돌아감
       if (formattedUser.type === "business") {
-        setScreen("businessDashboard");
+        navigate("/business", { replace: true });
       } else {
-        setScreen("main");
+        navigate("/", { replace: true });
         handleFetchWishlist();
       }
       sonnerToast.success(successMessage);
@@ -1265,7 +1290,7 @@ async function handleRefresh() {
             }} 
             onDetail={(id) => {
               setSelectedPostId(id);
-              setScreen("communityDetail");
+              navigate(`/community/${id}`); // 방금 클릭한 id로 직접 이동 (stale state 방지)
             }} 
           />
         )}
