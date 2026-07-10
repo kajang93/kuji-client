@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
-import { Trophy, Zap } from './icons';
+import { Menu, Trophy, Zap } from './icons';
 import { fetchRecentDrawHistory } from '../api/kuji';
 import { BASE_URL } from '../api/axiosInstance';
 import { Client } from '@stomp/stompjs';
@@ -14,7 +14,11 @@ interface RecentDraw {
   createdAt: string;
 }
 
-export default function LiveTicker() {
+type LiveTickerProps = {
+  onOpenMenu?: () => void;
+};
+
+export default function LiveTicker({ onOpenMenu }: LiveTickerProps) {
   const [winnings, setWinnings] = useState<RecentDraw[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -78,7 +82,7 @@ export default function LiveTicker() {
   const current = winnings.length > 0 ? winnings[currentIndex] : null;
 
   return (
-    <div className="h-10 bg-slate-900/80 backdrop-blur-md border-b border-white/5 overflow-hidden flex items-center px-4 relative w-full z-20">
+    <div className="h-12 bg-slate-900/80 backdrop-blur-md border-b border-white/5 overflow-hidden flex items-center pl-4 pr-1 relative w-full z-20">
       <div className="flex items-center gap-2 text-xs font-bold text-amber-400 shrink-0 mr-4">
         <Zap className="w-3.5 h-3.5 fill-amber-400 animate-pulse" />
         <span className="hidden sm:inline uppercase tracking-wider">LIVE WINNINGS</span>
@@ -117,6 +121,17 @@ export default function LiveTicker() {
         <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
         <span className="text-[10px] text-rose-500 font-bold uppercase hidden xs:inline">Realtime</span>
       </div>
+
+      {onOpenMenu && (
+        <button
+          type="button"
+          onClick={onOpenMenu}
+          aria-label="메뉴 열기"
+          className="ml-3 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white shadow-inner transition-colors hover:bg-white/10 active:bg-rose-500/20"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      )}
     </div>
   );
 }

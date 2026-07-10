@@ -24,7 +24,6 @@ import Notice from "./components/Notice";
 import Events from "./components/Events";
 import AlertModal from "./components/AlertModal";
 import LiveTicker from "./components/LiveTicker";
-import { Menu } from "./components/icons";
 import { Toaster, toast, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import NaverCallback from "./components/NaverCallback";
@@ -1038,22 +1037,19 @@ async function handleRefresh() {
     }));
   };
 
+  const canOpenSidebar =
+    !isSidebarOpen &&
+    screen !== "reveal" &&
+    screen !== "login" &&
+    screen !== "communityWrite" &&
+    screen !== "communityDetail";
+
   return (
     <div className="h-[100dvh] flex flex-col bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-800 overflow-hidden w-full relative">
       {/* Live Ticker - Show on all screens except login/reveal/detail */}
       {screen !== "login" &&
         screen !== "reveal" &&
-        screen !== "detail" && <LiveTicker />}
-
-      {/* Hamburger Menu Button - Fixed position (사이드바 열리면 숨김: X 버튼과 겹침 방지) */}
-      {!isSidebarOpen && screen !== "reveal" && screen !== "login" && screen !== "communityWrite" && screen !== "communityDetail" && (
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          className="fixed top-[max(3rem,calc(env(safe-area-inset-top)+0.75rem))] right-4 z-30 p-3 bg-rose-500 rounded-full shadow-lg hover:bg-rose-600 transition-colors"
-        >
-          <Menu className="w-6 h-6 text-white" />
-        </button>
-      )}
+        screen !== "detail" && <LiveTicker onOpenMenu={canOpenSidebar ? () => setIsSidebarOpen(true) : undefined} />}
 
       <div className={`flex-1 overflow-x-hidden overscroll-y-contain relative w-full ${screen === "main" ? "overflow-y-hidden overscroll-none touch-none" : "overflow-y-auto"}`} id="main-scroll-container">
 
