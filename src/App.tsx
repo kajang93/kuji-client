@@ -1372,7 +1372,7 @@ async function handleRefresh() {
         richColors
         visibleToasts={1}
         duration={2500}
-        offset="calc(env(safe-area-inset-top) + 12px)"
+        offset="calc(max(env(safe-area-inset-top, 40px), 48px) + 12px)"
       />
     </div>
   );
