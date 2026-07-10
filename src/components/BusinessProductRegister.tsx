@@ -167,9 +167,10 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
         ) || []
       }));
       toast.success('누적 데이터 분석 및 AI 이미지 처리가 완료되었습니다!');
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error('AI 분석 중 오류가 발생했습니다.');
+      const backendError = error.response?.data?.error || '알 수 없는 오류가 발생했습니다.';
+      toast.error(`AI 분석 실패: ${backendError}`);
     } finally {
       setIsAiProcessing(prev => ({ ...prev, [productId]: false }));
     }
