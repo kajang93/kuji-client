@@ -1055,7 +1055,7 @@ async function handleRefresh() {
         </button>
       )}
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain relative w-full" id="main-scroll-container">
+      <div className={`flex-1 overflow-x-hidden overscroll-y-contain relative w-full ${screen === "main" ? "overflow-y-hidden" : "overflow-y-auto"}`} id="main-scroll-container">
 
         {screen === "main" && (
           <MainScreen

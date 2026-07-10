@@ -161,15 +161,9 @@ export default function MainScreen({ onStart, banners }: MainScreenProps) {
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="relative w-full max-w-3xl h-[85vh] bg-slate-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-700"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 bg-slate-800 border-b border-slate-700 shrink-0">
+              {/* Header (상단 X 버튼 제거: 햄버거 버튼과 겹침. 닫기는 하단 '닫기' 버튼 사용) */}
+              <div className="flex items-center justify-center px-4 py-3 bg-slate-800 border-b border-slate-700 shrink-0">
                 <h3 className="text-white font-bold">🎉 서비스 오픈 안내</h3>
-                <button
-                  onClick={closeBrochure}
-                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
               </div>
               
               {/* iframe Container */}

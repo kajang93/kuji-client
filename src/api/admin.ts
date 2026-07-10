@@ -12,7 +12,10 @@ export const answerInquiry = async (id: number, answerContent: string): Promise<
 
 export const fetchNotices = async (): Promise<Post[]> => {
   const response = await axiosInstance.get("/api/posts?category=NOTICE");
-  return response.data;
+  // /api/posts는 Spring 페이지네이션 객체({content:[...]})를 반환하므로 배열만 추출.
+  // (배열을 그대로 setState하면 notices.filter가 함수가 아니라 렌더 크래시 → 검은 화면)
+  const data = response.data;
+  return Array.isArray(data) ? data : (data?.content ?? []);
 };
 
 export const createNotice = async (title: string, content: string): Promise<void> => {
