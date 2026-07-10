@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import MainScreen from "./components/MainScreen";
 import AnimeList from "./components/AnimeListFixed";
 import PrizeDetail from "./components/PrizeDetail";
@@ -56,24 +57,59 @@ import {
 
 export default function App() {
 
-  const [screen, setScreen] = useState<ScreenType>(() => {
-    const saved = sessionStorage.getItem("currentScreen") as ScreenType;
-    // 복원 불가 화면: 새로고침 시 사라지는 메모리 상태(선택된 글/상품 ID 등)에 의존해
-    // 화면 이름만 복원하면 아무것도 렌더링되지 않는(빈 화면) 것들
-    const unsafeScreens = [
-      "detail", "selection", "reveal", "winning", "prizeSelection",
-      "kakaoCallback", "naverCallback", "googleCallback",
-      "communityDetail", "communityWrite", "businessProductEdit", "profileEdit",
-    ];
-    if (saved && !unsafeScreens.includes(saved)) {
-      return saved;
+  
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [screen, setInternalScreen] = useState<ScreenType>("main");
+
+  // URL -> State 동기화 (사파리 뒤로가기 스와이프 감지용)
+  useEffect(() => {
+    const p = location.pathname;
+    if (p === "/") setInternalScreen("main");
+    else if (p === "/list") setInternalScreen("list");
+    else if (p.startsWith("/board/")) setInternalScreen("detail");
+    else if (p === "/login") setInternalScreen("login");
+    else if (p === "/profile") setInternalScreen("profile");
+    else if (p === "/profile/edit") setInternalScreen("profileEdit");
+    else if (p === "/history") setInternalScreen("winning");
+    else if (p === "/points") setInternalScreen("pointCharge");
+    else if (p === "/wishlist") setInternalScreen("wishlist");
+    else if (p === "/support") setInternalScreen("support");
+    else if (p === "/settings") setInternalScreen("settings");
+    else if (p.startsWith("/community/write")) setInternalScreen("communityWrite");
+    else if (p.startsWith("/community/")) setInternalScreen("communityDetail");
+    else if (p === "/community") setInternalScreen("community");
+    else if (p === "/notice") setInternalScreen("notice");
+    else if (p === "/events") setInternalScreen("events");
+    // 그 외 복잡한 라우트는 기존 상태 유지 (점진적 전환)
+  }, [location.pathname]);
+
+  // State -> URL 변경 (기존 setScreen 호출 호환성 유지)
+  const setScreen = (s: ScreenType) => {
+    if (s === "main") navigate("/");
+    else if (s === "list") navigate("/list");
+    else if (s === "login") navigate("/login");
+    else if (s === "profile") navigate("/profile");
+    else if (s === "profileEdit") navigate("/profile/edit");
+    else if (s === "winning") navigate("/history");
+    else if (s === "wishlist") navigate("/wishlist");
+    else if (s === "pointCharge") navigate("/points");
+    else if (s === "support") navigate("/support");
+    else if (s === "settings") navigate("/settings");
+    else if (s === "community") navigate("/community");
+    else if (s === "communityWrite") navigate("/community/write");
+    else if (s === "notice") navigate("/notice");
+    else if (s === "events") navigate("/events");
+    else if (s === "detail") navigate(`/board/${selectedAnime?.id || 1}`);
+    else {
+      // 매핑 안된 라우트는 임시로 내부 상태만 변경 (URL 미변경)
+      setInternalScreen(s);
     }
-    return "main";
-  });
+  };
+
 
   useEffect(() => {
-    sessionStorage.setItem("currentScreen", screen);
-  }, [screen]);
+      }, [screen]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [selectedAnime, setSelectedAnime] =
     useState<AnimeCollection | null>(null);

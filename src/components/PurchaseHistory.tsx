@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Package, Calendar, CreditCard, X, Clock, Menu } from './icons';
-import { useSwipeNavigation } from './useSwipeNavigation';
 import { fetchMyDrawHistory } from '../api/kuji';
 
 type PurchaseHistoryProps = {
@@ -37,11 +36,7 @@ export default function PurchaseHistory({ onBack }: PurchaseHistoryProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Swipe navigation - Right swipe goes back
-  useSwipeNavigation({
-    onSwipeRight: onBack,
-    threshold: 100,
-  });
+  // Swipe navigation - Right swipe goes back (Removed to prevent Safari conflict)
 
   const [purchases, setPurchases] = useState<PurchaseItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
