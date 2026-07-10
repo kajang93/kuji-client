@@ -18,12 +18,24 @@ export const fetchNotices = async (): Promise<Post[]> => {
   return Array.isArray(data) ? data : (data?.content ?? []);
 };
 
+// 서버 POST/PUT /api/posts는 multipart(consumes=MULTIPART_FORM_DATA)로,
+// JSON을 'request' 파트(Blob)로 담아야 함. JSON 직접 전송 시 415 오류 발생.
+const buildNoticeFormData = (title: string, content: string): FormData => {
+  const formData = new FormData();
+  const requestBlob = new Blob(
+    [JSON.stringify({ title, content, category: "NOTICE" })],
+    { type: "application/json" },
+  );
+  formData.append("request", requestBlob);
+  return formData;
+};
+
 export const createNotice = async (title: string, content: string): Promise<void> => {
-  await axiosInstance.post("/api/posts", { title, content, category: "NOTICE" });
+  await axiosInstance.post("/api/posts", buildNoticeFormData(title, content));
 };
 
 export const updateNotice = async (id: number, title: string, content: string): Promise<void> => {
-  await axiosInstance.put(`/api/posts/${id}`, { title, content, category: "NOTICE" });
+  await axiosInstance.put(`/api/posts/${id}`, buildNoticeFormData(title, content));
 };
 
 export const deleteNotice = async (id: number): Promise<void> => {

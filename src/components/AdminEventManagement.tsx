@@ -20,15 +20,18 @@ export default function AdminEventManagement({ onBack }: AdminEventManagementPro
   // 이벤트 백엔드 연동 전까지 빈 목록으로 시작 (목데이터 제거)
   const [events, setEvents] = useState<Event[]>([]);
 
+  // 오늘 날짜 (YYYY-MM-DD) — 이벤트 시작/종료일 기본값
+  const todayStr = new Date().toLocaleDateString('sv-SE'); // 로컬 시간 기준 YYYY-MM-DD
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    startDate: '',
-    endDate: '',
+    startDate: todayStr,
+    endDate: todayStr,
   });
 
   const getEventStatus = (startDate: string, endDate: string): 'upcoming' | 'ongoing' | 'ended' => {
@@ -120,7 +123,7 @@ export default function AdminEventManagement({ onBack }: AdminEventManagementPro
             </div>
             <button
               onClick={() => {
-                setFormData({ title: '', description: '', startDate: '', endDate: '' });
+                setFormData({ title: '', description: '', startDate: todayStr, endDate: todayStr });
                 setEditingEvent(null);
                 setShowCreateModal(true);
               }}
