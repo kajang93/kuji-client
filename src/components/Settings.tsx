@@ -48,10 +48,34 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // 토글을 켤 때 실제 체감 피드백 (진동은 진동, 소리는 짧은 알림음)
+  // ※ iOS Safari는 웹에서 진동 API를 지원하지 않아 iOS에선 진동이 울리지 않음 (안드로이드는 동작)
+  const playToggleFeedback = (key: string, turnedOn: boolean) => {
+    if (!turnedOn) return;
+    if (key === 'vibrationEnabled') {
+      (navigator as any).vibrate?.(200);
+    } else if (key === 'soundEnabled') {
+      try {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 880; // 알림음 느낌의 높은 '띵'
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.35);
+        osc.onended = () => ctx.close();
+      } catch { /* 오디오 미지원 환경 무시 */ }
+    }
+  };
+
   // 토글 클릭 → 로컬 즉시 반영 + 백엔드 동기화
   const toggleSetting = async (key: keyof NotificationSettingsState) => {
     const newSettings = { ...settings, [key]: !settings[key] };
     onUpdateSettings(newSettings); // 즉시 UI 반영 (낙관적 업데이트)
+    playToggleFeedback(key as string, !!newSettings[key]);
 
     if (!user) return; // 비로그인 시 API 호출 안 함
     setIsSyncing(true);

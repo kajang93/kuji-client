@@ -537,6 +537,12 @@ async function handleRefresh() {
     }
   };
 
+  // 구성품 선택 새로고침 시 선택 상태(selectedWinningId/selectedRank)가 없으면 당첨내역으로 복귀
+  useEffect(() => {
+    if (screen === "prizeSelection" && (!selectedWinningId || !selectedRank)) {
+      setScreen("winning");
+    }
+  }, [screen, selectedWinningId, selectedRank]);
   const handlePurchase = (count: number, pointsUsed = 0) => {
     if (!user) {
       // Not logged in - go to login screen
