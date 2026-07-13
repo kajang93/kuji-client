@@ -20,18 +20,15 @@ export default function AdminEventManagement({ onBack }: AdminEventManagementPro
   // 이벤트 백엔드 연동 전까지 빈 목록으로 시작 (목데이터 제거)
   const [events, setEvents] = useState<Event[]>([]);
 
-  // 오늘 날짜 (YYYY-MM-DD) — 이벤트 시작/종료일 기본값
-  const todayStr = new Date().toLocaleDateString('sv-SE'); // 로컬 시간 기준 YYYY-MM-DD
-
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    startDate: todayStr,
-    endDate: todayStr,
+    startDate: '',
+    endDate: '',
   });
 
   const getEventStatus = (startDate: string, endDate: string): 'upcoming' | 'ongoing' | 'ended' => {
@@ -123,7 +120,7 @@ export default function AdminEventManagement({ onBack }: AdminEventManagementPro
             </div>
             <button
               onClick={() => {
-                setFormData({ title: '', description: '', startDate: todayStr, endDate: todayStr });
+                setFormData({ title: '', description: '', startDate: '', endDate: '' });
                 setEditingEvent(null);
                 setShowCreateModal(true);
               }}
@@ -255,7 +252,7 @@ export default function AdminEventManagement({ onBack }: AdminEventManagementPro
                       type="date"
                       value={formData.startDate}
                       onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                      className="w-full min-w-0 min-h-[48px] px-3 py-3 bg-white/10 text-white rounded-xl border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-500 appearance-none [color-scheme:dark]"
+                      className="w-full px-4 py-3 bg-white/10 text-white rounded-xl border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     />
                   </div>
                   <div>
@@ -264,7 +261,7 @@ export default function AdminEventManagement({ onBack }: AdminEventManagementPro
                       type="date"
                       value={formData.endDate}
                       onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      className="w-full min-w-0 min-h-[48px] px-3 py-3 bg-white/10 text-white rounded-xl border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-500 appearance-none [color-scheme:dark]"
+                      className="w-full px-4 py-3 bg-white/10 text-white rounded-xl border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     />
                   </div>
                 </div>

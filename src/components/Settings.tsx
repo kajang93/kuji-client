@@ -159,15 +159,15 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
               </div>
               <button
                 onClick={handlePushToggle}
-                className={`relative w-[4.5rem] h-8 rounded-full transition-colors shrink-0 ${
+                className={`relative w-16 h-10 rounded-xl transition-colors ${
                   settings.pushEnabled ? 'bg-indigo-500' : 'bg-white/20'
                 }`}
               >
                 <motion.div
-                  animate={{ x: settings.pushEnabled ? 44 : 4 }}
+                  animate={{ x: settings.pushEnabled ? 28 : 4 }}
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  className={`absolute top-1 w-6 h-6 rounded-full shadow-lg ${
-                    settings.pushEnabled ? 'bg-white' : 'bg-white/70'
+                  className={`absolute top-1 w-8 h-8 rounded-lg shadow-lg ${
+                    settings.pushEnabled ? 'bg-white' : 'bg-white/60'
                   }`}
                 />
               </button>
@@ -190,16 +190,13 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                   </div>
                   <button
                     onClick={() => toggleSetting('vibrationEnabled')}
-                    className={`relative w-[4.5rem] h-8 rounded-full transition-colors shrink-0 ${
+                    className={`relative w-10 h-6 rounded-full transition-colors ${
                       settings.vibrationEnabled ? 'bg-rose-500' : 'bg-white/20'
                     }`}
                   >
                     <motion.div
-                      animate={{ x: settings.vibrationEnabled ? 44 : 4 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      className={`absolute top-1 w-6 h-6 rounded-full shadow-lg ${
-                        settings.vibrationEnabled ? 'bg-white' : 'bg-white/70'
-                      }`}
+                      animate={{ x: settings.vibrationEnabled ? 22 : 2 }}
+                      className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
                     />
                   </button>
                 </div>
@@ -220,16 +217,13 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                   </div>
                   <button
                     onClick={() => toggleSetting('soundEnabled')}
-                    className={`relative w-[4.5rem] h-8 rounded-full transition-colors shrink-0 ${
+                    className={`relative w-10 h-6 rounded-full transition-colors ${
                       settings.soundEnabled ? 'bg-amber-500' : 'bg-white/20'
                     }`}
                   >
                     <motion.div
-                      animate={{ x: settings.soundEnabled ? 44 : 4 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      className={`absolute top-1 w-6 h-6 rounded-full shadow-lg ${
-                        settings.soundEnabled ? 'bg-white' : 'bg-white/70'
-                      }`}
+                      animate={{ x: settings.soundEnabled ? 22 : 2 }}
+                      className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
                     />
                   </button>
                 </div>
@@ -296,13 +290,13 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                       </div>
                       <button
                         onClick={() => toggleSetting(isBusiness ? 'kakaoBizOrder' : 'kakaoWinning')}
-                        className={`relative w-[4.5rem] h-8 rounded-full transition-colors shrink-0 ${
+                        className={`relative w-10 h-6 rounded-full transition-colors ${
                           (isBusiness ? settings.kakaoBizOrder : settings.kakaoWinning) ? 'bg-[#FAE100]' : 'bg-white/20'
                         }`}
                       >
                         <motion.div
-                          animate={{ x: (isBusiness ? settings.kakaoBizOrder : settings.kakaoWinning) ? 44 : 4 }}
-                          className={`absolute top-1 w-6 h-6 rounded-full shadow-sm ${
+                          animate={{ x: (isBusiness ? settings.kakaoBizOrder : settings.kakaoWinning) ? 22 : 2 }}
+                          className={`absolute top-1 w-4 h-4 rounded-full shadow-sm ${
                             (isBusiness ? settings.kakaoBizOrder : settings.kakaoWinning) ? 'bg-[#371D1E]' : 'bg-white/60'
                           }`}
                         />
@@ -326,13 +320,13 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                       </div>
                       <button
                         onClick={() => toggleSetting(isBusiness ? 'kakaoBizCancel' : 'kakaoDelivery')}
-                        className={`relative w-[4.5rem] h-8 rounded-full transition-colors shrink-0 ${
+                        className={`relative w-10 h-6 rounded-full transition-colors ${
                           (isBusiness ? settings.kakaoBizCancel : settings.kakaoDelivery) ? 'bg-[#FAE100]' : 'bg-white/20'
                         }`}
                       >
                         <motion.div
-                          animate={{ x: (isBusiness ? settings.kakaoBizCancel : settings.kakaoDelivery) ? 44 : 4 }}
-                          className={`absolute top-1 w-6 h-6 rounded-full shadow-sm ${
+                          animate={{ x: (isBusiness ? settings.kakaoBizCancel : settings.kakaoDelivery) ? 22 : 2 }}
+                          className={`absolute top-1 w-4 h-4 rounded-full shadow-sm ${
                             (isBusiness ? settings.kakaoBizCancel : settings.kakaoDelivery) ? 'bg-[#371D1E]' : 'bg-white/60'
                           }`}
                         />
@@ -356,13 +350,13 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                       </div>
                       <button
                         onClick={() => toggleSetting(isBusiness ? 'kakaoBizInquiry' : 'kakaoInquiry')}
-                        className={`relative w-[4.5rem] h-8 rounded-full transition-colors shrink-0 ${
+                        className={`relative w-10 h-6 rounded-full transition-colors ${
                           (isBusiness ? settings.kakaoBizInquiry : settings.kakaoInquiry) ? 'bg-[#FAE100]' : 'bg-white/20'
                         }`}
                       >
                         <motion.div
-                          animate={{ x: (isBusiness ? settings.kakaoBizInquiry : settings.kakaoInquiry) ? 44 : 4 }}
-                          className={`absolute top-1 w-6 h-6 rounded-full shadow-sm ${
+                          animate={{ x: (isBusiness ? settings.kakaoBizInquiry : settings.kakaoInquiry) ? 22 : 2 }}
+                          className={`absolute top-1 w-4 h-4 rounded-full shadow-sm ${
                             (isBusiness ? settings.kakaoBizInquiry : settings.kakaoInquiry) ? 'bg-[#371D1E]' : 'bg-white/60'
                           }`}
                         />
@@ -428,12 +422,12 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                       </div>
                       <button
                         onClick={() => toggleSetting('marketingOpen')}
-                        className={`relative w-[4.5rem] h-8 rounded-full transition-colors shrink-0 ${
+                        className={`relative w-10 h-6 rounded-full transition-colors ${
                           settings.marketingOpen ? 'bg-purple-500' : 'bg-white/20'
                         }`}
                       >
                         <motion.div
-                          animate={{ x: settings.marketingOpen ? 44 : 4 }}
+                          animate={{ x: settings.marketingOpen ? 22 : 2 }}
                           className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
                         />
                       </button>
@@ -452,12 +446,12 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                       </div>
                       <button
                         onClick={() => toggleSetting('marketingRestock')}
-                        className={`relative w-[4.5rem] h-8 rounded-full transition-colors shrink-0 ${
+                        className={`relative w-10 h-6 rounded-full transition-colors ${
                           settings.marketingRestock ? 'bg-purple-500' : 'bg-white/20'
                         }`}
                       >
                         <motion.div
-                          animate={{ x: settings.marketingRestock ? 44 : 4 }}
+                          animate={{ x: settings.marketingRestock ? 22 : 2 }}
                           className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
                         />
                       </button>
@@ -476,12 +470,12 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                       </div>
                       <button
                         onClick={() => toggleSetting('nightPush')}
-                        className={`relative w-[4.5rem] h-8 rounded-full transition-colors shrink-0 ${
+                        className={`relative w-10 h-6 rounded-full transition-colors ${
                           settings.nightPush ? 'bg-purple-500' : 'bg-white/20'
                         }`}
                       >
                         <motion.div
-                          animate={{ x: settings.nightPush ? 44 : 4 }}
+                          animate={{ x: settings.nightPush ? 22 : 2 }}
                           className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
                         />
                       </button>

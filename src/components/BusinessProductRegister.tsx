@@ -145,6 +145,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
       
       // 2. 나만의 엔진 (누적 데이터 기반 추천 엔진) 호출
       let suggestedStock = 1;
+      let suggestedName = result.name;
       try {
         // rank에서 실제 등급 문자 추출 (예: 'A상' -> 'A')
         const gradeMatch = rank.match(/^[A-Z]/i);
@@ -154,23 +155,24 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
         if (suggestion.suggestedTotalQty) {
           suggestedStock = suggestion.suggestedTotalQty;
         }
-        // AI가 만들어준 화려한 이름을 유지하기 위해, 단순 누적 통계 이름으로 덮어쓰지 않습니다.
+        if (suggestion.suggestedName) {
+          suggestedName = suggestion.suggestedName;
+        }
       } catch (e) {
         console.warn("추천 엔진 호출 실패 (초기 데이터 부족 등)", e);
       }
       
-      // 3. 폼에 매핑 (이미지, AI 생성 이름 + 설명, 추천 수량)
+      // 3. 폼에 매핑 (이미지, 추천 이름 + AI 설명, 추천 수량)
       setRankData(prev => ({
         ...prev,
         [rank]: prev[rank]?.map(p =>
-          p.id === productId ? { ...p, image: result.imageUrl, name: `[${result.name}] ${result.description}`, stock: suggestedStock } : p
+          p.id === productId ? { ...p, image: result.imageUrl, name: `[${suggestedName}] ${result.description}`, stock: suggestedStock } : p
         ) || []
       }));
       toast.success('누적 데이터 분석 및 AI 이미지 처리가 완료되었습니다!');
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
-      const backendError = error.response?.data?.error || '알 수 없는 오류가 발생했습니다.';
-      toast.error(`AI 분석 실패: ${backendError}`);
+      toast.error('AI 분석 중 오류가 발생했습니다.');
     } finally {
       setIsAiProcessing(prev => ({ ...prev, [productId]: false }));
     }

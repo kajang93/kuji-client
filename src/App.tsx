@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import MainScreen from "./components/MainScreen";
 import AnimeList from "./components/AnimeListFixed";
 import PrizeDetail from "./components/PrizeDetail";
@@ -19,11 +18,13 @@ import Wishlist from "./components/Wishlist";
 import Settings from "./components/Settings";
 import CustomerSupport from "./components/CustomerSupport";
 import PrizeSelection from "./components/PrizeSelection";
+import { useGlobalGestures } from "./hooks/useGlobalGestures";
 import { useRefreshOnPageShow } from "./hooks/useRefreshOnPageShow";
 import Notice from "./components/Notice";
 import Events from "./components/Events";
 import AlertModal from "./components/AlertModal";
 import LiveTicker from "./components/LiveTicker";
+import { Menu } from "./components/icons";
 import { Toaster, toast, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import NaverCallback from "./components/NaverCallback";
@@ -56,79 +57,24 @@ import {
 
 export default function App() {
 
-  
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [screen, setInternalScreen] = useState<ScreenType>("main");
+  const [screen, setScreen] = useState<ScreenType>(() => {
+    const saved = sessionStorage.getItem("currentScreen") as ScreenType;
+    // 복원 불가 화면: 새로고침 시 사라지는 메모리 상태(선택된 글/상품 ID 등)에 의존해
+    // 화면 이름만 복원하면 아무것도 렌더링되지 않는(빈 화면) 것들
+    const unsafeScreens = [
+      "detail", "selection", "reveal", "winning", "prizeSelection",
+      "kakaoCallback", "naverCallback", "googleCallback",
+      "communityDetail", "communityWrite", "businessProductEdit", "profileEdit",
+    ];
+    if (saved && !unsafeScreens.includes(saved)) {
+      return saved;
+    }
+    return "main";
+  });
 
-  // 화면 ↔ URL 양방향 매핑 (동적 경로 /board/:id, /community/:id 는 별도 처리)
-  const SCREEN_PATHS: Partial<Record<ScreenType, string>> = {
-    main: "/",
-    list: "/list",
-    login: "/login",
-    profile: "/profile",
-    profileEdit: "/profile/edit",
-    winning: "/history",
-    purchase: "/purchases",
-    wishlist: "/wishlist",
-    pointCharge: "/points",
-    support: "/support",
-    settings: "/settings",
-    community: "/community",
-    communityWrite: "/community/write",
-    notice: "/notice",
-    events: "/events",
-    businessDashboard: "/business",
-    businessProfile: "/business/profile",
-    businessProducts: "/business/products",
-    businessProductEdit: "/business/products/edit",
-    businessRegister: "/business/register",
-    businessShipping: "/business/shipping",
-    businessInquiries: "/business/inquiries",
-    businessPending: "/business/pending",
-    adminDashboard: "/admin",
-    adminNoticeManagement: "/admin/notices",
-    adminEventManagement: "/admin/events",
-    adminInquiryManagement: "/admin/inquiries",
-    adminMainBannerManagement: "/admin/banners",
-    adminUserManagement: "/admin/users",
-    adminPromotionManagement: "/admin/promotions",
-    adminStatistics: "/admin/stats",
-  };
-  const PATH_SCREENS: Record<string, ScreenType> = Object.fromEntries(
-    Object.entries(SCREEN_PATHS).map(([s, p]) => [p, s as ScreenType]),
-  );
-
-  // URL -> State 동기화 (사파리 네이티브 뒤로가기 스와이프가 URL을 바꾸면 화면도 따라감)
   useEffect(() => {
-    const p = location.pathname;
-    const mapped = PATH_SCREENS[p];
-    if (mapped) {
-      setInternalScreen(mapped);
-      return;
-    }
-    if (p.startsWith("/board/")) {
-      setInternalScreen("detail");
-      return;
-    }
-    if (p.startsWith("/community/")) {
-      // 직링크/새로고침 시 글 ID 복원 (BoardDetail이 postId로 자체 로딩)
-      const postId = Number(p.split("/community/")[1]);
-      if (Number.isInteger(postId) && postId > 0) setSelectedPostId(postId);
-      setInternalScreen("communityDetail");
-      return;
-    }
-    // 그 외(뽑기 진행 selection/reveal, OAuth 콜백 등)는 내부 전용 화면 → 상태 유지
-  }, [location.pathname]);
-
-  // State -> URL 변경 (기존 setScreen 호출부 호환 유지)
-  const setScreen = (s: ScreenType) => {
-    const path = SCREEN_PATHS[s];
-    if (path) navigate(path);
-    else if (s === "detail") navigate(`/board/${selectedAnime?.id || ""}`);
-    else if (s === "communityDetail") navigate(`/community/${selectedPostId || ""}`);
-    else setInternalScreen(s); // selection/reveal 등 URL 없는 플로우 화면
-  };
+    sessionStorage.setItem("currentScreen", screen);
+  }, [screen]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [selectedAnime, setSelectedAnime] =
     useState<AnimeCollection | null>(null);
@@ -168,9 +114,8 @@ export default function App() {
     message: "",
     type: "info",
   });
-  // (제거됨) useGlobalGestures 커스텀 스와이프: 네이티브 브라우저 뒤로가기와
-  // 이중 발동되어 "느리게 두 번 이동하는" 문제를 만들었음. URL 라우팅이 대체.
-  useRefreshOnPageShow(handleRefresh);
+  useGlobalGestures(screen, setScreen, returnToScreen, setReturnToScreen);
+useRefreshOnPageShow(handleRefresh);
   const [animeCollections, setAnimeCollections] = useState<AnimeCollection[]>([]);
   const [sellerCollections, setSellerCollections] = useState<AnimeCollection[]>([]);
 
@@ -248,9 +193,6 @@ async function handleRefresh() {
   useEffect(() => {
     handleFetchBoards();
   }, []);
-
-  // (제거됨) 예전 popstate trap: react-router 도입으로 네이티브 뒤로가기가
-  // URL 히스토리를 정상 사용하므로 trap이 있으면 오히려 히스토리가 오염된다.
 
   // Foreground FCM message handler
   useEffect(() => {
@@ -571,9 +513,7 @@ async function handleRefresh() {
       };
 
       setSelectedAnime(updatedAnime);
-      // setScreen("detail")은 아직 반영 전인 selectedAnime state를 읽어 /board/1 로
-      // 잘못 이동할 수 있으므로, 방금 선택한 id로 직접 이동한다.
-      navigate(`/board/${anime.id}`);
+      setScreen("detail");
 
       // Initialize kuji status from backend data
       const status: boolean[] = [];
@@ -596,20 +536,6 @@ async function handleRefresh() {
       alert("상품 상세 정보를 가져오는데 실패했습니다.");
     }
   };
-
-  // /board/:id 직링크·새로고침 시 상세 데이터 복원 (없으면 목록으로)
-  useEffect(() => {
-    if (screen !== "detail" || selectedAnime) return;
-    const idStr = location.pathname.split("/board/")[1];
-    const target = animeCollections.find((c) => String(c.id) === idStr);
-    if (target) {
-      handleAnimeSelect(target);
-    } else if (animeCollections.length > 0) {
-      // 목록은 로딩됐는데 해당 상품이 없음 (판매종료/잘못된 링크)
-      navigate("/list", { replace: true });
-    }
-    // animeCollections 로딩 전이면 로딩 완료 후 이 effect가 다시 실행됨
-  }, [screen, selectedAnime, animeCollections, location.pathname]);
 
   const handlePurchase = (count: number, pointsUsed = 0) => {
     if (!user) {
@@ -641,20 +567,19 @@ async function handleRefresh() {
     }
 
     // Business users go to dashboard (if active) or pending screen
-    // replace: /login 히스토리를 대체 → 로그인 직후 스와이프 백해도 로그인 화면으로 안 돌아감
     if (userData.type === "business") {
       if (userData.isActive === false) {
-        navigate("/business/pending", { replace: true });
+        setScreen("businessPending");
       } else {
-        navigate("/business", { replace: true });
+        setScreen("businessDashboard");
       }
     } else if (userData.type === "admin") {
-      navigate("/admin", { replace: true });
+      setScreen("adminDashboard");
     } else if (returnToScreen === "detail") {
       setScreen("selection");
       setReturnToScreen(null);
     } else {
-      navigate("/", { replace: true });
+      setScreen("main");
     }
   };
 
@@ -682,12 +607,13 @@ async function handleRefresh() {
       };
       setUser(formattedUser);
 
-      // replace: OAuth 콜백(?code=) URL을 히스토리에서 대체
-      // → 로그인 직후 스와이프 백해도 콜백/로그인 화면으로 안 돌아감
+      // Remove OAuth params from URL without refreshing
+      window.history.replaceState({}, document.title, window.location.pathname);
+
       if (formattedUser.type === "business") {
-        navigate("/business", { replace: true });
+        setScreen("businessDashboard");
       } else {
-        navigate("/", { replace: true });
+        setScreen("main");
         handleFetchWishlist();
       }
       sonnerToast.success(successMessage);
@@ -1098,21 +1024,24 @@ async function handleRefresh() {
     }));
   };
 
-  const canOpenSidebar =
-    !isSidebarOpen &&
-    screen !== "reveal" &&
-    screen !== "login" &&
-    screen !== "communityWrite" &&
-    screen !== "communityDetail";
-
   return (
     <div className="h-[100dvh] flex flex-col bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-800 overflow-hidden w-full relative">
       {/* Live Ticker - Show on all screens except login/reveal/detail */}
       {screen !== "login" &&
         screen !== "reveal" &&
-        screen !== "detail" && <LiveTicker onOpenMenu={canOpenSidebar ? () => setIsSidebarOpen(true) : undefined} />}
+        screen !== "detail" && <LiveTicker />}
 
-      <div className={`flex-1 overflow-x-hidden overscroll-y-contain relative w-full ${screen === "main" ? "overflow-y-hidden overscroll-none touch-none" : "overflow-y-auto"}`} id="main-scroll-container">
+      {/* Hamburger Menu Button - Fixed position */}
+      {screen !== "reveal" && screen !== "login" && screen !== "communityWrite" && screen !== "communityDetail" && (
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          className="fixed top-12 right-4 z-30 p-3 bg-rose-500 rounded-full shadow-lg hover:bg-rose-600 transition-colors"
+        >
+          <Menu className="w-6 h-6 text-white" />
+        </button>
+      )}
+
+      <div className="flex-1 overflow-y-auto overflow-x-hidden relative w-full" id="main-scroll-container">
 
         {screen === "main" && (
           <MainScreen
@@ -1290,7 +1219,7 @@ async function handleRefresh() {
             }} 
             onDetail={(id) => {
               setSelectedPostId(id);
-              navigate(`/community/${id}`); // 방금 클릭한 id로 직접 이동 (stale state 방지)
+              setScreen("communityDetail");
             }} 
           />
         )}
@@ -1429,7 +1358,7 @@ async function handleRefresh() {
         richColors
         visibleToasts={1}
         duration={2500}
-        offset="calc(max(env(safe-area-inset-top, 40px), 48px) + 12px)"
+        offset="calc(env(safe-area-inset-top) + 12px)"
       />
     </div>
   );

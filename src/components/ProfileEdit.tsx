@@ -355,7 +355,7 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
               type="date"
               value={birthdate}
               onChange={(e) => setBirthdate(e.target.value)}
-              className="w-full px-4 py-3 min-h-[48px] bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-pink-400 appearance-none [color-scheme:dark]"
+              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-pink-400"
             />
           </div>
 

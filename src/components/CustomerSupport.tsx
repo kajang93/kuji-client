@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from './motion';
-import { ChevronLeft, Send, FileText, ChevronDown } from './icons';
+import { ChevronLeft, Send, FileText } from './icons';
 import { toast } from 'sonner';
 import SupportHistory from './SupportHistory';
 import { createInquiry } from '../api/inquiry';
@@ -19,7 +19,6 @@ const INQUIRY_CATEGORIES: { label: string; value: InquiryType }[] = [
 
 export default function CustomerSupport({ onBack }: CustomerSupportProps) {
   const [showHistory, setShowHistory] = useState(false);
-  const [showGuide, setShowGuide] = useState(false); // 문의 안내 접이식 (기본 접힘 → 버튼이 바로 보이도록)
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     inquiryType: 'SHIPPING' as InquiryType,
@@ -88,26 +87,17 @@ export default function CustomerSupport({ onBack }: CustomerSupportProps) {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-2xl mx-auto"
         >
-          {/* Info Box (접이식) */}
-          <div className="bg-blue-500/10 border border-blue-400/30 rounded-2xl px-5 mb-6 overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setShowGuide((v) => !v)}
-              className="w-full flex items-center justify-between py-4 text-blue-300 font-bold"
-            >
-              <span className="flex items-center gap-2">
-                <span className="text-lg">💬</span>
-                <span>문의 안내</span>
-              </span>
-              <ChevronDown className={`w-5 h-5 transition-transform ${showGuide ? 'rotate-180' : ''}`} />
-            </button>
-            {showGuide && (
-              <ul className="text-white/70 text-sm space-y-2 leading-relaxed pb-4">
-                <li>• 평일 09:00 ~ 18:00 운영 (주말/공휴일 휴무)</li>
-                <li>• 문의 접수 후 1~2 영업일 내 답변 드립니다.</li>
-                <li>• 본인 확인을 위해 답변 알림이 발송될 수 있습니다.</li>
-              </ul>
-            )}
+          {/* Info Box */}
+          <div className="bg-blue-500/10 border border-blue-400/30 rounded-2xl p-5 mb-6">
+            <h3 className="text-blue-300 font-bold mb-3 flex items-center gap-2">
+              <span className="text-lg">💬</span>
+              <span>문의 안내</span>
+            </h3>
+            <ul className="text-white/70 text-sm space-y-2 leading-relaxed">
+              <li>• 평일 09:00 ~ 18:00 운영 (주말/공휴일 휴무)</li>
+              <li>• 문의 접수 후 1~2 영업일 내 답변 드립니다.</li>
+              <li>• 본인 확인을 위해 답변 알림이 발송될 수 있습니다.</li>
+            </ul>
           </div>
 
           {/* Form */}
@@ -159,7 +149,7 @@ export default function CustomerSupport({ onBack }: CustomerSupportProps) {
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 placeholder="문의하실 내용을 자세히 작성해주세요"
-                rows={5}
+                rows={8}
                 className="w-full px-4 py-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 focus:outline-none focus:border-cyan-400 resize-none transition-colors"
                 required
               />
