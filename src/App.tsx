@@ -54,90 +54,12 @@ import {
 
 
 
-
-const SCREEN_TITLES: Partial<Record<ScreenType, string>> = {
-  main: "오시쿠지 - 홈",
-  list: "오시쿠지 - 쿠지 목록",
-  detail: "오시쿠지 - 상품 상세",
-  login: "오시쿠지 - 로그인/회원가입",
-  selection: "오시쿠지 - 뽑기 선택",
-  reveal: "오시쿠지 - 뽑기 결과",
-  profile: "오시쿠지 - 마이페이지",
-  profileEdit: "오시쿠지 - 프로필 수정",
-  purchase: "오시쿠지 - 구매 내역",
-  winning: "오시쿠지 - 당첨 보관함",
-  wishlist: "오시쿠지 - 찜 목록",
-  settings: "오시쿠지 - 설정",
-  support: "오시쿠지 - 고객센터",
-  prizeSelection: "오시쿠지 - 상품 선택",
-  businessDashboard: "오시쿠지 - 사업자 대시보드",
-  businessProfile: "오시쿠지 - 사업자 프로필",
-  businessProducts: "오시쿠지 - 상품 관리",
-  businessProductEdit: "오시쿠지 - 상품 수정",
-  businessRegister: "오시쿠지 - 쿠지 등록",
-  businessShipping: "오시쿠지 - 배송 관리",
-  businessInquiries: "오시쿠지 - 고객 문의",
-  businessPending: "오시쿠지 - 사업자 승인 대기",
-  community: "오시쿠지 - 커뮤니티",
-  communityDetail: "오시쿠지 - 커뮤니티 상세",
-  communityWrite: "오시쿠지 - 커뮤니티 글쓰기",
-  notice: "오시쿠지 - 공지사항",
-  events: "오시쿠지 - 이벤트",
-  pointCharge: "오시쿠지 - 포인트 충전",
-  adminDashboard: "오시쿠지 - 관리자 대시보드",
-  adminNoticeManagement: "오시쿠지 - 공지사항 관리",
-  adminEventManagement: "오시쿠지 - 이벤트 관리",
-  adminInquiryManagement: "오시쿠지 - 1:1 문의 관리",
-  adminMainBannerManagement: "오시쿠지 - 메인 배너 관리",
-  adminUserManagement: "오시쿠지 - 회원 관리",
-  adminPromotionManagement: "오시쿠지 - 프로모션 관리",
-  adminStatistics: "오시쿠지 - 관리자 통계",
-};
+import { useScreen } from "./hooks/useScreen";
 
 export default function App() {
 
-  const [screen, setScreen] = useState<ScreenType>(() => {
-    const saved = sessionStorage.getItem("currentScreen") as ScreenType;
-    // 복원 불가 화면: 새로고침 시 사라지는 메모리 상태(선택된 글/상품 ID 등)에 의존해
-    // 화면 이름만 복원하면 아무것도 렌더링되지 않는(빈 화면) 것들
-    const unsafeScreens = [
-      "detail", "selection", "reveal", "winning", "prizeSelection",
-      "kakaoCallback", "naverCallback", "googleCallback",
-      "communityDetail", "communityWrite", "businessProductEdit", "profileEdit",
-    ];
-    if (saved && !unsafeScreens.includes(saved)) {
-      return saved;
-    }
-    return "main";
-  });
+  const [screen, setScreen] = useScreen();
 
-  useEffect(() => {
-    sessionStorage.setItem("currentScreen", screen);
-
-    if (typeof window !== "undefined") {
-      // 1. 화면 타이틀 갱신 (메트리쿨 대시보드 페이지명에 반영)
-      const pageTitle = SCREEN_TITLES[screen] || "오시쿠지 (推しクジ)";
-      document.title = pageTitle;
-
-      // 2. 콜백 화면이 아닐 때 가상 URL 해시 동기화 (예: /#login, /#businessRegister)
-      const isCallback = ["kakaoCallback", "naverCallback", "googleCallback"].includes(screen);
-      if (!isCallback) {
-        const hash = screen === "main" ? "" : `#${screen}`;
-        const newUrl = `${window.location.pathname}${window.location.search}${hash}`;
-        window.history.replaceState(null, pageTitle, newUrl);
-      }
-
-      // 3. 메트리쿨(Metricool) SPA 화면별 페이지뷰 전송
-      const win = window as any;
-      if (win.beTracker && typeof win.beTracker.t === "function") {
-        try {
-          win.beTracker.t({ hash: "6904186716ade72017672c0f2c7ba55c" });
-        } catch (e) {
-          console.debug("Metricool track error", e);
-        }
-      }
-    }
-  }, [screen]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [selectedAnime, setSelectedAnime] =
     useState<AnimeCollection | null>(null);
@@ -178,7 +100,7 @@ export default function App() {
     type: "info",
   });
   useGlobalGestures(screen, setScreen, returnToScreen, setReturnToScreen);
-  useRefreshOnPageShow(handleRefresh);
+useRefreshOnPageShow(handleRefresh);
   const [animeCollections, setAnimeCollections] = useState<AnimeCollection[]>([]);
   const [sellerCollections, setSellerCollections] = useState<AnimeCollection[]>([]);
 
@@ -205,14 +127,14 @@ export default function App() {
 
     setSellerCollections(collections);
   };
-
+  
   useEffect(() => {
     if (screen === "businessProducts") {
       fetchSellerCollectionsWithPrizes()
         .catch(console.error);
     }
   }, [screen]);
-
+  
   const handleFetchBoards = async () => {
     try {
       const boards = await fetchKujiBoards();
@@ -220,7 +142,7 @@ export default function App() {
       const mappedCollections: AnimeCollection[] = boards.map(mapBoardToCollection);
 
       setAnimeCollections(mappedCollections);
-
+      
       // ✅ 상품 썸네일 즉시 프리로딩 (목록 진입 시 지연 없는 이미지 렌더링을 위해)
       requestAnimationFrame(() => {
         mappedCollections.forEach(collection => {
@@ -242,16 +164,16 @@ export default function App() {
     }
   };
 
-  async function handleRefresh() {
-    await handleFetchBoards();
-    if (user?.type === 'admin' || user?.type === 'business') {
-      try {
-        await fetchSellerCollectionsWithPrizes();
-      } catch (e) {
-        console.error(e);
-      }
+async function handleRefresh() {
+  await handleFetchBoards();
+  if (user?.type === 'admin' || user?.type === 'business') {
+    try {
+      await fetchSellerCollectionsWithPrizes();
+    } catch (e) {
+      console.error(e);
     }
   }
+}
 
   useEffect(() => {
     handleFetchBoards();
@@ -261,15 +183,15 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onForegroundMessage((payload) => {
       console.log("Foreground push notification received:", payload);
-
+      
       // 당첨 알림(WINNING)은 KujiReveal에서 개별적으로 토스트를 띄우므로(스포일러 방지) 여기서 무시
       if (payload.data?.subType === 'WINNING') {
         return;
       }
-
+      
       const title = payload.notification?.title || payload.data?.title || "알림";
       const body = payload.notification?.body || payload.data?.body || "";
-
+      
       toast.success(
         `${title}\n${body}`,
         {
@@ -288,7 +210,7 @@ export default function App() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const urlParams = new URLSearchParams(window.location.search);
-
+    
     // Toss Payment Redirect Handling
     const payment = urlParams.get("payment");
     const pointCharge = urlParams.get("pointCharge");
@@ -341,12 +263,12 @@ export default function App() {
         window.history.replaceState({}, document.title, window.location.pathname);
         return;
       }
-
+      
       const { boardId, count } = JSON.parse(pendingData);
-
+      
       // Cleanup URL immediately
       window.history.replaceState({}, document.title, window.location.pathname);
-
+      
       const result = await drawKuji(boardId, {
         count,
         paymentType: "PG",
@@ -354,13 +276,13 @@ export default function App() {
         orderId,
         amount: Number(amount)
       });
-
+      
       const prizes: Prize[] = result.results.map(mapKujiItemToPrize);
 
       localStorage.removeItem("kuji_pending_payment");
       setRevealedPrizes(prizes);
       setScreen("reveal");
-
+      
     } catch (error) {
       console.error("결제 승인 처리 중 오류:", error);
       alert("결제 승인 후 뽑기 처리에 실패했습니다. 관리자에게 문의해주세요.");
@@ -376,23 +298,23 @@ export default function App() {
         window.history.replaceState({}, document.title, window.location.pathname);
         return;
       }
-
+      
       // Cleanup URL immediately
       window.history.replaceState({}, document.title, window.location.pathname);
-
+      
       const result = await confirmPointCharge({
         paymentKey,
         orderId,
         amount: Number(amount)
       });
-
+      
       localStorage.removeItem("point_charge_pending");
 
       const bonusMsg = result.bonusPoints > 0
         ? `\n🎁 보너스 ${result.bonusPoints.toLocaleString()}P 추가 적립!`
         : '';
       alert(`충전 완료! 🎉${bonusMsg}\n총 보유 포인트: ${result.totalPoints.toLocaleString()}P`);
-
+      
       // Refresh user info
       const token = localStorage.getItem("token");
       if (token) {
@@ -425,7 +347,7 @@ export default function App() {
       };
 
       setUser(formattedUser);
-
+      
       // 사용자 정보 로드 후 찜 목록 및 당첨 내역도 함께 로드
       if (formattedUser.type === "social") {
         handleFetchWishlist();
@@ -491,10 +413,10 @@ export default function App() {
                 rank: item.grade || '',
                 prizeName: item.itemName || '',
                 prizeImage: item.itemImage || '',
-                deliveryStatus:
+                deliveryStatus: 
                   s.status === 'PREPARING' ? 'preparing' :
-                    s.status === 'SHIPPING' ? 'shipped' :
-                      s.status === 'DELIVERED' ? 'delivered' : 'preparing',
+                  s.status === 'SHIPPING' ? 'shipped' :
+                  s.status === 'DELIVERED' ? 'delivered' : 'preparing',
                 trackingNumber: s.trackingNumber,
                 courierName: s.courierName,
                 needsOptionSelection: false,
@@ -507,7 +429,7 @@ export default function App() {
         setWinningHistory(mappedWinnings);
       } else {
         const histories = await fetchMyDrawHistory();
-
+        
         if (!histories || !Array.isArray(histories)) {
           setWinningHistory([]);
           return;
@@ -521,11 +443,11 @@ export default function App() {
           rank: h.grade,
           prizeName: h.itemName,
           prizeImage: h.itemImageUrl,
-          deliveryStatus:
+          deliveryStatus: 
             h.status === 'DRAWN' ? 'stored' :
-              h.status === 'SHIPPING_REQUESTED' ? 'preparing' :
-                h.status === 'SHIPPING' ? 'shipped' :
-                  h.status === 'DELIVERED' ? 'delivered' : 'stored',
+            h.status === 'SHIPPING_REQUESTED' ? 'preparing' :
+            h.status === 'SHIPPING' ? 'shipped' :
+            h.status === 'DELIVERED' ? 'delivered' : 'stored',
           needsOptionSelection: !!(h.grade && /^[A-DG]/i.test(h.grade)),
           isNew: false,
           shippingId: h.shippingId,
@@ -544,7 +466,7 @@ export default function App() {
     try {
       const myWishlist = await fetchMyWishlist();
       setWishlist(myWishlist.map(board => board.id.toString()));
-
+      
       // 전체 목록에서도 찜 상태 동기화
       setAnimeCollections(prev => prev.map(anime => ({
         ...anime,
@@ -600,12 +522,6 @@ export default function App() {
     }
   };
 
-  // 구성품 선택 새로고침 시 선택 상태(selectedWinningId/selectedRank)가 없으면 당첨내역으로 복귀
-  useEffect(() => {
-    if (screen === "prizeSelection" && (!selectedWinningId || !selectedRank)) {
-      setScreen("winning");
-    }
-  }, [screen, selectedWinningId, selectedRank]);
   const handlePurchase = (count: number, pointsUsed = 0) => {
     if (!user) {
       // Not logged in - go to login screen
@@ -766,11 +682,11 @@ export default function App() {
           rank: h.grade,
           prizeName: h.itemName,
           prizeImage: h.itemImageUrl,
-          deliveryStatus:
+          deliveryStatus: 
             h.status === 'DRAWN' ? 'stored' :
-              h.status === 'SHIPPING_REQUESTED' ? 'preparing' :
-                h.status === 'SHIPPING' ? 'shipped' :
-                  h.status === 'DELIVERED' ? 'delivered' : 'stored',
+            h.status === 'SHIPPING_REQUESTED' ? 'preparing' :
+            h.status === 'SHIPPING' ? 'shipped' :
+            h.status === 'DELIVERED' ? 'delivered' : 'stored',
           needsOptionSelection: !!(h.grade && /^[A-DG]/i.test(h.grade)),
           isNew: revealedIds.includes(h.id),
           shippingId: h.shippingId,
@@ -947,7 +863,7 @@ export default function App() {
     try {
       // 1. 서버 API 호출
       const { wished } = await toggleWishlist(Number(animeId));
-
+      
       // 2. 로컬 상태 업데이트
       setWishlist((prev) => {
         if (wished) {
@@ -958,7 +874,7 @@ export default function App() {
       });
 
       // 3. 전체 목록 데이터도 업데이트
-      setAnimeCollections(prev => prev.map(anime =>
+      setAnimeCollections(prev => prev.map(anime => 
         anime.id === animeId ? { ...anime, isWished: wished } : anime
       ));
 
@@ -973,10 +889,10 @@ export default function App() {
     try {
       // 찜 해제 API 호출 (토글과 동일한 엔드포인트 사용)
       const { wished } = await toggleWishlist(Number(animeId));
-
+      
       if (!wished) {
         setWishlist((prev) => prev.filter((id) => id !== animeId));
-        setAnimeCollections(prev => prev.map(anime =>
+        setAnimeCollections(prev => prev.map(anime => 
           anime.id === animeId ? { ...anime, isWished: false } : anime
         ));
         toast.success("찜 목록에서 제거되었습니다.");
@@ -1083,7 +999,7 @@ export default function App() {
   // Real prize options from backend data
   const getPrizeOptions = (rank: string): PrizeOption[] => {
     const prizesForRank = selectedAnime?.prizes.filter((p) => p.rank === rank) || [];
-
+    
     // 해당 등급(rank)에 등록된 모든 상품들을 옵션으로 매핑하여 반환합니다.
     return prizesForRank.map((prize) => ({
       id: prize.id,
@@ -1175,8 +1091,8 @@ export default function App() {
             user={user}
             onBack={() => setScreen(user.type === "business" ? "businessProfile" : "profile")}
             onSave={(userData) => {
-              setUser({
-                ...user,
+              setUser({ 
+                ...user, 
                 ...userData,
                 profileImageUrl: userData.profileImage || user.profileImageUrl
               });
@@ -1274,7 +1190,7 @@ export default function App() {
           />
         )}
         {screen === "community" && (
-          <BoardList
+          <BoardList 
             user={user}
             onBack={() => setScreen("main")}
             onWrite={() => {
@@ -1285,17 +1201,17 @@ export default function App() {
               }
               setSelectedPostId(null); // 새 글 작성을 위해 ID 초기화
               setScreen("communityWrite");
-            }}
+            }} 
             onDetail={(id) => {
               setSelectedPostId(id);
               setScreen("communityDetail");
-            }}
+            }} 
           />
         )}
 
         {screen === "communityDetail" && selectedPostId && (
-          <BoardDetail
-            postId={selectedPostId}
+          <BoardDetail 
+            postId={selectedPostId} 
             user={user}
             onBack={() => {
               const url = new URL(window.location.href);
@@ -1308,10 +1224,10 @@ export default function App() {
         )}
 
         {screen === "communityWrite" && (
-          <BoardWrite
+          <BoardWrite 
             postId={selectedPostId || undefined}
-            onBack={() => setScreen(selectedPostId ? "communityDetail" : "community")}
-            onSuccess={() => setScreen(selectedPostId ? "communityDetail" : "community")}
+            onBack={() => setScreen(selectedPostId ? "communityDetail" : "community")} 
+            onSuccess={() => setScreen(selectedPostId ? "communityDetail" : "community")} 
           />
         )}
 
@@ -1374,7 +1290,7 @@ export default function App() {
           />
         )}
 
-      </div>
+    </div>
 
       {/* Sidebar - Different for Business Users */}
       {user?.type === "business" ? (
