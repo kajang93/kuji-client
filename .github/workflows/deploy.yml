@@ -22,8 +22,44 @@ jobs:
         run: npm ci
         
       - name: Create .env file
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+          VITE_TOSS_CLIENT_KEY: ${{ secrets.VITE_TOSS_CLIENT_KEY }}
+          VITE_KAKAO_REST_API_KEY: ${{ secrets.VITE_KAKAO_REST_API_KEY }}
         run: |
-          echo "${{ secrets.ENV_FILE }}" > .env
+          python3 - <<'PYTHON'
+          import json
+          import os
+          import re
+          import shlex
+          from pathlib import Path
+
+          lines = os.environ.get("ENV_FILE", "").splitlines()
+          lines = [line for line in lines if not re.match(r"\s*(?:export\s+)?VITE_KAKAO_CLIENT_SECRET\s*=", line)]
+          for name in ("VITE_TOSS_CLIENT_KEY", "VITE_KAKAO_REST_API_KEY"):
+              value = os.environ.get(name, "").strip()
+              if value:
+                  if "\n" in value or "\r" in value:
+                      raise SystemExit(f"{name} must be a single line")
+                  lines = [line for line in lines if not re.match(rf"\s*(?:export\s+)?{name}\s*=", line)]
+                  lines.append(f"{name}={json.dumps(value)}")
+          values = {}
+          for line in lines:
+              match = re.match(r"\s*(?:export\s+)?(VITE_TOSS_CLIENT_KEY|VITE_KAKAO_REST_API_KEY)\s*=\s*(.*?)\s*$", line)
+              if match:
+                  try:
+                      parts = shlex.split(match[2], comments=True)
+                  except ValueError:
+                      raise SystemExit(f"{match[1]} must be a single value")
+                  if len(parts) > 1:
+                      raise SystemExit(f"{match[1]} must be a single value")
+                  values[match[1]] = parts[0] if parts else ""
+          if not re.fullmatch(r"(?:test|live)_ck_[A-Za-z0-9]+", values.get("VITE_TOSS_CLIENT_KEY", "")):
+              raise SystemExit("Set VITE_TOSS_CLIENT_KEY to the API individual integration client key (test_ck_ or live_ck_)")
+          if not values.get("VITE_KAKAO_REST_API_KEY"):
+              raise SystemExit("Set VITE_KAKAO_REST_API_KEY")
+          Path(".env").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PYTHON
           
       - name: Build Project
         run: npm run build
