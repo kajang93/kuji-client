@@ -1,5 +1,4 @@
 import axiosInstance from "./axiosInstance";
-import { API_HOST } from "./client";
 import { v4 as uuidv4 } from 'uuid';
 
 export interface NotificationSettingDto {
@@ -116,7 +115,7 @@ export const getNotificationSettings = async (): Promise<NotificationSettingDto>
  * - 사용자가 토글을 변경할 때마다 서버에 저장합니다.
  */
 export const updateNotificationSettings = async (settings: Partial<NotificationSettingDto>): Promise<void> => {
-  const response = await axiosInstance.patch('/api/notifications/settings', settings);
+  await axiosInstance.patch('/api/notifications/settings', settings);
   // axios throws on error
 }
 

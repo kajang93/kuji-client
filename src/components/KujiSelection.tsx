@@ -16,7 +16,7 @@ type KujiSelectionProps = {
   onBack: () => void;
 };
 
-export default function KujiSelection({ boardId, totalKuji, purchaseCount, pointsToUse, pricePerKuji, kujiStatus, onConfirm, onBack }: KujiSelectionProps) {
+export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pricePerKuji, kujiStatus, onConfirm, onBack }: KujiSelectionProps) {
   const [selectedKuji, setSelectedKuji] = useState<number[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -62,6 +62,11 @@ export default function KujiSelection({ boardId, totalKuji, purchaseCount, point
     if (selectedKuji.length !== purchaseCount || isProcessing) return;
 
     if (finalPrice > 0) {
+      const clientKey = import.meta.env.VITE_TOSS_CLIENT_KEY;
+      if (!clientKey) {
+        alert("결제 서비스가 설정되지 않았습니다. 고객센터에 문의해 주세요.");
+        return;
+      }
       try {
         setIsProcessing(true);
         // 1. Prepare payment via Backend
@@ -78,7 +83,6 @@ export default function KujiSelection({ boardId, totalKuji, purchaseCount, point
         }));
 
         // 3. Load Toss SDK & Request Payment
-        const clientKey = "test_ck_yL0qZ4G1VOKP7BNe20MBVoWb2MQY";
         const tossPayments = await loadTossPayments(clientKey);
 
         await tossPayments.requestPayment("카드", {
@@ -107,13 +111,6 @@ export default function KujiSelection({ boardId, totalKuji, purchaseCount, point
       onConfirm(selectedKuji);
     }
   };
-
-  // Auto-select if purchase count is reached
-  useEffect(() => {
-    if (selectedKuji.length === purchaseCount) {
-      // Optional: could auto-proceed after a delay
-    }
-  }, [selectedKuji.length, purchaseCount]);
 
   // Create serrated edge path for kuji card
   const createSerratedPath = (width: number, height: number) => {

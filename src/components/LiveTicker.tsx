@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
-import { Trophy, Zap } from './icons';
+import { Zap } from './icons';
 import { fetchRecentDrawHistory } from '../api/kuji';
 import { BASE_URL } from '../api/axiosInstance';
 import { Client } from '@stomp/stompjs';

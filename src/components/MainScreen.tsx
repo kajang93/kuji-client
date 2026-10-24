@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { Ticket, Sparkles, Trophy, Star, ChevronRight, X } from './icons';
+import { Ticket, ChevronRight, X } from './icons';
 
 type Banner = {
   id: string;

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
-import { ChevronLeft, User, Mail, Phone, MapPin, Calendar, Save, Search, Camera, ImageIcon, X } from './icons';
+import { ChevronLeft, User, Mail, Phone, MapPin, Calendar, Save, Camera, ImageIcon } from './icons';
 import AddressSearchModal from './AddressSearchModal';
 import { updateMyProfile, changePassword, fetchMyProfile } from '../api/auth';
 import { validateImageFile, compressImageFile, validatePasswordRules } from '../api/client';
@@ -49,7 +49,7 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
     const loadProfile = async () => {
       try {
         const data = await fetchMyProfile();
-        setName(data.nickname || data.name || user.name);
+        setName(data.nickname || user.name);
         setEmail(data.email || user.email);
         setPhone(data.phoneNumber || user.phone || '');
         setAddress(data.address || user.address || '');
@@ -177,7 +177,7 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
   };
 
   return (
-    <div className="min-h-screen pb-6">
+    <div aria-busy={isLoading} className="min-h-screen pb-6">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-gradient-to-r from-purple-900 to-blue-900 border-b-2 border-cyan-400/50 shadow-lg">
         <div className="flex items-center justify-between p-4">
@@ -440,7 +440,7 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleSave}
-          disabled={isSaving}
+          disabled={isSaving || isLoading}
           className={`w-full mt-6 py-4 text-white rounded-full shadow-xl flex items-center justify-center gap-2 ${
             isSaving ? 'bg-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-pink-500 to-purple-500'
           }`}

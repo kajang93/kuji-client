@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from './motion';
-import { Search, PenLine, ChevronRight, ChevronLeft, Eye, MessageSquare, Filter, Heart } from './icons';
+import { PenLine, ChevronLeft, Eye, MessageSquare, Heart } from './icons';
 import { Post, PostCategory } from '../shared-types';
 import { fetchPosts } from '../api/community';
 

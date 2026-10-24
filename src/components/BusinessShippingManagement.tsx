@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from './motion';
-import { ChevronLeft, Package, Truck, CheckCircle, ChevronRight, Save } from './icons';
+import { motion } from './motion';
+import { ChevronLeft, Package, Truck, CheckCircle, ChevronRight } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import type { WinningItem } from '@/shared-types';
 
@@ -34,8 +34,12 @@ export default function BusinessShippingManagement({
     return acc;
   }, {} as GroupedWinnings);
 
-  const getStatusInfo = (status: 'preparing' | 'shipped' | 'delivered') => {
+  const getStatusInfo = (status: WinningItem['deliveryStatus']) => {
     switch (status) {
+      case 'stored':
+        return { label: '보관중', color: 'bg-slate-500', textColor: 'text-slate-300', icon: Package };
+      case 'SHIP_REQUESTED':
+        return { label: '배송 요청', color: 'bg-blue-500', textColor: 'text-blue-300', icon: Package };
       case 'preparing':
         return { label: '배송 준비중', color: 'bg-blue-500', textColor: 'text-blue-300', icon: Package };
       case 'shipped':
@@ -126,7 +130,6 @@ export default function BusinessShippingManagement({
         <div className="p-4 space-y-3">
           {seriesWinnings.map((winning, index) => {
             const statusInfo = getStatusInfo(winning.deliveryStatus);
-            const StatusIcon = statusInfo.icon;
             
             return (
               <motion.div

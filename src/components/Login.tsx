@@ -1,19 +1,30 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
-import { ChevronLeft, Mail, Building2, Users, Eye, EyeOff, X, Ticket } from './icons';
+import { ChevronLeft, Mail, Building2, Users, X, Ticket } from './icons';
 import { toast } from 'sonner';
 import { login, fetchMyProfile, findId, sendSms, verifySms, resetPasswordDirect } from '../api/auth';
 import { validatePasswordRules } from '../api/client';
 import Signup from './Signup';
 import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
 
 // Auth Migration: Login.tsx updated.
 
 
 
 type LoginProps = {
-  onLogin: (user: { name: string; email: string; type: 'social' | 'business' }) => void;
+  onLogin: (user: {
+    name: string;
+    email: string;
+    type: 'social' | 'business' | 'admin';
+    phone?: string;
+    birthdate?: string;
+    address?: string;
+    addressDetail?: string;
+    joinDate?: string;
+    points?: number;
+    isActive?: boolean;
+    profileImageUrl?: string;
+  }) => void;
   onBack: () => void;
 };
 
@@ -38,7 +49,6 @@ export default function Login({ onLogin, onBack }: LoginProps) {
     }
   }, []);
   const [findPhone, setFindPhone] = useState('');
-  const [showPw, setShowPw] = useState(false);
   const [logoClickCount, setLogoClickCount] = useState(0);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
@@ -68,7 +78,9 @@ export default function Login({ onLogin, onBack }: LoginProps) {
         ? "http://localhost:5173/auth/kakao/callback" 
         : "https://kujishop.shop/auth/kakao/callback";
 
-      const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code`;
+      const state = crypto.randomUUID();
+      sessionStorage.setItem('oauth_state_kakao', state);
+      const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?${new URLSearchParams({ client_id: REST_API_KEY, redirect_uri: REDIRECT_URI, response_type: 'code', state })}`;
       
       if (Capacitor.isNativePlatform()) {
         toast.info("모바일 앱 환경에서는 딥링크(App Link) 설정 전까지 소셜 로그인이 제한됩니다.");
@@ -88,8 +100,9 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       const REDIRECT_URI = import.meta.env.DEV
         ? "http://localhost:5173/auth/naver/callback"
         : "https://kujishop.shop/auth/naver/callback";
-      const STATE = "naver_" + Math.random().toString(36).substring(2, 15);
-      const NAVER_AUTH_URL = `https://nid.naver.com/oauth2.0/authorize?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}`;
+      const state = crypto.randomUUID();
+      sessionStorage.setItem('oauth_state_naver', state);
+      const NAVER_AUTH_URL = `https://nid.naver.com/oauth2.0/authorize?${new URLSearchParams({ response_type: 'token', client_id: CLIENT_ID, redirect_uri: REDIRECT_URI, state })}`;
 
       if (Capacitor.isNativePlatform()) {
         toast.info("모바일 앱 환경에서는 딥링크(App Link) 설정 전까지 소셜 로그인이 제한됩니다.");
@@ -109,9 +122,10 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       const REDIRECT_URI = import.meta.env.DEV
         ? "http://localhost:5173/auth/google/callback"
         : "https://kujishop.shop/auth/google/callback";
-      const STATE = "google_" + Math.random().toString(36).substring(2, 15);
-      const SCOPE = encodeURIComponent("https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile");
-      const GOOGLE_AUTH_URL = `https://accounts.google.com/o/oauth2/v2/auth?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}&scope=${SCOPE}`;
+      const state = crypto.randomUUID();
+      sessionStorage.setItem('oauth_state_google', state);
+      const scope = "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile";
+      const GOOGLE_AUTH_URL = `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({ response_type: 'token', client_id: CLIENT_ID, redirect_uri: REDIRECT_URI, state, scope })}`;
 
       if (Capacitor.isNativePlatform()) {
         toast.info("모바일 앱 환경에서는 딥링크(App Link) 설정 전까지 소셜 로그인이 제한됩니다.");
@@ -124,7 +138,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
     toast.info("애플 로그인은 준비 중입니다.");
   };
 
-  const handleIdPwLogin = async (e: React.FormEvent, type: 'customer' | 'business') => {
+  const handleIdPwLogin = async (e: React.FormEvent, type: 'customer' | 'business' | 'admin') => {
     e.preventDefault();
     if (!userId || !userPw || isLoading) return;
 
@@ -136,8 +150,10 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       // rememberMe 체크 여부에 따라 저장소 분기
       if (token) {
         if (rememberMe) {
+          sessionStorage.removeItem('token');
           localStorage.setItem('token', token);
         } else {
+          localStorage.removeItem('token');
           sessionStorage.setItem('token', token);
         }
       }
@@ -146,22 +162,33 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       const userData = await fetchMyProfile();
       const userRole = userData.role || "USER";
 
+      if (type === 'admin' && userRole !== 'ROLE_ADMIN' && userRole !== 'ADMIN') {
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
+        toast.error('관리자 계정이 아닙니다.');
+        return;
+      }
+
       // Enforce login tab matches user role
       if (type === 'customer' && (userRole === 'ROLE_BUSINESS' || userRole === 'BIZ')) {
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
         toast.error('사업자 계정은 사업자 탭에서 로그인해주세요.');
         setIsLoading(false);
         return;
       }
       if (type === 'business' && !(userRole === 'ROLE_BUSINESS' || userRole === 'BIZ')) {
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
         toast.error('사업자 계정이 아닌 사용자입니다.');
         setIsLoading(false);
         return;
       }
       
       onLogin({
-        name: userData.nickname || userData.name,
+        name: userData.nickname || userData.email,
         email: userData.email,
-        type: (userRole === "ROLE_BUSINESS" || userRole === "BIZ" ? "business" : userRole === "ROLE_ADMIN" || userRole === "ADMIN" ? "admin" : "social") as any,
+        type: userRole === "ROLE_BUSINESS" || userRole === "BIZ" ? "business" : userRole === "ROLE_ADMIN" || userRole === "ADMIN" ? "admin" : "social",
         phone: userData.phoneNumber,
         birthdate: userData.birthDate,
         address: userData.address,
@@ -170,7 +197,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
         points: userData.points || 0,
         isActive: userData.isActive !== undefined ? userData.isActive : true,
         profileImageUrl: userData.profileImageUrl || ""
-      } as any);
+      });
 
       toast.success("로그인 성공!");
     } catch (error: any) {
@@ -185,7 +212,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
     window.scrollTo(0, 0);
   }, []);
 
-  const handleSignupComplete = (type: 'registered' | 'requested') => {
+  const handleSignupComplete = () => {
     setShowSignup(false);
     setActiveTab('customer');
   };
@@ -291,22 +318,6 @@ export default function Login({ onLogin, onBack }: LoginProps) {
     if (logoClickCount + 1 >= 7) {
       setShowAdminLogin(true);
       setLogoClickCount(0);
-    }
-  };
-
-  const handleAdminLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Admin credentials: admin / admin1234
-    if (userId === 'admin' && userPw === 'admin1234') {
-      setTimeout(() => {
-        onLogin({
-          name: '시스템 관리자',
-          email: 'admin@oshikuji.com',
-          type: 'admin' as any
-        });
-      }, 500);
-    } else {
-      toast.error('관리자 인증에 실패했습니다.');
     }
   };
 
@@ -986,7 +997,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                   </button>
                 </div>
 
-                <form onSubmit={handleAdminLogin} className="space-y-4">
+                <form onSubmit={(e: React.FormEvent) => handleIdPwLogin(e, 'admin')} className="space-y-4">
                   <div>
                     <label className="block text-white mb-2">이메일</label>
                     <input

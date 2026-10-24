@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchTrackingInfo, type TrackingResponse } from '../api/shipping';
-import { motion, AnimatePresence } from './motion';
+import { motion } from './motion';
 import { X, ChevronDown, ChevronUp, Package, Truck, MapPin, CheckCircle, Phone, MessageCircle } from './icons';
 import type { WinningItem } from '@/shared-types';
 import SellerInquiryModal from './SellerInquiryModal';
@@ -27,7 +27,6 @@ export default function DeliveryTracking({
   recipientAddress,
   deliveryDriver = '미배정',
   deliveryDriverPhone,
-  sellerContact = '1588-0000',
   sellerName = '판매자',
   sellerId = 'seller1',
   winning,
@@ -68,7 +67,6 @@ export default function DeliveryTracking({
   const finalRecipientAddress = trackingData?.recipientAddress || recipientAddress || '서울시 강남구 테헤란로 123';
   const finalDeliveryDriver = trackingData?.deliveryDriver || deliveryDriver;
   const finalDeliveryDriverPhone = trackingData?.deliveryDriverPhone || deliveryDriverPhone;
-  const finalSellerContact = sellerContact;
   const finalSellerName = sellerName;
   const finalSellerId = sellerId;
   const deliveryHistory = trackingData?.history || [];

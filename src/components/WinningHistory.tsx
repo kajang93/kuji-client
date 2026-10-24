@@ -1,11 +1,10 @@
 import { motion, AnimatePresence } from './motion';
-import { ChevronLeft, Trophy, Calendar, Package, Gift, Sparkles, Truck, X, Check, CheckCircle, ShoppingBag, Info } from './icons';
+import { ChevronLeft, Trophy, Package, Gift, Sparkles, Truck, X, Check, CheckCircle, Info } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import type { WinningItem } from '@/shared-types';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import DeliveryTracking from './DeliveryTracking';
 import AddressSearchModal from './AddressSearchModal';
-import { getToken } from '../api/axiosInstance';
 
 // Type Migration: WinningHistory updated.
 
@@ -49,15 +48,6 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
     
     setShippingForm({ ...shippingForm, phone: formatted });
   };
-
-  // Auto-trigger option selection for new winnings
-  useEffect(() => {
-    // Fill default shipping info if user exists
-    const token = getToken();
-    if (token) {
-      // In a real app, you might fetch user's default address here
-    }
-  }, []);
 
   // Real seller info mapping from WinningItem
   const getSellerInfo = (item: WinningItem | undefined) => {
@@ -148,17 +138,6 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const rankColors = {
-    'A': 'from-yellow-600 to-yellow-700',
-    'B': 'from-blue-600 to-blue-700',
-    'C': 'from-orange-600 to-orange-700',
-    'D': 'from-purple-600 to-purple-700',
-    'E': 'from-green-600 to-green-700',
-    'F': 'from-pink-600 to-pink-700',
-    'G': 'from-cyan-600 to-cyan-700',
-    'H': 'from-red-600 to-red-700',
   };
 
   const getDeliveryStatusColor = (status: string) => {
@@ -286,8 +265,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                   <p className="text-white/50">보관 중인 상품이 없습니다</p>
                 </div>
               ) : (
-                inventoryItems.map((winning, index) => {
-                  const bgGradient = rankColors[winning.rank as keyof typeof rankColors] || 'from-gray-600 to-gray-700';
+                inventoryItems.map((winning) => {
                   const isSelected = selectedItems.includes(winning.id);
                   const seller = getSellerInfo(winning);
 
@@ -407,8 +385,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                   </p>
                 </div>
               ) : (
-                filteredShippingItems.map((winning, index) => {
-                  const bgGradient = rankColors[winning.rank as keyof typeof rankColors] || 'from-gray-600 to-gray-700';
+                filteredShippingItems.map((winning) => {
                   
                   return (
                     <motion.div
@@ -706,7 +683,6 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
       {/* Certificate Popup (Same as before) */}
       <AnimatePresence>
         {certificatePopup && (() => {
-           const bgGradient = rankColors[certificatePopup.rank as keyof typeof rankColors] || 'from-gray-600 to-gray-700';
           return (
             <motion.div
               initial={{ opacity: 0 }}

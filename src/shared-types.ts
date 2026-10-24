@@ -1,5 +1,3 @@
-export const TYPES_MODULE = true;
-
 export interface PostComment {
   id: number;
   content: string;
@@ -31,7 +29,19 @@ export interface KujiBoard {
   remainCount?: number;
   gradeCount?: number; // 추가
   isWished?: boolean; // 추가
-  prizes?: Prize[];
+  prizes?: KujiItemResponse[];
+}
+
+export interface KujiItemResponse {
+  id: number;
+  grade: string;
+  name: string;
+  totalQty: number;
+  remainQty: number;
+  imageUrls: string[];
+  opened: boolean[];
+  drawHistoryId?: number;
+  options?: string | PrizeOption[];
 }
 
 export type Prize = {
@@ -45,7 +55,7 @@ export type Prize = {
   remainQty?: number;    // Backend field alignment
   opened: boolean[];
   drawHistoryId?: number; // 추가
-  options?: any; // 추가: KujiItem options
+  options?: PrizeOption[];
 };
 
 export type AnimeCollection = {
@@ -60,6 +70,7 @@ export type AnimeCollection = {
   boardId?: number; // Backend alignment
   isWished?: boolean; // 추가
   rewardRate?: number; // 적립 포인트 설정용
+  pricePerDraw?: number;
 };
 
 export type WinningItem = {
@@ -88,16 +99,20 @@ export interface ShippingInfo {
   id: number;
   recipientName: string;
   phone: string;
-  zipcode: string;
   address: string;
   detailAddress: string;
   trackingNumber?: string;
-  status: "PREPARING" | "SHIPPED" | "DELIVERED";
+  status: "COMPLETED" | "PREPARING" | "SHIPPING" | "DELIVERED" | "CANCELLED" | "RETURNED";
   courierName?: string;
   deliveryMessage?: string;
   createdAt: string;
-  updatedAt: string;
-  items: WinningItem[];
+  items: {
+    drawHistoryId: number;
+    kujiName: string;
+    grade: string;
+    itemName: string;
+    itemImage: string;
+  }[];
 }
 
 export type PrizeOption = {
@@ -179,12 +194,15 @@ export type Banner = {
   subtitle: string;
   imageUrl: string;
   order: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
   link?: string;
   buttonText?: string;
 };
 
 export interface MemberProfileResponse {
-  id: number;
+  memberId: number;
   email: string;
   nickname: string;
   role: string;

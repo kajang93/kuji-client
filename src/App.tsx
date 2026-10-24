@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import MainScreen from "./components/MainScreen";
 import AnimeList from "./components/AnimeListFixed";
 import PrizeDetail from "./components/PrizeDetail";
@@ -34,7 +35,8 @@ import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory, fe
 import BoardList from "./components/BoardList";
 import BoardDetail from "./components/BoardDetail";
 import BoardWrite from "./components/BoardWrite";
-import { fetchMyProfile } from "./api/auth";
+import { fetchMyProfile, logout } from "./api/auth";
+import { getToken } from "./api/axiosInstance";
 import { toggleWishlist, fetchMyWishlist } from "./api/wishlist";
 import { onForegroundMessage } from "./api/firebase";
 import { fetchSellerShippingList, completeShipping, updateTrackingInfo } from "./api/shipping";
@@ -59,6 +61,7 @@ import { useScreen } from "./hooks/useScreen";
 export default function App() {
 
   const [screen, setScreen] = useScreen();
+  const navigate = useNavigate();
 
   const [banners, setBanners] = useState<Banner[]>([]);
   const [selectedAnime, setSelectedAnime] =
@@ -67,7 +70,6 @@ export default function App() {
   const [revealedPrizes, setRevealedPrizes] = useState<Prize[]>([]);
   const [purchaseCount, setPurchaseCount] = useState(1);
   const [pointsToUse, setPointsToUse] = useState(0);
-  const [selectedKuji, setSelectedKuji] = useState<number[]>([]);
   const [user, setUser] = useState<{
     name: string;
     email: string;
@@ -99,7 +101,7 @@ export default function App() {
     message: "",
     type: "info",
   });
-  useGlobalGestures(screen, setScreen, returnToScreen, setReturnToScreen);
+  useGlobalGestures(screen, setScreen, returnToScreen);
 useRefreshOnPageShow(handleRefresh);
   const [animeCollections, setAnimeCollections] = useState<AnimeCollection[]>([]);
   const [sellerCollections, setSellerCollections] = useState<AnimeCollection[]>([]);
@@ -208,7 +210,10 @@ async function handleRefresh() {
 
   // Check for existing session or Kakao redirect on mount
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    if (screen === "kakaoCallback" || screen === "naverCallback" || screen === "googleCallback") {
+      return;
+    }
+    const token = getToken();
     const urlParams = new URLSearchParams(window.location.search);
     
     // Toss Payment Redirect Handling
@@ -224,34 +229,53 @@ async function handleRefresh() {
     } else if (payment === "fail") {
       const failMessage = urlParams.get("message") || "결제가 취소되었거나 실패했습니다.";
       localStorage.removeItem("kuji_pending_payment");
-      alert(decodeURIComponent(failMessage));
+      alert(failMessage);
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (pointCharge === "success" && paymentKey && orderId && amount) {
       handlePointChargeCompletion(paymentKey, orderId, amount);
     } else if (pointCharge === "fail") {
       const failMessage = urlParams.get("message") || "충전이 취소되었거나 실패했습니다.";
       localStorage.removeItem("point_charge_pending");
-      alert(decodeURIComponent(failMessage));
+      alert(failMessage);
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (Number.isInteger(sharedPostId) && sharedPostId > 0) {
       setSelectedPostId(sharedPostId);
       setScreen("communityDetail");
       if (token && token !== "undefined" && token !== "null") {
-        handleFetchUserInfo(token);
+        handleFetchUserInfo();
       }
     } else if (urlParams.get("action") === "signup") {
       setScreen("login");
     } else if (urlParams.has("code")) {
-      setScreen("kakaoCallback");
+      navigate(`/auth/kakao/callback${window.location.search}`, { replace: true });
+      return;
     } else if (window.location.hash.includes("access_token")) {
       const state = new URLSearchParams(window.location.hash.substring(1)).get("state");
-      if (state?.startsWith("google_")) {
-        setScreen("googleCallback");
+      if (state && state === sessionStorage.getItem("oauth_state_google")) {
+        navigate(`/auth/google/callback${window.location.hash}`, { replace: true });
+      } else if (state && state === sessionStorage.getItem("oauth_state_naver")) {
+        navigate(`/auth/naver/callback${window.location.hash}`, { replace: true });
       } else {
-        setScreen("naverCallback");
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setScreen("login");
+        toast.error("로그인 요청을 확인할 수 없습니다. 다시 로그인해 주세요.");
       }
+      return;
     } else if (token && token !== "undefined" && token !== "null") {
-      handleFetchUserInfo(token);
+      handleFetchUserInfo();
+    }
+
+    // 새로고침으로 화면에 필요한 선택 상태가 사라지면 목록으로 돌아갑니다.
+    if ((screen === "detail" || screen === "selection") && payment !== "success") {
+      setScreen("list");
+    } else if (screen === "reveal" && payment !== "success") {
+      setScreen("winning");
+    } else if (screen === "communityDetail" && !(Number.isInteger(sharedPostId) && sharedPostId > 0)) {
+      setScreen("community");
+    } else if (screen === "businessProductEdit") {
+      setScreen("businessProducts");
+    } else if (screen === "prizeSelection") {
+      setScreen("winning");
     }
   }, []);
 
@@ -316,9 +340,9 @@ async function handleRefresh() {
       alert(`충전 완료! 🎉${bonusMsg}\n총 보유 포인트: ${result.totalPoints.toLocaleString()}P`);
       
       // Refresh user info
-      const token = localStorage.getItem("token");
+      const token = getToken();
       if (token) {
-        await handleFetchUserInfo(token);
+        await handleFetchUserInfo();
       }
       setScreen("main");
     } catch (error) {
@@ -328,14 +352,14 @@ async function handleRefresh() {
     }
   };
 
-  const handleFetchUserInfo = async (token: string) => {
+  const handleFetchUserInfo = async () => {
     try {
       const userData = await fetchMyProfile();
       const userRole = userData.role || "USER";
       const formattedUser = {
-        name: userData.nickname || userData.name,
+        name: userData.nickname || userData.email,
         email: userData.email,
-        type: (userRole === "ROLE_BUSINESS" || userRole === "BIZ" ? "business" : userRole === "ROLE_ADMIN" || userRole === "ADMIN" ? "admin" : "social") as any,
+        type: (userRole === "ROLE_BUSINESS" || userRole === "BIZ" ? "business" : userRole === "ROLE_ADMIN" || userRole === "ADMIN" ? "admin" : "social") as "business" | "admin" | "social",
         points: userData.points || 0,
         isActive: userData.isActive !== undefined ? userData.isActive : true,
         profileImageUrl: userData.profileImageUrl || "",
@@ -360,6 +384,7 @@ async function handleRefresh() {
     } catch (error) {
       console.error("Session expired or invalid token:", error);
       localStorage.removeItem("token");
+      sessionStorage.removeItem("token");
       setUser(null);
       // 세션이 무효인데 로그인 전제 화면에 머물러 있으면 빈 화면이 되므로 메인으로 복귀
       setScreen(prev =>
@@ -404,7 +429,7 @@ async function handleRefresh() {
         const mappedWinnings: WinningItem[] = [];
         shippings.forEach(s => {
           if (s.items) {
-            s.items.forEach((item: any) => {
+            s.items.forEach((item) => {
               mappedWinnings.push({
                 id: `${s.id}-${item.drawHistoryId}`,
                 drawHistoryId: item.drawHistoryId,
@@ -533,7 +558,6 @@ async function handleRefresh() {
       // Already logged in - proceed to selection
       setPurchaseCount(count);
       setPointsToUse(pointsUsed);
-      setSelectedKuji([]);
       setScreen("selection");
     }
   };
@@ -542,6 +566,8 @@ async function handleRefresh() {
     name: string;
     email: string;
     type: "social" | "business" | "admin";
+    isActive?: boolean;
+    points?: number;
   }) => {
     setUser(userData);
     setIsSidebarOpen(false);
@@ -569,13 +595,17 @@ async function handleRefresh() {
   };
 
   const handleLogout = () => {
-    showConfirm("로그아웃 하시겠습니까?", () => {
-      localStorage.removeItem("token");
-      sessionStorage.removeItem("token");
-      setUser(null);
-      setScreen("main");
-      setIsSidebarOpen(false);
-      toast.success("로그아웃 되었습니다.");
+    showConfirm("로그아웃 하시겠습니까?", async () => {
+      try {
+        await logout();
+        setUser(null);
+        setScreen("main");
+        setIsSidebarOpen(false);
+        toast.success("로그아웃 되었습니다.");
+      } catch (error) {
+        console.error("서버 로그아웃 실패:", error);
+        toast.error("로그아웃하지 못했습니다. 연결 상태를 확인하고 다시 시도해주세요.");
+      }
     }, "로그아웃", "info");
   };
 
@@ -583,8 +613,9 @@ async function handleRefresh() {
   const handleSocialLoginSuccess = (successMessage: string) =>
     (token: string, userData: any) => {
       localStorage.setItem("token", token);
+      sessionStorage.removeItem("token");
       const formattedUser = {
-        name: userData.nickname || userData.name,
+        name: userData.nickname || userData.email,
         email: userData.email,
         type: (userData.role === "BIZ" ? "business" : "social") as "business" | "social",
         points: userData.points || 0,
@@ -615,7 +646,7 @@ async function handleRefresh() {
 
     try {
       // 1. Call the real draw API with POINT payment type
-      const response = await drawKuji(selectedAnime.id || (selectedAnime as any).boardId, {
+      const response = await drawKuji(Number(selectedAnime.id), {
         count: kujiIndices.length,
         paymentType: "POINT"
       });
@@ -640,7 +671,6 @@ async function handleRefresh() {
       };
 
       setRevealedPrizes(prizes);
-      setSelectedKuji(kujiIndices);
       setSelectedAnime(updatedAnime);
 
       // 사용한 포인트 로컬 상태 차감
@@ -719,17 +749,6 @@ async function handleRefresh() {
     }
 
     setRevealedPrizes([]);
-    setSelectedKuji([]);
-  };
-
-  const getSidebarMenuItems = () => {
-    const baseMenu = [
-      { id: "main", label: "홈", icon: <Home className="w-5 h-5" /> },
-      { id: "list", label: "뽑기 목록", icon: <Ticket className="w-5 h-5" /> },
-      { id: "community", label: "커뮤니티", icon: <MessageSquare className="w-5 h-5" /> },
-      { id: "support", label: "고객센터", icon: <Support className="w-5 h-5" /> },
-    ];
-    return baseMenu;
   };
 
   const handleSidebarNavigate = (
@@ -741,6 +760,7 @@ async function handleRefresh() {
       | "settings"
       | "support"
       | "community"
+      | "notice"
       | "events",
   ) => {
     setScreen(navScreen);
@@ -962,16 +982,6 @@ async function handleRefresh() {
       "배송 신청 완료",
     );
 
-    // Simulate Kakao Notification
-    if (notificationSettings.kakaoDelivery) {
-      setTimeout(() => {
-        showAlert(
-          `[카카오톡 알림톡 전송]\n배송 신청이 접수되었습니다. (운송장 번호 생성 예정)`,
-          "info",
-          "알림 발송 완료",
-        );
-      }, 1500);
-    }
   };
 
   // Alert function
@@ -1039,7 +1049,6 @@ async function handleRefresh() {
             collections={animeCollections}
             onSelect={handleAnimeSelect}
             onBack={() => setScreen("main")}
-            wishlist={wishlist}
             onToggleWishlist={(anime) => handleToggleWishlist(anime.id)}
           />
         )}
@@ -1048,7 +1057,7 @@ async function handleRefresh() {
             anime={selectedAnime}
             onBack={() => setScreen("list")}
             onPurchase={handlePurchase}
-            user={user}
+            user={user ? { ...user, points: user.points || 0 } : null}
           />
         )}
         {screen === "login" && (
@@ -1062,7 +1071,7 @@ async function handleRefresh() {
         )}
         {screen === "selection" && selectedAnime && (
           <KujiSelection
-            boardId={selectedAnime.id}
+            boardId={Number(selectedAnime.id)}
             totalKuji={selectedAnime.totalKuji}
             purchaseCount={purchaseCount}
             pointsToUse={pointsToUse}
@@ -1140,7 +1149,7 @@ async function handleRefresh() {
                 sellerId,
                 sellerName,
                 orderNumber,
-                inquiryType,
+                inquiryType: inquiryType === "주문" || inquiryType === "배송" || inquiryType === "결제" || inquiryType === "상품문의" ? inquiryType : "기타",
                 subject,
                 content,
                 status: "pending",
@@ -1297,7 +1306,7 @@ async function handleRefresh() {
         <BusinessSidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
-          user={user}
+          user={{ ...user, type: "business" }}
           onLogout={handleLogout}
           onNavigate={handleBusinessSidebarNavigate}
           newInquiriesCount={
@@ -1308,7 +1317,7 @@ async function handleRefresh() {
         <AdminSidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
-          user={user}
+          user={{ ...user, type: "admin" }}
           onLogout={handleLogout}
           onNavigate={handleAdminSidebarNavigate}
           newInquiriesCount={
@@ -1319,7 +1328,7 @@ async function handleRefresh() {
         <Sidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
-          user={user}
+          user={user ? { ...user, type: "social" } : null}
           onLogout={handleLogout}
           onLogin={() => {
             setIsSidebarOpen(false);

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { motion } from "./motion";
 import { Ticket } from "./icons";
 import { loginWithNaver, fetchMyProfile } from "../api/auth";
@@ -12,12 +12,25 @@ export default function NaverCallback({
   onLoginSuccess,
   onLoginFailure,
 }: NaverCallbackProps) {
+  const handled = useRef(false);
+
   useEffect(() => {
+    if (handled.current) return;
+    handled.current = true;
     // URL 해시(#) 파싱: #access_token=...&state=...&token_type=bearer&expires_in=3600
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const accessToken = hashParams.get("access_token");
     const error = hashParams.get("error");
     const errorDescription = hashParams.get("error_description");
+    const state = hashParams.get("state");
+    const expectedState = sessionStorage.getItem("oauth_state_naver");
+    sessionStorage.removeItem("oauth_state_naver");
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    if (!state || !expectedState || state !== expectedState) {
+      onLoginFailure("로그인 요청을 확인할 수 없습니다. 다시 로그인해 주세요.");
+      return;
+    }
 
     if (error) {
       onLoginFailure(`네이버 로그인 에러: ${errorDescription || error}`);
@@ -25,8 +38,6 @@ export default function NaverCallback({
     }
 
     if (accessToken) {
-      // 해시 값 제거 (보안 목적)
-      window.history.replaceState({}, document.title, window.location.pathname);
       handleNaverLogin(accessToken);
     } else {
       onLoginFailure("인가 토큰을 찾을 수 없습니다.");
@@ -43,6 +54,7 @@ export default function NaverCallback({
       }
 
       localStorage.setItem("token", data.token);
+      sessionStorage.removeItem("token");
       const userData = await fetchMyProfile();
       onLoginSuccess(data.token, userData);
     } catch (error: any) {

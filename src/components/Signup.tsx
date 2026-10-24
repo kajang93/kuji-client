@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
-import { ChevronLeft, Check, Upload, X, FileText, Search } from './icons';
+import { ChevronLeft, Check, Upload, X } from './icons';
 import { toast } from 'sonner';
 import { signup, checkEmail, sendSms, verifySms } from '../api/auth';
 import { compressImageFile, validatePasswordRules } from '../api/client';

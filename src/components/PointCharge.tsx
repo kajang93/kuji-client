@@ -17,7 +17,7 @@ const PRESET_AMOUNTS = [
   { value: 100000, label: '10만원', bonus: 5000 },
 ];
 
-export default function PointCharge({ currentPoints, onBack, onChargeComplete }: PointChargeProps) {
+export default function PointCharge({ currentPoints, onBack }: PointChargeProps) {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
   const [isCustom, setIsCustom] = useState(false);
@@ -57,6 +57,11 @@ export default function PointCharge({ currentPoints, onBack, onChargeComplete }:
       return;
     }
     if (isProcessing) return;
+    const clientKey = import.meta.env.VITE_TOSS_CLIENT_KEY;
+    if (!clientKey) {
+      alert('결제 서비스가 설정되지 않았습니다. 고객센터에 문의해 주세요.');
+      return;
+    }
 
     try {
       setIsProcessing(true);
@@ -72,7 +77,6 @@ export default function PointCharge({ currentPoints, onBack, onChargeComplete }:
       }));
 
       // 3. 토스페이먼츠 결제창 호출
-      const clientKey = 'test_ck_yL0qZ4G1VOKP7BNe20MBVoWb2MQY';
       const tossPayments = await loadTossPayments(clientKey);
 
       const orderName = prepareRes.bonusPoints > 0

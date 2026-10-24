@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { motion } from './motion';
 import { ChevronLeft, MessageSquare, Send, CheckCircle, Clock, Search } from './icons';
 import type { Inquiry } from '../shared-types';
 import { fetchAllInquiries, answerInquiry } from '../api/admin';

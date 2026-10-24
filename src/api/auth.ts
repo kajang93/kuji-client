@@ -1,6 +1,8 @@
 import { MemberProfileResponse } from "../shared-types";
-import { API_HOST, extractErrorMessage } from "./client";
+import { API_HOST } from "./client";
 import axiosInstance from "./axiosInstance";
+
+export { logoutSession as logout } from "./axiosInstance";
 
 const API_BASE_URL = `${API_HOST}/api/members`;
 
@@ -16,13 +18,15 @@ export const login = async (email: string, password: string): Promise<any> => {
  * 카카오 로그인 요청 (백엔드 세션 발급)
  */
 export const loginWithKakao = async (
-  kakaoAccessToken: string,
+  authorizationCode: string,
+  redirectUri: string,
   isTermsAgreed?: boolean,
   isPrivacyAgreed?: boolean,
   isMarketingAgreed?: boolean
 ): Promise<any> => {
   const response = await axiosInstance.post(`${API_BASE_URL}/login/kakao`, { 
-    kakaoAccessToken,
+    authorizationCode,
+    redirectUri,
     isTermsAgreed,
     isPrivacyAgreed,
     isMarketingAgreed

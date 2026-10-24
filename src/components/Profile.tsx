@@ -12,7 +12,6 @@ type ProfileProps = {
 export default function Profile({ user, onBack, onEdit, onChargePoints }: ProfileProps) {
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(user.profileImageUrl || null);
-  const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

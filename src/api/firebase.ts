@@ -55,7 +55,6 @@ export const requestFirebaseToken = async (): Promise<string | null> => {
         await PushNotifications.removeAllListeners();
         
         PushNotifications.addListener('registration', (token) => {
-          console.log("네이티브 FCM 토큰 발급 성공:", token.value);
           resolve(token.value);
         });
 
@@ -101,7 +100,6 @@ export const requestFirebaseToken = async (): Promise<string | null> => {
     });
 
     if (currentToken) {
-      console.log("FCM 토큰 발급 성공:", currentToken);
       return currentToken;
     } else {
       console.log("FCM 토큰을 가져올 수 없습니다. 알림 권한을 요청해주세요.");

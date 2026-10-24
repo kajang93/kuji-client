@@ -21,7 +21,6 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [purchaseCount, setPurchaseCount] = useState(1);
   const [pointsToUse, setPointsToUse] = useState(0);
-  const [currentImageIndexes, setCurrentImageIndexes] = useState<{ [key: string]: number }>({});
   const [imagePopup, setImagePopup] = useState<{ images: string[]; currentIndex: number; prizeName: string } | null>(null);
   const pricePerKuji = anime.pricePerDraw || 15000; // 1장당 가격 (백엔드 기본값 매핑)
   const groupedPrizes = anime.prizes.reduce((acc, prize) => {
@@ -72,20 +71,6 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
     if (purchaseCount > 1) {
       setPurchaseCount(prev => prev - 1);
     }
-  };
-
-  const nextImage = (prizeId: string, totalImages: number) => {
-    setCurrentImageIndexes(prev => ({
-      ...prev,
-      [prizeId]: ((prev[prizeId] || 0) + 1) % totalImages
-    }));
-  };
-
-  const prevImage = (prizeId: string, totalImages: number) => {
-    setCurrentImageIndexes(prev => ({
-      ...prev,
-      [prizeId]: ((prev[prizeId] || 0) - 1 + totalImages) % totalImages
-    }));
   };
 
   const openImagePopup = (images: string[], currentIndex: number, prizeName: string) => {

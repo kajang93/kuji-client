@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from './motion';
-import { ChevronLeft, Send, Image as ImageIcon, Check, X } from './icons';
+import { ChevronLeft, Image as ImageIcon, Check, X } from './icons';
 import { PostCategory, PostCreateRequest } from '../shared-types';
 import { useRef } from 'react';
 import { createPost, fetchPostDetail, updatePost } from '../api/community';

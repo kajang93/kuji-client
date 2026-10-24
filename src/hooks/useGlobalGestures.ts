@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import type { ScreenType } from '../shared-types';
 
 /**
  * Global gesture handling for PWA mode.
@@ -7,7 +8,7 @@ import { useEffect } from 'react';
  */
 
 // 화면별 뒤로가기 목적지 (없으면 스와이프 백 미동작)
-const BACK_TARGETS: Record<string, string> = {
+const BACK_TARGETS: Partial<Record<ScreenType, ScreenType>> = {
   // 고객 화면
   list: 'main',
   detail: 'list',
@@ -43,10 +44,9 @@ const BACK_TARGETS: Record<string, string> = {
 };
 
 export const useGlobalGestures = (
-  screen: string,
-  setScreen: (s: string) => void,
-  returnToScreen: string | null,
-  setReturnToScreen: (s: string | null) => void,
+  screen: ScreenType,
+  setScreen: (s: ScreenType) => void,
+  returnToScreen: ScreenType | null,
 ) => {
   useEffect(() => {
     let startX = 0;
@@ -103,5 +103,5 @@ export const useGlobalGestures = (
       detach();
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [screen, returnToScreen]);
+  }, [screen, returnToScreen, setScreen]);
 };

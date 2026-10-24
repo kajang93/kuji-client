@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
-import { Check, X, ChevronLeft } from './icons';
+import { Check, ChevronLeft } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 export type PrizeOption = {
@@ -19,7 +19,7 @@ type PrizeSelectionProps = {
   onBack: () => void;
 };
 
-export default function PrizeSelection({ rank, prizeName, availableOptions, onConfirm, onBack }: PrizeSelectionProps) {
+export default function PrizeSelection({ prizeName, availableOptions, onConfirm, onBack }: PrizeSelectionProps) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
   useEffect(() => {

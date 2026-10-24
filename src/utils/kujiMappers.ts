@@ -28,7 +28,7 @@ export function mapBoardToCollection(board: KujiBoard): AnimeCollection {
     pricePerDraw: board.pricePerDraw || 15000,
     rewardRate: board.rewardRate || 0,
     prizes: [],
-  } as AnimeCollection;
+  };
 }
 
 // 서버 KujiItem/추첨 결과 응답 → 프론트 Prize 변환 (상세/추첨/수정 공용)

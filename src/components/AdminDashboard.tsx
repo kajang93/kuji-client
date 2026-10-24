@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import Chart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
 import { motion, AnimatePresence } from './motion';
-import { Users, MessageSquare, Bell, Calendar, FileText, Settings as SettingsIcon, BarChart, Layout, Plus, Send, ChevronLeft, X, DollarSign } from './icons';
+import { Users, MessageSquare, Bell, Calendar, Settings as SettingsIcon, BarChart, Layout, Plus, X, DollarSign } from './icons';
 import { fetchAdminSummary, fetchAdminDailySales, AdminSummary, DailySales } from '../api/statistics';
 import { fetchAllInquiries, answerInquiry } from '../api/admin';
 import { Inquiry } from '../shared-types';

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from './motion';
-import { Search, Filter, UserCheck, UserX, Shield, Store, User, ChevronDown, Edit, Trash2, Plus, ChevronLeft } from './icons';
+import { Search, Filter, UserCheck, Shield, Store, User, ChevronDown, Edit, Trash2, Plus, ChevronLeft } from './icons';
 import { fetchAdminMembers } from '../api/admin';
 
 type User = {
@@ -38,9 +38,9 @@ export default function AdminUserManagement({ onBack }: Props) {
   const loadMembers = async () => {
     try {
       const data = await fetchAdminMembers();
-      const mapped = data.map((d: any) => ({
+      const mapped = data.map((d): User => ({
         id: d.id.toString(),
-        name: d.nickname || d.name,
+        name: d.nickname || d.email,
         email: d.email,
         phone: d.phoneNumber || '-',
         userType: d.role === 'ROLE_BUSINESS' || d.role === 'BIZ' ? 'business' : (d.role === 'ROLE_ADMIN' || d.role === 'ADMIN' ? 'admin' : 'customer'),
@@ -123,7 +123,7 @@ export default function AdminUserManagement({ onBack }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pb-6">
+    <div aria-busy={isLoading} className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pb-6">
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">

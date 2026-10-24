@@ -50,6 +50,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
 
   // 토글 클릭 → 로컬 즉시 반영 + 백엔드 동기화
   const toggleSetting = async (key: keyof NotificationSettingsState) => {
+    if (isSyncing) return;
     const newSettings = { ...settings, [key]: !settings[key] };
     onUpdateSettings(newSettings); // 즉시 UI 반영 (낙관적 업데이트)
 

@@ -1,4 +1,4 @@
-import { Post, PostCreateRequest, PostComment } from "../shared-types";
+import { Post, PostComment } from "../shared-types";
 import axiosInstance from "./axiosInstance";
 import { API_HOST } from "./client";
 
@@ -33,7 +33,7 @@ export const createPost = async (formData: FormData): Promise<number> => {
  * 게시글 수정
  */
 export const updatePost = async (id: number, formData: FormData): Promise<void> => {
-  const response = await axiosInstance.put(`${API_BASE_URL}/${id}`, formData);
+  await axiosInstance.put(`${API_BASE_URL}/${id}`, formData);
   // axios throws on error
 };
 
@@ -41,7 +41,7 @@ export const updatePost = async (id: number, formData: FormData): Promise<void> 
  * 게시글 삭제
  */
 export const deletePost = async (id: number): Promise<void> => {
-  const response = await axiosInstance.delete(`${API_BASE_URL}/${id}`);
+  await axiosInstance.delete(`${API_BASE_URL}/${id}`);
   // axios throws on error
 };
 
@@ -50,7 +50,7 @@ export const deletePost = async (id: number): Promise<void> => {
  * POST /api/posts/{postId}/like
  */
 export const togglePostLike = async (postId: number): Promise<void> => {
-  const response = await axiosInstance.post(`${API_BASE_URL}/${postId}/like`);
+  await axiosInstance.post(`${API_BASE_URL}/${postId}/like`);
   // axios throws on error
 };
 
@@ -59,7 +59,7 @@ export const togglePostLike = async (postId: number): Promise<void> => {
  * POST /api/posts/{postId}/wish
  */
 export const togglePostWishlist = async (postId: number): Promise<void> => {
-  const response = await axiosInstance.post(`${API_BASE_URL}/${postId}/wish`);
+  await axiosInstance.post(`${API_BASE_URL}/${postId}/wish`);
   // axios throws on error
 };
 
@@ -77,7 +77,7 @@ export const fetchComments = async (postId: number): Promise<PostComment[]> => {
  * POST /api/posts/{postId}/comments
  */
 export const createComment = async (postId: number, content: string): Promise<void> => {
-  const response = await axiosInstance.post(`${API_BASE_URL}/${postId}/comments`, { content });
+  await axiosInstance.post(`${API_BASE_URL}/${postId}/comments`, { content });
   // axios throws on error
 };
 
@@ -86,7 +86,7 @@ export const createComment = async (postId: number, content: string): Promise<vo
  * PUT /api/posts/{postId}/comments/{commentId}
  */
 export const updateComment = async (postId: number, commentId: number, content: string): Promise<void> => {
-  const response = await axiosInstance.put(`${API_BASE_URL}/${postId}/comments/${commentId}`, { content });
+  await axiosInstance.put(`${API_BASE_URL}/${postId}/comments/${commentId}`, { content });
   // axios throws on error
 };
 
@@ -95,6 +95,6 @@ export const updateComment = async (postId: number, commentId: number, content: 
  * DELETE /api/posts/{postId}/comments/{commentId}
  */
 export const deleteComment = async (postId: number, commentId: number): Promise<void> => {
-  const response = await axiosInstance.delete(`${API_BASE_URL}/${postId}/comments/${commentId}`);
+  await axiosInstance.delete(`${API_BASE_URL}/${postId}/comments/${commentId}`);
   // axios throws on error
 };

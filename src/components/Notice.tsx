@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
-import { ChevronLeft, Bell, Pin, X } from './icons';
+import { ChevronLeft, Bell, X } from './icons';
 import { fetchPosts } from '../api/community';
 import { Post } from '../shared-types';
 import { toast } from 'sonner';
@@ -9,9 +9,11 @@ type NoticeProps = {
   onBack: () => void;
 };
 
+type NoticeItem = Omit<Post, 'id'> & { id: number | 'brochure' };
+
 export default function Notice({ onBack }: NoticeProps) {
-  const [selectedNotice, setSelectedNotice] = useState<Post | null>(null);
-  const [notices, setNotices] = useState<Post[]>([]);
+  const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
+  const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -31,12 +33,13 @@ export default function Notice({ onBack }: NoticeProps) {
         fetchedNotices = (data as any).content;
       }
       
-      const brochureNotice: Post = {
-        id: 'brochure' as any,
+      const brochureNotice: NoticeItem = {
+        id: 'brochure',
         title: '🎉 온라인 쿠지 플랫폼 오픈 안내 (브로셔)',
         content: '온라인 쿠지 플랫폼 서비스 안내 브로셔입니다.',
-        type: 'NOTICE',
-        authorId: 0,
+        category: 'NOTICE',
+        authorName: '오시쿠지',
+        authorEmail: '',
         viewCount: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

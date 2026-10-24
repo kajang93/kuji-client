@@ -6,7 +6,8 @@ import { toast } from 'sonner';
  * 로그인유지 체크 시 localStorage, 미체크 시 sessionStorage에 저장됨
  */
 export const getToken = (): string | null => {
-  return localStorage.getItem('token') || sessionStorage.getItem('token');
+  const tokens = [localStorage.getItem('token'), sessionStorage.getItem('token')];
+  return tokens.find((token) => token && token !== 'undefined' && token !== 'null') || null;
 };
 
 // Auto-detect environment: DEV uses proxy (empty string), PROD uses real domain
@@ -26,59 +27,89 @@ const getCsrfTokenFromCookie = () => {
 
 // Request interceptor: add X‑CSRF‑Token header for state‑changing requests
 axiosInstance.interceptors.request.use((config) => {
-  // Ensure config is an object even when axiosInstance.get(url) is called without a config arg
-  config = config || {} as any;
   const method = (config.method || 'get').toUpperCase();
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
     const token = getCsrfTokenFromCookie();
     if (token) {
-      config.headers = config.headers || {};
-      // @ts-ignore – allow custom header
       config.headers['X-CSRF-Token'] = token;
     }
   }
   // Add Authorization header if token is stored
   const token = getToken();
   if (token) {
-    config.headers = config.headers || {};
-    // @ts-ignore – custom header
     config.headers['Authorization'] = `Bearer ${token}`;
   }
   return config;
 }, (error) => Promise.reject(error));
+
+// 동시에 만료된 요청들은 하나의 갱신 요청을 공유합니다.
+let refreshRequest: Promise<string> | null = null;
+let logoutRequest: Promise<void> | null = null;
+
+const refreshAccessToken = (): Promise<string> => {
+  if (!refreshRequest) {
+    refreshRequest = axios.post<string | { token?: string }>(
+      `${import.meta.env.VITE_API_BASE_URL || BASE_URL}/api/members/refresh`,
+      {},
+      { withCredentials: true },
+    ).then(({ data }) => {
+      const token = typeof data === 'string' ? data : data.token;
+      if (!token) throw new Error('로그인 토큰을 갱신하지 못했습니다.');
+      const localToken = localStorage.getItem('token');
+      const storage = localToken && localToken === getToken() ? localStorage : sessionStorage;
+      storage.setItem('token', token);
+      return token;
+    }).catch((error) => {
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+      toast.error('로그인이 만료되었습니다. 다시 로그인해주세요.');
+      throw error;
+    }).finally(() => {
+      refreshRequest = null;
+    });
+  }
+  return refreshRequest;
+};
+
+// 갱신 중인 요청을 먼저 마친 뒤 서버 세션을 폐기해 토큰이 다시 저장되는 경쟁을 막습니다.
+export const logoutSession = (): Promise<void> => {
+  if (!logoutRequest) {
+    logoutRequest = (async () => {
+      await refreshRequest?.catch(() => undefined);
+      const requestLogout = () => axiosInstance.post('/api/members/logout');
+      try {
+        await requestLogout();
+      } catch (error) {
+        if (!axios.isAxiosError(error) || error.response?.status !== 401 || !getToken()) {
+          throw error;
+        }
+        // 만료된 액세스 토큰도 갱신 후 즉시 폐기할 수 있도록 로그아웃 흐름에서만 재시도합니다.
+        await refreshAccessToken();
+        await requestLogout();
+      }
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+    })().finally(() => {
+      logoutRequest = null;
+    });
+  }
+  return logoutRequest;
+};
 
 // Response interceptor: auto‑refresh on 401 (unauthorized)
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error?.config;
-    if (error?.response?.status === 401 && originalRequest && !originalRequest._retry) {
+    if (error?.response?.status === 401 && originalRequest && !originalRequest._retry && getToken() && !logoutRequest) {
       originalRequest._retry = true;
       try {
-        // Call refresh endpoint; server reads HttpOnly cookie and returns new access token
-        const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL || BASE_URL}/api/members/refresh`, {}, { withCredentials: true });
-        
-        // 서버에서 이제 LoginResponse (객체) 를 반환하므로 token 필드를 추출해야 함
-        const newToken = typeof res.data === 'string' ? res.data : res.data?.token;
-        
-        if (newToken) {
-          if (localStorage.getItem('token')) {
-            localStorage.setItem('token', newToken);
-          } else {
-            sessionStorage.setItem('token', newToken);
-          }
-        }
-
+        const newToken = await refreshAccessToken();
+        if (logoutRequest) throw new Error('로그아웃 중이므로 요청을 다시 보내지 않습니다.');
         // Retry original request with new token
         originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        // Refresh failed – force logout flow
-        localStorage.removeItem('token');
-        sessionStorage.removeItem('token');
-        toast.error('로그인이 만료되었습니다. 다시 로그인해주세요.');
-        // Optionally you could redirect to login screen here
-        // window.location.href = '/?action=login';
         return Promise.reject(refreshError);
       }
     }

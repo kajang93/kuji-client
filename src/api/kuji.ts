@@ -1,4 +1,4 @@
-import { KujiBoard, BoardStatus, BoardImageType } from "../shared-types";
+import { KujiBoard, BoardStatus, BoardImageType, KujiItemResponse } from "../shared-types";
 
 import axiosInstance from "./axiosInstance";
 import { API_HOST, toAbsoluteUrl } from "./client";
@@ -35,7 +35,7 @@ export const fetchSellerKujiBoards = async (): Promise<KujiBoard[]> => {
 };
 
 export const deleteKujiBoard = async (boardId: number): Promise<void> => {
-  const response = await axiosInstance.delete(`${API_BASE_URL}/${boardId}`);
+  await axiosInstance.delete(`${API_BASE_URL}/${boardId}`);
   // axios throws on non-2xx, so explicit error handling not needed
 };
 
@@ -61,7 +61,7 @@ export const uploadBoardImages = async (
   files.forEach((file) => {
     formData.append("files", file);
   });
-  const response = await axiosInstance.post(`${API_BASE_URL}/${boardId}/images`, formData);
+  await axiosInstance.post(`${API_BASE_URL}/${boardId}/images`, formData);
   // axios handles errors via thrown exception
 };
 
@@ -69,7 +69,7 @@ export const updateKujiBoardStatus = async (
   boardId: number,
   status: BoardStatus
 ): Promise<void> => {
-  const response = await axiosInstance.patch(`${API_BASE_URL}/${boardId}/status?status=${status}`);
+  await axiosInstance.patch(`${API_BASE_URL}/${boardId}/status?status=${status}`);
   // error handling via axios
 };
 
@@ -77,7 +77,7 @@ export const updateKujiBoardRewardRate = async (
   boardId: number,
   rewardRate: number
 ): Promise<void> => {
-  const response = await axiosInstance.patch(`${API_BASE_URL}/${boardId}/reward-rate?rewardRate=${rewardRate}`);
+  await axiosInstance.patch(`${API_BASE_URL}/${boardId}/reward-rate?rewardRate=${rewardRate}`);
 };
 
 /**
@@ -94,14 +94,14 @@ export const registerBoardItems = async (
   files.forEach((file) => {
     formData.append("files", file);
   });
-  const response = await axiosInstance.post(`${API_BASE_URL}/${boardId}/items`, formData);
+  await axiosInstance.post(`${API_BASE_URL}/${boardId}/items`, formData);
   // axios will throw on error
 };
 
 /**
  * Fetch detailed information of items for a board.
  */
-export const fetchKujiBoardDetail = async (boardId: number): Promise<Prize[]> => {
+export const fetchKujiBoardDetail = async (boardId: number): Promise<KujiItemResponse[]> => {
   const response = await axiosInstance.get(`${API_BASE_URL}/${boardId}`);
   return normalizeImageUrls(response.data);
 };
@@ -113,7 +113,7 @@ export const updateKujiItem = async (
   itemId: number,
   data: { grade?: string; name?: string; totalQty?: number }
 ): Promise<void> => {
-  const response = await axiosInstance.patch(`${API_BASE_URL}/items/${itemId}`, data);
+  await axiosInstance.patch(`${API_BASE_URL}/items/${itemId}`, data);
   // axios handles errors
 };
 
@@ -126,7 +126,7 @@ export const updateKujiItemImage = async (
 ): Promise<void> => {
   const formData = new FormData();
   formData.append("file", file);
-  const response = await axiosInstance.post(`${API_BASE_URL}/items/${itemId}/images`, formData);
+  await axiosInstance.post(`${API_BASE_URL}/items/${itemId}/images`, formData);
   // axios error handling
 };
 
@@ -134,7 +134,7 @@ export const updateKujiItemImage = async (
  * Delete a specific kuji item.
  */
 export const deleteKujiItem = async (itemId: number): Promise<void> => {
-  const response = await axiosInstance.delete(`${API_BASE_URL}/items/${itemId}`);
+  await axiosInstance.delete(`${API_BASE_URL}/items/${itemId}`);
   // axios throws on error
 };
 export interface PreparePaymentRequest {

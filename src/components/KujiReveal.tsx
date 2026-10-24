@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
 import { Hand } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { ArrowRight, Package, RefreshCw, Home, Sparkles, Trophy } from './icons';
+import { Package, RefreshCw, Home, Trophy } from './icons';
 import { toast } from 'sonner';
 import type { Prize } from '@/shared-types';
 import confetti from 'canvas-confetti';
@@ -131,7 +131,7 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
     return () => clearTimeout(timer);
   }, [currentIndex]);
 
-  const handleDrag = (event: any, info: PanInfo) => {
+  const handleDrag = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (stage !== 'ready' || isAutoMode) return;
     
     if (info.velocity.x > 50) {
@@ -145,7 +145,7 @@ export default function KujiReveal({ prizes, onComplete }: KujiRevealProps) {
     }
   };
 
-  const handleDragEnd = async (event: any, info: PanInfo) => {
+  const handleDragEnd = async (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (stage !== 'ready' || isAutoMode) return;
     
     if (info.offset.x > dragThreshold || info.velocity.x > 500) {

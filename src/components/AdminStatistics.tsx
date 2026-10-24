@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchAdminSummary, fetchAdminDailySales, AdminSummary, DailySales } from '../api/statistics';
 import { motion } from './motion';
-import { BarChart as BarChartIcon, TrendingUp, Users, DollarSign, ShoppingCart, Package, Calendar, ArrowUp, ArrowDown, ChevronLeft } from './icons';
+import { BarChart as BarChartIcon, TrendingUp, Users, DollarSign, Package, ArrowUp, ArrowDown, ChevronLeft } from './icons';
 import Chart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
 

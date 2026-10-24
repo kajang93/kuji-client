@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { motion } from "./motion";
 import { Ticket } from "./icons";
 import { loginWithKakao, fetchMyProfile } from "../api/auth";
@@ -12,8 +12,21 @@ export default function KakaoCallback({
   onLoginSuccess,
   onLoginFailure,
 }: KakaoCallbackProps) {
+  const handled = useRef(false);
+
   useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get("code");
+    if (handled.current) return;
+    handled.current = true;
+    const params = new URLSearchParams(window.location.search);
+    window.history.replaceState({}, document.title, window.location.pathname);
+    const code = params.get("code");
+    const expectedState = sessionStorage.getItem("oauth_state_kakao");
+    sessionStorage.removeItem("oauth_state_kakao");
+
+    if (!expectedState || params.get("state") !== expectedState) {
+      onLoginFailure("로그인 요청을 확인할 수 없습니다. 다시 시도해주세요.");
+      return;
+    }
 
     if (code) {
       handleKakaoLogin(code);
@@ -24,35 +37,9 @@ export default function KakaoCallback({
 
   const handleKakaoLogin = async (code: string) => {
     try {
-      // [STEP 1] 프런트엔드 ➡️ 카카오 : "인가 코드 줄 테니까 액세스 토큰 내놔!"
-      const REST_API_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY;
-      const CLIENT_SECRET = import.meta.env.VITE_KAKAO_CLIENT_SECRET;
       const REDIRECT_URI = `${window.location.origin}/auth/kakao/callback`;
-
-      const params = new URLSearchParams();
-      params.append('grant_type', 'authorization_code');
-      params.append('client_id', REST_API_KEY);
-      params.append('client_secret', CLIENT_SECRET);
-      params.append('redirect_uri', REDIRECT_URI);
-      params.append('code', code);
-
-      const tokenResponse = await fetch("https://kauth.kakao.com/oauth/token", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: params,
-      });
-
-      if (!tokenResponse.ok) {
-        throw new Error("카카오 토큰 발급에 실패했습니다.");
-      }
-
-      const tokenData = await tokenResponse.json();
-      const kakaoAccessToken = tokenData.access_token;
-
-      // [STEP 2] 프런트엔드 ➡️ 우리 백엔드 : "이 토큰(kakaoAccessToken)으로 로그인시켜줘!"
-      const data = await loginWithKakao(kakaoAccessToken, true, true, false);
+      // 인가 코드 교환은 비밀 키를 보관하는 서버에서 처리합니다.
+      const data = await loginWithKakao(code, REDIRECT_URI, true, true, false);
       
       if (data.isNewUser && !data.token) {
         throw new Error("신규 가입 처리에 실패했습니다. 약관 동의를 다시 확인해주세요.");
@@ -60,6 +47,7 @@ export default function KakaoCallback({
 
       // 토큰으로 실제 사용자 상세 정보 가져오기
       localStorage.setItem("token", data.token);
+      sessionStorage.removeItem("token");
       const userData = await fetchMyProfile();
       
       onLoginSuccess(data.token, userData);

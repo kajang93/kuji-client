@@ -50,7 +50,7 @@ export default function PurchaseHistory({ onBack }: PurchaseHistoryProps) {
     const loadHistory = async () => {
       try {
         const data = await fetchMyDrawHistory();
-        const mapped = data.map((d: any) => ({
+        const mapped = data.map((d): PurchaseItem => ({
           id: d.id ? d.id.toString() : '-',
           date: d.createdAt ? new Date(d.createdAt).toLocaleDateString() : '-',
           animeName: d.boardTitle || d.title || '쿠지 상품',
@@ -95,7 +95,7 @@ export default function PurchaseHistory({ onBack }: PurchaseHistoryProps) {
   };
 
   return (
-    <div className="min-h-screen pb-6">
+    <div aria-busy={isLoading} className="min-h-screen pb-6">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-gradient-to-r from-purple-900 to-blue-900 border-b-2 border-cyan-400/50 shadow-lg">
         <div className="flex items-center justify-between p-4">

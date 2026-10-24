@@ -8,7 +8,7 @@ const API_BASE_URL = `${API_HOST}/api/inquiries`;
  * 1:1 문의 등록
  */
 export const createInquiry = async (data: InquiryCreateRequest): Promise<void> => {
-  const response = await axiosInstance.post(API_BASE_URL, data);
+  await axiosInstance.post(API_BASE_URL, data);
   // axios throws on error
 };
 
