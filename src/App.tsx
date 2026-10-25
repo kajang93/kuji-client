@@ -86,6 +86,7 @@ export default function App() {
   const [paymentRecoveryBusy, setPaymentRecoveryBusy] = useState(false);
   const [paymentRecoveryMessage, setPaymentRecoveryMessage] = useState("이전에 진행한 결제의 결과를 확인하고 있습니다.");
   const paymentRequests = useRef(new Set<string>());
+  const pointDrawPending = useRef(false);
   const [returnToScreen, setReturnToScreen] = useState<
     "detail" | "list" | null
   >(null);
@@ -663,7 +664,8 @@ async function handleRefresh() {
   };
 
   const handleKujiReveal = async (kujiIndices: number[]) => {
-    if (!selectedAnime || !user) return;
+    if (!selectedAnime || !user || kujiIndices.length === 0 || pointDrawPending.current) return;
+    pointDrawPending.current = true;
 
     try {
       // 1. Call the real draw API with POINT payment type
@@ -714,6 +716,8 @@ async function handleRefresh() {
     } catch (error: any) {
       console.error("Failed to draw kuji:", error);
       sonnerToast.error(error.message || "추첨 중 오류가 발생했습니다.");
+    } finally {
+      pointDrawPending.current = false;
     }
   };
 
