@@ -4,6 +4,7 @@ import { ChevronLeft, Sparkles } from './icons';
 
 import { prepareKujiPayment } from '../api/kuji';
 import { loadTossPayments } from '@tosspayments/payment-sdk';
+import { readPaymentRecovery } from '../utils/paymentRecovery';
 
 type KujiSelectionProps = {
   boardId: number;
@@ -60,6 +61,10 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
 
   const handleConfirm = async () => {
     if (selectedKuji.length !== purchaseCount || isProcessing) return;
+    if (readPaymentRecovery()) {
+      alert("이전 결제 결과를 먼저 확인해 주세요.");
+      return;
+    }
 
     if (finalPrice > 0) {
       const clientKey = import.meta.env.VITE_TOSS_CLIENT_KEY;
@@ -79,7 +84,8 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
         localStorage.setItem("kuji_pending_payment", JSON.stringify({
           boardId,
           count: purchaseCount,
-          orderId: prepareRes.orderId
+          orderId: prepareRes.orderId,
+          amount: prepareRes.amount
         }));
 
         // 3. Load Toss SDK & Request Payment

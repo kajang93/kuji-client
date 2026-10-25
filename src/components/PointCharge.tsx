@@ -3,6 +3,7 @@ import { ChevronLeft, CreditCard, Check, Sparkles } from './icons';
 import { useState, useEffect } from 'react';
 import { loadTossPayments } from '@tosspayments/payment-sdk';
 import { preparePointCharge, fetchPointHistory, type PointHistory } from '../api/points';
+import { readPaymentRecovery } from '../utils/paymentRecovery';
 
 type PointChargeProps = {
   currentPoints: number;
@@ -57,6 +58,10 @@ export default function PointCharge({ currentPoints, onBack }: PointChargeProps)
       return;
     }
     if (isProcessing) return;
+    if (readPaymentRecovery()) {
+      alert('이전 결제 결과를 먼저 확인해 주세요.');
+      return;
+    }
     const clientKey = import.meta.env.VITE_TOSS_CLIENT_KEY;
     if (!clientKey) {
       alert('결제 서비스가 설정되지 않았습니다. 고객센터에 문의해 주세요.');
