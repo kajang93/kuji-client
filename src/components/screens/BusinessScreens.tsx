@@ -35,6 +35,7 @@ type BusinessScreensProps = {
   ) => void;
   onLogout: () => void;
   onRefresh: () => Promise<void>;
+  onRefreshAccount: () => Promise<void>;
   onFetchWinningHistory: () => void;
   onUpdateShipping: (
     winningId: string,
@@ -61,6 +62,7 @@ export default function BusinessScreens({
   showAlert,
   onLogout,
   onRefresh,
+  onRefreshAccount,
   onFetchWinningHistory,
   onUpdateShipping,
 }: BusinessScreensProps) {
@@ -139,26 +141,37 @@ export default function BusinessScreens({
           (c) => c.id === editingCollectionId,
         ) && (
           <BusinessProductEdit
-            onBack={() => setScreen("businessProducts")}
+            onBack={async () => {
+              try {
+                await onRefresh();
+                setScreen("businessProducts");
+              } catch {
+                showAlert("상품 목록을 불러오지 못했습니다. 다시 확인해주세요.", "error");
+              }
+            }}
             collection={sellerCollections.find((c) => c.id === editingCollectionId)!}
             user={user}
             onSave={async () => {
-              showAlert("상품이 수정되었습니다", "success");
               await onRefresh();
+              showAlert("상품이 수정되었습니다", "success");
               setScreen("businessProducts");
             }}
           />
         )}
       {screen === "businessRegister" && (
         <BusinessProductRegister
-          onBack={() => setScreen("businessDashboard")}
-          onComplete={async () => {
-            showAlert("상품이 등록되었습니다!", "success");
-            await onRefresh();
-            setScreen("businessProducts");
+          onBack={async () => {
+            try {
+              await onRefresh();
+              setScreen("businessProducts");
+            } catch {
+              showAlert("상품 목록을 불러오지 못했습니다. 다시 확인해주세요.", "error");
+            }
           }}
-          onTempSave={(message) => {
-            showAlert(message, "success");
+          onComplete={async () => {
+            await onRefresh();
+            showAlert("운영예정 상품으로 저장했습니다. 상품 관리에서 판매를 시작해주세요.", "success");
+            setScreen("businessProducts");
           }}
         />
       )}
@@ -251,6 +264,7 @@ export default function BusinessScreens({
         <BusinessPending
           user={user}
           onBack={onLogout}
+          onRefreshAccount={onRefreshAccount}
         />
       )}
     </>

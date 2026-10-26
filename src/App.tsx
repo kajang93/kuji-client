@@ -74,11 +74,14 @@ export default function App() {
   const [purchaseCount, setPurchaseCount] = useState(1);
   const [pointsToUse, setPointsToUse] = useState(0);
   const [user, setUser] = useState<{
+    memberId?: number;
     name: string;
     email: string;
     type: "social" | "business" | "admin";
     points?: number;
     isActive?: boolean; // 추가: 사업자 승인 여부
+    businessStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+    businessRejectReason?: string | null;
     profileImageUrl?: string; // 추가: 사용자 프로필 이미지
   } | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -379,11 +382,14 @@ async function handleRefresh() {
       const userData = await fetchMyProfile();
       const userRole = userData.role || "USER";
       const formattedUser = {
+        memberId: userData.memberId,
         name: userData.nickname || userData.email,
         email: userData.email,
         type: (userRole === "ROLE_BUSINESS" || userRole === "BIZ" ? "business" : userRole === "ROLE_ADMIN" || userRole === "ADMIN" ? "admin" : "social") as "business" | "admin" | "social",
         points: userData.points || 0,
-        isActive: userData.isActive !== undefined ? userData.isActive : true,
+        isActive: userRole === 'BIZ' || userRole === 'ROLE_BUSINESS' ? userData.businessStatus === 'APPROVED' : true,
+        businessStatus: userData.businessStatus,
+        businessRejectReason: userData.businessRejectReason,
         profileImageUrl: userData.profileImageUrl || "",
         phone: userData.phoneNumber,
         birthdate: userData.birthDate,
@@ -402,6 +408,8 @@ async function handleRefresh() {
 
       if (formattedUser.type === "business" && formattedUser.isActive === false) {
         setScreen("businessPending");
+      } else if (formattedUser.type === 'business' && screen === 'businessPending') {
+        setScreen('businessDashboard');
       }
     } catch (error) {
       console.error("Session expired or invalid token:", error);
@@ -585,10 +593,13 @@ async function handleRefresh() {
   };
 
   const handleLogin = (userData: {
+    memberId?: number;
     name: string;
     email: string;
     type: "social" | "business" | "admin";
     isActive?: boolean;
+    businessStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+    businessRejectReason?: string | null;
     points?: number;
   }) => {
     setUser(userData);
@@ -601,7 +612,7 @@ async function handleRefresh() {
 
     // Business users go to dashboard (if active) or pending screen
     if (userData.type === "business") {
-      if (userData.isActive === false) {
+      if (userData.businessStatus !== 'APPROVED') {
         setScreen("businessPending");
       } else {
         setScreen("businessDashboard");
@@ -637,10 +648,14 @@ async function handleRefresh() {
       localStorage.setItem("token", token);
       sessionStorage.removeItem("token");
       const formattedUser = {
+        memberId: userData.memberId,
         name: userData.nickname || userData.email,
         email: userData.email,
-        type: (userData.role === "BIZ" ? "business" : "social") as "business" | "social",
+        type: (userData.role === "BIZ" ? "business" : userData.role === 'ADMIN' ? 'admin' : "social") as "business" | "admin" | "social",
         points: userData.points || 0,
+        isActive: userData.role === 'BIZ' ? userData.businessStatus === 'APPROVED' : true,
+        businessStatus: userData.businessStatus,
+        businessRejectReason: userData.businessRejectReason,
         profileImageUrl: userData.profileImageUrl || "",
       };
       setUser(formattedUser);
@@ -649,7 +664,9 @@ async function handleRefresh() {
       window.history.replaceState({}, document.title, window.location.pathname);
 
       if (formattedUser.type === "business") {
-        setScreen("businessDashboard");
+        setScreen(formattedUser.businessStatus === 'APPROVED' ? 'businessDashboard' : 'businessPending');
+      } else if (formattedUser.type === 'admin') {
+        setScreen('adminDashboard');
       } else {
         setScreen("main");
         handleFetchWishlist();
@@ -1260,6 +1277,7 @@ async function handleRefresh() {
         {screen === "communityWrite" && (
           <BoardWrite 
             postId={selectedPostId || undefined}
+            user={user}
             onBack={() => setScreen(selectedPostId ? "communityDetail" : "community")} 
             onSuccess={() => setScreen(selectedPostId ? "communityDetail" : "community")} 
           />
@@ -1292,6 +1310,7 @@ async function handleRefresh() {
           showAlert={showAlert}
           onLogout={handleLogout}
           onRefresh={handleRefresh}
+          onRefreshAccount={handleFetchUserInfo}
           onFetchWinningHistory={handleFetchWinningHistory}
           onUpdateShipping={handleUpdateShipping}
         />

@@ -23,6 +23,7 @@ export default function BoardList({ user, onWrite, onDetail, onBack }: BoardList
   const [posts, setPosts] = useState<Post[]>([]);
   const [selectedPostType, setSelectedPostType] = useState<PostCategory | "ALL">('ALL');
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     loadPosts();
@@ -30,6 +31,7 @@ export default function BoardList({ user, onWrite, onDetail, onBack }: BoardList
 
   const loadPosts = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const typeParam = selectedPostType === 'ALL' ? undefined : selectedPostType;
       const data = await fetchPosts(typeParam);
@@ -45,6 +47,7 @@ export default function BoardList({ user, onWrite, onDetail, onBack }: BoardList
       }
     } catch (error) {
       console.error('Failed to load posts:', error);
+      setLoadError(error instanceof Error ? error.message : '게시글을 불러올 수 없습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -93,6 +96,13 @@ export default function BoardList({ user, onWrite, onDetail, onBack }: BoardList
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
             <p className="text-slate-500 text-sm">게시글을 불러오는 중...</p>
+          </div>
+        ) : loadError ? (
+          <div role="alert" className="flex flex-col items-center gap-4 py-20 text-center text-sm text-slate-400">
+            <p>{loadError}</p>
+            <button onClick={loadPosts} className="rounded-xl border border-rose-400/30 px-4 py-2 text-rose-300 hover:bg-white/5">
+              다시 불러오기
+            </button>
           </div>
         ) : posts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-500">

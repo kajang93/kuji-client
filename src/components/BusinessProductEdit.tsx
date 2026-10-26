@@ -1,16 +1,16 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from './motion';
 import { ChevronLeft, Save, Upload, X, Plus, Loader2 } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import type { AnimeCollection, Prize } from '@/shared-types';
-import { updateKujiItem, updateKujiItemImage, deleteKujiItem, registerBoardItems, updateKujiBoardStatus, uploadBoardImages, updateKujiBoardRewardRate } from '../api/kuji';
+import { updateKujiItem, updateKujiItemImage, deleteKujiItem, registerBoardItems, updateKujiBoardStatus, uploadBoardImages, updateKujiBoardRewardRate, updateKujiBoardTitle } from '../api/kuji';
 import { validateImageFile, compressImageFile } from '../api/client';
 import { toast } from 'sonner';
 
 type BusinessProductEditProps = {
   onBack: () => void;
   collection: AnimeCollection;
-  onSave: (updatedCollection: AnimeCollection) => void | Promise<void>;
+  onSave: () => void | Promise<void>;
   user?: { name: string; email: string; type: string; points?: number; isActive?: boolean } | null;
 };
 
@@ -30,8 +30,12 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
   const [operationStatus, setOperationStatus] = useState<'scheduled' | 'active' | 'ended'>(collection.operationStatus || 'scheduled');
   const [rewardRate, setRewardRate] = useState<number>(collection.rewardRate || 0);
   
-  // Check if editing is allowed based on current UI selection
-  const isEditingAllowed = operationStatus === 'scheduled';
+  const hasSales = collection.remainingKuji < collection.totalKuji || collection.prizes.some(prize => prize.remainingCount < prize.totalCount || prize.opened?.some(Boolean));
+  const canEditComposition = collection.operationStatus === 'scheduled' && !hasSales;
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveNeedsReload, setSaveNeedsReload] = useState(false);
+  const savingRef = useRef(false);
+  const isEditingAllowed = canEditComposition && !isSaving && !saveNeedsReload;
   
   // Initialize prizes with products
   const [prizes, setPrizes] = useState<Record<string, PrizeProduct[]>>(
@@ -41,15 +45,13 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
         id: prize.id,
         name: prize.name,
         image: prize.image,
-        stock: prize.remainingCount,
+        stock: prize.totalCount,
         originalData: prize
       });
       return acc;
     }, {} as Record<string, PrizeProduct[]>)
   );
   
-  const [isSaving, setIsSaving] = useState(false);
-
   const initialRanks = Array.from(new Set(collection.prizes.map(p => p.rank)));
   initialRanks.sort((a, b) => {
     if (a === 'LAST') return 1;
@@ -70,22 +72,14 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
   const [newRankType, setNewRankType] = useState<'single' | 'multi'>('single');
   const [showAddRank, setShowAddRank] = useState(false);
 
-  // Initialize empty state for newly added ranks if collection was empty
-  if (Object.keys(prizes).length === 0 && rankOrder.length === 1 && rankOrder[0] === 'A') {
-    if (!prizes['A']) {
-      setPrizes({
-        'A': [{ id: `A-${Date.now()}`, name: '', image: '', stock: 0 }]
-      });
-      setRankTypes({ 'A': 'single' });
-    }
-  }
-
   const handleAddNewRank = () => {
+    if (!isEditingAllowed) return;
     if (!newRankName.trim()) {
       toast.error('등급 이름을 입력해주세요. (예: A, LAST)');
       return;
     }
     const rank = newRankName.trim().toUpperCase();
+    if (rank.length > 10) return toast.error('등급명은 10자 이내로 입력해주세요.');
     if (rankOrder.includes(rank)) {
       toast.error('이미 존재하는 등급입니다.');
       return;
@@ -109,16 +103,17 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
   };
 
   const handleRemoveRank = (rank: string) => {
-    if (!confirm(`${rank}상을 전체 삭제하시겠습니까? 등록된 상품이 모두 삭제됩니다.`)) return;
-    // Note: To be fully correct, we should call deleteKujiItem for existing items here,
-    // but user can just not save if they change their mind, or handle save to prune removed items.
-    // For simplicity, we just remove from UI state.
+    if (!isEditingAllowed) return;
+    if (!confirm(`${rank}상 상품을 모두 제외할까요? 저장할 때 삭제되며, 저장 전 취소하면 유지됩니다.`)) return;
     setRankOrder(prev => prev.filter(r => r !== rank));
-    const newPrizes = { ...prizes };
-    delete newPrizes[rank];
-    setPrizes(newPrizes);
+    setPrizes(prev => {
+      const next = { ...prev };
+      delete next[rank];
+      return next;
+    });
   };
   const handleSeriesImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isEditingAllowed) return;
     const file = e.target.files?.[0];
     if (file) {
       const compressedFile = await compressImageFile(file);
@@ -138,6 +133,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
   };
 
   const handleAddProduct = (rank: string) => {
+    if (!isEditingAllowed) return;
     setPrizes(prev => ({
       ...prev,
       [rank]: [
@@ -152,27 +148,13 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
     }));
   };
 
-  const handleRemoveProduct = async (rank: string, index: number) => {
-    const product = prizes[rank][index];
-    
-    // If it's an existing item (numeric ID), delete from server
-    if (!isNaN(Number(product.id))) {
-      if (!confirm('정말로 이 경품을 삭제하시겠습니까?')) return;
-      try {
-        await deleteKujiItem(Number(product.id));
-      } catch (error) {
-        toast.error('경품 삭제에 실패했습니다.');
-        return;
-      }
-    }
-
-    setPrizes(prev => ({
-      ...prev,
-      [rank]: prev[rank].filter((_, i) => i !== index)
-    }));
+  const handleRemoveProduct = (rank: string, index: number) => {
+    if (!isEditingAllowed) return;
+    setPrizes(prev => ({ ...prev, [rank]: prev[rank].filter((_, i) => i !== index) }));
   };
 
   const handleProductChange = (rank: string, index: number, field: keyof PrizeProduct, value: string | number) => {
+    if (!isEditingAllowed) return;
     setPrizes(prev => ({
       ...prev,
       [rank]: prev[rank].map((product, i) => 
@@ -182,6 +164,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
   };
 
   const handleImageUpload = async (rank: string, index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isEditingAllowed) return;
     const file = e.target.files?.[0];
     if (file) {
       const compressedFile = await compressImageFile(file);
@@ -205,79 +188,82 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
   };
 
   const handleSave = async () => {
+    if (savingRef.current || saveNeedsReload) return;
+    const products = Object.entries(prizes).flatMap(([grade, items]) => items.map(item => ({ grade, ...item })));
+    if (canEditComposition) {
+      if (!seriesName.trim() || seriesName.trim().length > 100) return toast.error('시리즈명은 1자 이상 100자 이내로 입력해주세요.');
+      if (!seriesImage) return toast.error('시리즈 이미지를 등록해주세요.');
+      if (!Number.isInteger(rewardRate) || rewardRate < 0 || rewardRate > 100) return toast.error('적립 포인트는 0부터 100 사이의 정수로 입력해주세요.');
+      if (products.length === 0) return toast.error('최소 1개 이상의 상품을 남겨주세요.');
+      for (const product of products) {
+        if (!product.name.trim() || product.name.trim().length > 100) return toast.error(`${product.grade}상 상품명은 1자 이상 100자 이내로 입력해주세요.`);
+        if (!Number.isInteger(product.stock) || product.stock < 1 || product.stock > 100000) return toast.error(`${product.grade}상 수량은 1개 이상 100000개 이하의 정수로 입력해주세요.`);
+        if (!product.image || (!product.originalData && !product.file)) return toast.error(`${product.grade}상 상품 이미지를 등록해주세요.`);
+      }
+    }
+
+    savingRef.current = true;
     setIsSaving(true);
+    let mutationStarted = false;
     try {
-      // 1. Separate items: Updates vs New
-      const itemsToUpdate: PrizeProduct[] = [];
-      const itemsToCreate: { data: any; file?: File }[] = [];
-
-      Object.entries(prizes).forEach(([rank, products]) => {
-        products.forEach(product => {
-          if (!isNaN(Number(product.id))) {
-            // Check if changed
-            const original = product.originalData;
-            if ((original && (original.name !== product.name || original.remainingCount !== product.stock)) || product.file) {
-              itemsToUpdate.push(product);
-            }
-          } else {
-            // New item
-            itemsToCreate.push({
-              data: { grade: rank, name: product.name, totalQty: product.stock },
-              file: product.file || new File([new Blob()], "empty.bin", { type: "application/octet-stream" })
-            });
+      if (canEditComposition) {
+        const boardId = Number(collection.id);
+        if (seriesName.trim() !== collection.name) {
+          mutationStarted = true;
+          await updateKujiBoardTitle(boardId, seriesName.trim());
+        }
+        if ((collection.rewardRate ?? 0) !== rewardRate) {
+          mutationStarted = true;
+          await updateKujiBoardRewardRate(boardId, rewardRate);
+        }
+        if (seriesFile) {
+          mutationStarted = true;
+          await uploadBoardImages(boardId, 'THUMBNAIL', [seriesFile]);
+        }
+        for (const product of products.filter(item => item.originalData)) {
+          const original = product.originalData!;
+          if (original.name !== product.name.trim() || original.totalCount !== product.stock) {
+            mutationStarted = true;
+            await updateKujiItem(Number(product.id), { name: product.name.trim(), totalQty: product.stock });
           }
-        });
-      });
-
-      // 2. Execute Updates
-      for (const item of itemsToUpdate) {
-        // Update item details
-        const original = item.originalData;
-        if (original && (original.name !== item.name || original.remainingCount !== item.stock)) {
-          await updateKujiItem(Number(item.id), {
-            name: item.name,
-            totalQty: item.stock
-          });
+          if (product.file) {
+            mutationStarted = true;
+            await updateKujiItemImage(Number(product.id), product.file);
+          }
         }
-        
-        // Update item image if there's a new file
-        if (item.file) {
-          await updateKujiItemImage(Number(item.id), item.file);
+        const newItems = products.filter(product => !product.originalData);
+        if (newItems.length > 0) {
+          mutationStarted = true;
+          await registerBoardItems(boardId,
+            newItems.map(product => ({ grade: product.grade, name: product.name.trim(), totalQty: product.stock })),
+            newItems.map(product => product.file || new File([], 'empty.bin', { type: 'application/octet-stream' })));
+        }
+        const remainingIds = new Set(products.filter(product => product.originalData).map(product => product.id));
+        for (const original of collection.prizes) {
+          if (!remainingIds.has(original.id)) {
+            mutationStarted = true;
+            await deleteKujiItem(Number(original.id));
+          }
         }
       }
 
-      // 3. Execute Creations (if any)
-      if (itemsToCreate.length > 0) {
-        const createData = itemsToCreate.map(i => i.data);
-        const createFiles = itemsToCreate.map(i => i.file).filter((f): f is File => !!f);
-        await registerBoardItems(Number(collection.id), createData, createFiles);
-      }
-
-      // 4. Update Board Status if changed
+      // 구성을 모두 저장한 다음 판매 상태를 바꾼다. 판매 중인 판에는 구성 요청을 보내지 않는다.
       if (collection.operationStatus !== operationStatus) {
-        let backendStatus: "PREPARING" | "ACTIVE" | "FINISHED" = "PREPARING";
-        if (operationStatus === 'active') backendStatus = "ACTIVE";
-        else if (operationStatus === 'ended') backendStatus = "FINISHED";
-        
-        await updateKujiBoardStatus(Number(collection.id), backendStatus);
+        const status = operationStatus === 'active' ? 'ACTIVE' : operationStatus === 'ended' ? 'FINISHED' : 'PREPARING';
+        mutationStarted = true;
+        await updateKujiBoardStatus(Number(collection.id), status);
       }
-
-      // Update Reward Rate if changed
-      if (collection.rewardRate !== rewardRate) {
-        await updateKujiBoardRewardRate(Number(collection.id), rewardRate);
-      }
-
-      // 5. Update Series Image if changed
-      if (seriesFile) {
-        await uploadBoardImages(Number(collection.id), 'THUMBNAIL', [seriesFile]);
-      }
-
-      toast.success('성공적으로 저장되었습니다.');
-      await onSave(collection);
+      await onSave();
     } catch (error) {
-      console.error('Save failed:', error);
-      toast.error('저장 도중 오류가 발생했습니다.');
+      const message = error instanceof Error ? error.message : '상품 저장에 실패했습니다.';
+      if (mutationStarted) {
+        setSaveNeedsReload(true);
+        toast.error(`${message} 일부 변경이 저장됐을 수 있어 상품 목록을 다시 불러온 후 확인해주세요.`);
+      } else {
+        toast.error(message);
+      }
     } finally {
+      savingRef.current = false;
       setIsSaving(false);
     }
   };
@@ -300,6 +286,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
         <div className="flex items-center justify-between p-4">
           <button
             onClick={onBack}
+            disabled={isSaving}
             className="p-2 bg-pink-500 rounded-full hover:bg-pink-600 transition-colors"
           >
             <ChevronLeft className="w-6 h-6 text-white" />
@@ -308,7 +295,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
           <div className="flex items-center gap-2">
             <button
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || saveNeedsReload}
               className={`px-3 py-1.5 bg-teal-500 hover:bg-teal-600 rounded-lg text-white text-sm flex items-center gap-1 transition-colors ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
               {isSaving ? (
@@ -323,8 +310,14 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
       </div>
 
       <div className="p-4 max-w-4xl mx-auto">
+        {saveNeedsReload && (
+          <div role="alert" className="mb-4 rounded-xl border border-amber-300/30 bg-amber-400/10 p-4 text-sm text-amber-100">
+            일부 변경이 저장됐을 수 있습니다. 중복 저장을 막기 위해 이 화면의 저장을 중단했습니다.
+            <button onClick={onBack} className="ml-2 underline">상품 목록에서 다시 확인하기</button>
+          </div>
+        )}
         {/* Editing Warning for Active Products */}
-        {!isEditingAllowed && (
+        {!canEditComposition && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -335,8 +328,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
               <div>
                 <h3 className="text-red-200 mb-1">수정 불가</h3>
                 <p className="text-red-300/80 text-sm">
-                  이 상품은 현재 <strong>{collection.operationStatus === 'active' ? '운영중' : '운영종료'}</strong> 상태입니다.
-                  운영중이거나 운영이 종료된 상품은 수정할 수 없습니다.
+                  판매 이력이 있거나 운영예정 상태가 아닌 상품은 이름·이미지·수량을 변경할 수 없습니다. 운영 상태 변경은 아래에서 저장할 수 있습니다.
                 </p>
               </div>
             </div>
@@ -357,13 +349,13 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
               <div className="flex gap-3">
                 <button
                   onClick={() => setOperationStatus('scheduled')}
-                  disabled={collection.operationStatus === 'active' || collection.operationStatus === 'ended'}
+                  disabled={isSaving || saveNeedsReload}
                   className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                     operationStatus === 'scheduled'
                       ? 'bg-blue-500/30 border-blue-400/50 text-blue-200'
                       : 'bg-white/5 border-white/20 text-white/60'
                   } ${
-                    (collection.operationStatus === 'active' || collection.operationStatus === 'ended')
+                    (isSaving || saveNeedsReload)
                       ? 'opacity-50 cursor-not-allowed'
                       : 'hover:border-blue-400/50'
                   }`}
@@ -372,19 +364,19 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
                 </button>
                 <button
                   onClick={() => {
-                    if (user && user.isActive === false) {
+                    if (!user || user.isActive === false) {
                       toast.error('사업자 심사가 완료된 후에만 운영중 상태로 변경할 수 있습니다.');
                       return;
                     }
                     setOperationStatus('active');
                   }}
-                  disabled={collection.operationStatus === 'ended'}
+                  disabled={isSaving || saveNeedsReload}
                   className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                     operationStatus === 'active'
                       ? 'bg-green-500/30 border-green-400/50 text-green-200'
                       : 'bg-white/5 border-white/20 text-white/60'
                   } ${
-                    collection.operationStatus === 'ended'
+                    (isSaving || saveNeedsReload)
                       ? 'opacity-50 cursor-not-allowed'
                       : 'hover:border-green-400/50'
                   }`}
@@ -393,6 +385,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
                 </button>
                 <button
                   onClick={() => setOperationStatus('ended')}
+                  disabled={isSaving || saveNeedsReload}
                   className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                     operationStatus === 'ended'
                       ? 'bg-gray-500/30 border-gray-400/50 text-gray-300'
@@ -403,7 +396,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
                 </button>
               </div>
               <p className="text-cyan-300 text-xs mt-2 flex items-center gap-1">
-                💡 운영중이나 운영종료로 변경하면 더 이상 수정할 수 없습니다
+                💡 구성과 재고는 판매 이력이 없는 운영예정 상품에서만 수정할 수 있습니다.
               </p>
             </div>
 
@@ -427,9 +420,9 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
                 <input
                   type="number"
                   value={rewardRate === 0 ? '' : rewardRate}
-                  onChange={(e) => setRewardRate(e.target.value === '' ? 0 : parseInt(e.target.value))}
+                  onChange={(e) => setRewardRate(e.target.value === '' ? 0 : Number(e.target.value))}
                   disabled={!isEditingAllowed}
-                  min="0"
+                  min="0" max="100" step="1"
                   className={`w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-cyan-400 ${
                     !isEditingAllowed ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
@@ -580,7 +573,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
                               type="number"
                               value={product.stock === 0 || product.stock === undefined ? '' : product.stock}
                               onChange={(e) => {
-                                const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                const val = e.target.value === '' ? 0 : Number(e.target.value);
                                 handleProductChange(rank, productIndex, 'stock', val);
                               }}
                               disabled={!isEditingAllowed}
@@ -590,7 +583,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
                                   : 'bg-white/5 text-white/50 cursor-not-allowed'
                               }`}
                               placeholder="재고 수량"
-                              min="0"
+                              min="1" max="100000" step="1"
                             />
                             {isEditingAllowed ? (
                               <p className="text-cyan-300 text-xs mt-1 flex items-center gap-1">
@@ -692,7 +685,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
           whileHover={{ scale: isSaving ? 1 : 1.02 }}
           whileTap={{ scale: isSaving ? 1 : 0.98 }}
           onClick={handleSave}
-          disabled={isSaving}
+          disabled={isSaving || saveNeedsReload}
           className={`w-full mt-6 py-4 rounded-xl shadow-xl flex items-center justify-center gap-2 transition-colors ${
             isSaving 
               ? 'bg-gray-500 text-white/70 cursor-not-allowed' 

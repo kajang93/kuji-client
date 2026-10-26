@@ -118,6 +118,12 @@ axiosInstance.interceptors.response.use(
     // 없다면 브라우저 기본 에러(Network Error, Request failed with status 401 등) 대신 한글 안내 문구 적용
     if (error?.response?.data?.message) {
       error.message = error.response.data.message;
+    } else if (error?.response?.status === 403) {
+      error.message = '이 작업을 수행할 권한이 없습니다.';
+    } else if (error?.response?.status === 401) {
+      error.message = '로그인이 필요합니다. 다시 로그인해 주세요.';
+    } else if (error?.response?.status === 404) {
+      error.message = '요청한 내용을 찾을 수 없습니다.';
     } else if (error?.message?.includes('status code') || error?.message?.includes('Network Error')) {
       error.message = '서버 통신 중 오류가 발생했습니다.';
     }

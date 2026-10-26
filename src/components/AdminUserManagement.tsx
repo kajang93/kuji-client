@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from './motion';
-import { Search, Filter, UserCheck, Shield, Store, User, ChevronDown, Edit, Trash2, Plus, ChevronLeft } from './icons';
-import { fetchAdminMembers } from '../api/admin';
+import { Search, Filter, UserCheck, Shield, Store, User, ChevronDown, Edit, Plus, ChevronLeft } from './icons';
+import { fetchAdminMembers, reviewBusinessApplication } from '../api/admin';
+import { downloadBusinessLicense } from '../api/auth';
+import { toast } from 'sonner';
 
 type User = {
   id: string;
@@ -12,6 +14,11 @@ type User = {
   points: number;
   createdAt: string;
   isActive: boolean;
+  businessStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  companyName?: string;
+  businessNumber?: string;
+  rejectReason?: string;
+  licenseSubmitted?: boolean;
   purchases?: number;
   winnings?: number;
   products?: number;
@@ -29,6 +36,8 @@ export default function AdminUserManagement({ onBack }: Props) {
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -40,17 +49,22 @@ export default function AdminUserManagement({ onBack }: Props) {
       const data = await fetchAdminMembers();
       const mapped = data.map((d): User => ({
         id: d.id.toString(),
-        name: d.nickname || d.email,
-        email: d.email,
+        name: d.nickname || d.email || `회원 ${d.id}`,
+        email: d.email || '',
         phone: d.phoneNumber || '-',
         userType: d.role === 'ROLE_BUSINESS' || d.role === 'BIZ' ? 'business' : (d.role === 'ROLE_ADMIN' || d.role === 'ADMIN' ? 'admin' : 'customer'),
         points: d.points || 0,
         createdAt: d.createdAt ? new Date(d.createdAt).toLocaleDateString() : '-',
-        isActive: d.isActive !== false,
+        isActive: d.role === 'BIZ' || d.role === 'ROLE_BUSINESS' ? d.businessStatus === 'APPROVED' : true,
+        businessStatus: d.businessStatus,
+        companyName: d.companyName,
+        businessNumber: d.businessNumber,
+        rejectReason: d.rejectReason,
+        licenseSubmitted: d.licenseSubmitted,
       }));
       setUsers(mapped);
     } catch (e) {
-      console.error(e);
+      toast.error(e instanceof Error ? e.message : '회원 목록을 불러오지 못했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -105,20 +119,23 @@ export default function AdminUserManagement({ onBack }: Props) {
     { label: '활성 사용자', value: users.filter(u => u.isActive).length.toString(), icon: UserCheck, color: 'from-yellow-500 to-orange-500' },
   ];
 
-  const handleToggleActive = (userId: string) => {
-    setUsers(users.map(u => 
-      u.id === userId ? { ...u, isActive: !u.isActive } : u
-    ));
-  };
-
-  const handleDeleteUser = (userId: string) => {
-    if (confirm('정말 이 사용자를 삭제하시겠습니까?')) {
-      setUsers(users.filter(u => u.id !== userId));
-    }
+  const handleReview = async (status: 'APPROVED' | 'REJECTED') => {
+    if (!selectedUser || reviewBusy) return;
+    if (status === 'REJECTED' && !rejectReason.trim()) { toast.error('반려 사유를 입력해주세요.'); return; }
+    if (!confirm(status === 'APPROVED' ? '등록증과 신청 정보를 확인했습니다. 이 사업자의 판매를 승인하시겠습니까?' : '작성한 사유로 사업자 신청을 반려하시겠습니까?')) return;
+    setReviewBusy(true);
+    try {
+      await reviewBusinessApplication(Number(selectedUser.id), status, rejectReason.trim());
+      await loadMembers();
+      setIsDetailOpen(false);
+      toast.success(status === 'APPROVED' ? '사업자 신청을 승인했습니다.' : '사업자 신청을 반려했습니다.');
+    } catch (error) { toast.error(error instanceof Error ? error.message : '심사 결과를 저장하지 못했습니다.'); }
+    finally { setReviewBusy(false); }
   };
 
   const handleViewDetail = (user: User) => {
     setSelectedUser(user);
+    setRejectReason(user.rejectReason || '');
     setIsDetailOpen(true);
   };
 
@@ -274,14 +291,14 @@ export default function AdminUserManagement({ onBack }: Props) {
                       </td>
                       <td className="px-6 py-4">
                         <button
-                          onClick={() => handleToggleActive(user.id)}
+                          onClick={() => handleViewDetail(user)}
                           className={`px-3 py-1 rounded-full text-xs ${
                             user.isActive
                               ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                               : 'bg-red-500/20 text-red-300 border border-red-500/30'
                           }`}
                         >
-                          {user.isActive ? '활성' : '비활성'}
+                          {user.userType === 'business' ? ({ PENDING: '심사 대기', APPROVED: '승인', REJECTED: '반려' }[user.businessStatus || 'PENDING']) : '이용 중'}
                         </button>
                       </td>
                       <td className="px-6 py-4">
@@ -292,14 +309,6 @@ export default function AdminUserManagement({ onBack }: Props) {
                           >
                             <Edit className="w-4 h-4 text-blue-300" />
                           </button>
-                          {user.userType !== 'admin' && (
-                            <button
-                              onClick={() => handleDeleteUser(user.id)}
-                              className="p-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-300" />
-                            </button>
-                          )}
                         </div>
                       </td>
                     </motion.tr>
@@ -353,15 +362,20 @@ export default function AdminUserManagement({ onBack }: Props) {
                   <div className="text-white/60 text-sm mb-1">가입일</div>
                   <div className="text-white">{selectedUser.createdAt}</div>
                 </div>
+                {selectedUser.userType === 'business' && <div className="space-y-3 rounded-xl border border-amber-300/20 p-4 text-white">
+                  <p>{selectedUser.companyName} · {selectedUser.businessNumber}</p>
+                  <button disabled={!selectedUser.licenseSubmitted} onClick={() => void downloadBusinessLicense(Number(selectedUser.id)).catch(error => toast.error(error.message || '등록증을 내려받지 못했습니다.'))} className="rounded-lg bg-white/10 p-3 disabled:opacity-40">{selectedUser.licenseSubmitted ? '사업자등록증 내려받기' : '등록증 미제출 · 서류 보완 필요'}</button>
+                  <label className="block text-sm">반려 사유
+                    <textarea maxLength={255} value={rejectReason} disabled={reviewBusy} onChange={event => setRejectReason(event.target.value)} className="mt-2 w-full rounded-lg bg-slate-950 p-3" />
+                  </label>
+                </div>}
               </div>
 
               <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => handleToggleActive(selectedUser.id)}
-                  className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl hover:shadow-lg transition-all"
-                >
-                  {selectedUser.isActive ? '비활성화' : '활성화'}
-                </button>
+                {selectedUser.userType === 'business' && selectedUser.businessStatus !== 'APPROVED' && <>
+                  <button disabled={reviewBusy || !selectedUser.licenseSubmitted} onClick={() => void handleReview('APPROVED')} className="flex-1 rounded-xl bg-emerald-500 py-3 text-white disabled:opacity-40">승인</button>
+                  <button disabled={reviewBusy} onClick={() => void handleReview('REJECTED')} className="flex-1 rounded-xl bg-rose-500 py-3 text-white disabled:opacity-40">반려</button>
+                </>}
                 <button
                   onClick={() => setIsDetailOpen(false)}
                   className="flex-1 py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all"

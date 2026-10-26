@@ -32,6 +32,10 @@ export const fetchAdminMembers = async (): Promise<any[]> => {
   return response.data;
 };
 
+export const reviewBusinessApplication = async (memberId: number, status: 'APPROVED' | 'REJECTED', rejectReason?: string): Promise<void> => {
+  await axiosInstance.patch(`/api/business/${memberId}/review`, { status, rejectReason });
+};
+
 export const fetchPromotions = async (): Promise<any[]> => {
   const response = await axiosInstance.get("/api/admin/promotions");
   return response.data;

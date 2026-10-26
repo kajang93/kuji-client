@@ -5,9 +5,11 @@ import { useRef } from 'react';
 import { createPost, fetchPostDetail, updatePost } from '../api/community';
 import { validateImageFile, compressImageFile } from '../api/client';
 import { toast } from 'sonner';
+import { isCommunityAuthor } from '../utils/communityOwnership';
 
 interface BoardWriteProps {
   postId?: number;
+  user: { memberId?: number } | null;
   onBack: () => void;
   onSuccess: () => void;
 }
@@ -18,42 +20,50 @@ const CATEGORIES: { label: string; value: PostCategory }[] = [
   { label: 'Q&A', value: 'QNA' },
 ];
 
-export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProps) {
+export default function BoardWrite({ postId, user, onBack, onSuccess }: BoardWriteProps) {
   const [formData, setFormData] = useState<PostCreateRequest>({
     title: '',
     content: '',
     category: 'FREE'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(Boolean(postId));
+  const [loadedAuthorId, setLoadedAuthorId] = useState<number | null>(null);
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const submittingRef = useRef(false);
+  const canEdit = !postId || isCommunityAuthor(user, { authorId: loadedAuthorId });
 
   useEffect(() => {
-    if (postId) {
-      loadOriginalPost();
-    }
-  }, [postId]);
-
-  const loadOriginalPost = async () => {
+    if (!postId) return;
+    let active = true;
     setIsLoading(true);
-    try {
-      const data = await fetchPostDetail(postId!);
+    setLoadedAuthorId(null);
+    fetchPostDetail(postId).then(data => {
+      if (!active) return;
+      if (!isCommunityAuthor(user, data)) {
+        toast.error('내가 작성한 게시글만 수정할 수 있습니다.');
+        onBack();
+        return;
+      }
+      setLoadedAuthorId(data.authorId ?? null);
       setFormData({
         title: data.title,
         content: data.content,
         category: data.category
       });
       setExistingImageUrls(data.imageUrls || []);
-    } catch (error) {
-      toast.error('기존 내용을 불러올 수 없습니다.');
+    }).catch(error => {
+      if (!active) return;
+      toast.error(error instanceof Error ? error.message : '기존 내용을 불러올 수 없습니다.');
       onBack();
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    }).finally(() => {
+      if (active) setIsLoading(false);
+    });
+    return () => { active = false; };
+  }, [postId, user?.memberId]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -98,9 +108,13 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current || isLoading) return;
+    if (!user?.memberId) return toast.error('로그인이 필요합니다.');
+    if (!canEdit) return toast.error('내가 작성한 게시글만 수정할 수 있습니다.');
     if (!formData.title.trim()) return toast.error('제목을 입력해주세요.');
     if (!formData.content.trim()) return toast.error('내용을 입력해주세요.');
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
       const formDataObj = new FormData();
@@ -125,6 +139,7 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
     } catch (error: any) {
       toast.error(error.message);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -150,7 +165,7 @@ export default function BoardWrite({ postId, onBack, onSuccess }: BoardWriteProp
         </div>
         <button 
           onClick={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isLoading || !canEdit}
           className="px-4 py-2 bg-rose-500 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-rose-600 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 shadow-lg shadow-rose-500/20"
         >
           {isSubmitting ? (

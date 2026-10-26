@@ -91,8 +91,48 @@ export const updateMyProfile = async (formData: FormData): Promise<MemberProfile
 /**
  * 회원가입 요청
  */
-export const signup = async (data: any): Promise<void> => {
+export const signup = async (data: any, license?: File | null): Promise<void> => {
+  if (data.role === 'BIZ') {
+    if (!license) throw new Error('사업자등록증을 첨부해주세요.');
+    const body = new FormData();
+    body.append('data', new Blob([JSON.stringify(data)], { type: 'application/json' }));
+    body.append('license', license);
+    await axiosInstance.post(`${API_BASE_URL}/signup`, body);
+    return;
+  }
   await axiosInstance.post(`${API_BASE_URL}/signup`, data);
+};
+
+export type BusinessApplication = {
+  businessNumber: string;
+  companyName: string;
+  ceoName: string;
+  businessAddress: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectReason?: string | null;
+  licenseImageUrl?: string | null;
+};
+
+export const fetchBusinessApplication = async (memberId: number): Promise<BusinessApplication> => {
+  const { data } = await axiosInstance.get(`/api/business/${memberId}`);
+  return data;
+};
+
+export const resubmitBusinessApplication = async (data: { businessNumber: string; companyName: string; representativeName: string; businessAddress: string }, license: File): Promise<void> => {
+  const body = new FormData();
+  body.append('data', new Blob([JSON.stringify(data)], { type: 'application/json' }));
+  body.append('license', license);
+  await axiosInstance.post('/api/business/register', body);
+};
+
+export const downloadBusinessLicense = async (memberId: number): Promise<void> => {
+  const response = await axiosInstance.get(`/api/business/${memberId}/license`, { responseType: 'blob' });
+  const url = URL.createObjectURL(response.data);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `사업자등록증-${memberId}`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
 /**

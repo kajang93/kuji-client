@@ -1,5 +1,6 @@
 export interface PostComment {
   id: number;
+  authorId?: number;
   content: string;
   authorName: string;
   authorEmail: string;
@@ -209,6 +210,8 @@ export interface MemberProfileResponse {
   points: number;
   isActive: boolean;
   profileImageUrl?: string;
+  businessStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+  businessRejectReason?: string | null;
   phoneNumber?: string;
   birthDate?: string;
   address?: string;
@@ -220,6 +223,7 @@ export type PostCategory = "FREE" | "WINNING" | "QNA" | "NOTICE";
 
 export interface Post {
   id: number;
+  authorId?: number;
   title: string;
   content: string;
   category: PostCategory;

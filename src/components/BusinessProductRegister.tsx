@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react';
 import { motion } from './motion';
-import { ChevronLeft, Upload, Save, X, Plus, Check, Loader2, Sparkles } from './icons';
+import { ChevronLeft, Upload, X, Plus, Check, Loader2, Sparkles } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { createKujiBoard, uploadBoardImages } from '../api/kuji';
+import { createKujiBoard, deleteKujiBoard, registerBoardItems, uploadBoardImages } from '../api/kuji';
 import { validateImageFile, compressImageFile } from '../api/client';
 import { processAiImage, fetchItemSuggestion } from '../api/admin';
 import { rankColors } from '../constants/rankColors';
@@ -10,8 +10,7 @@ import { toast } from 'sonner';
 
 type BusinessProductRegisterProps = {
   onBack: () => void;
-  onComplete?: () => void;
-  onTempSave?: (message: string) => void;
+  onComplete?: () => void | Promise<void>;
 };
 
 type ProductItem = {
@@ -32,7 +31,7 @@ const createEmptyProducts = (rank: string, count: number): ProductItem[] =>
     stock: 0
   }));
 
-export default function BusinessProductRegister({ onBack, onComplete, onTempSave }: BusinessProductRegisterProps) {
+export default function BusinessProductRegister({ onBack, onComplete }: BusinessProductRegisterProps) {
   const [seriesName, setSeriesName] = useState('');
   const [seriesImage, setSeriesImage] = useState<string | null>(null);
   const [seriesFile, setSeriesFile] = useState<File | null>(null);
@@ -42,6 +41,8 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
   const [productFiles, setProductFiles] = useState<Record<string, File>>({}); // Added to track actual File objects
   const [isRegistering, setIsRegistering] = useState(false);
   const [isAiProcessing, setIsAiProcessing] = useState<Record<string, boolean>>({});
+  const [unfinishedBoardId, setUnfinishedBoardId] = useState<number | null>(null);
+  const registeringRef = useRef(false);
   
   const seriesImageInputRef = useRef<HTMLInputElement>(null);
 
@@ -179,95 +180,58 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
   };
 
   const handleRegister = async () => {
-    if (!seriesName.trim()) {
-      toast.error('시리즈명을 입력해주세요');
-      return;
+    if (registeringRef.current || unfinishedBoardId !== null) return;
+    if (!seriesName.trim() || seriesName.trim().length > 100) return toast.error('시리즈명은 1자 이상 100자 이내로 입력해주세요.');
+    if (!Number.isSafeInteger(pricePerDraw) || Number(pricePerDraw) < 1 || Number(pricePerDraw) > 2147483647) return toast.error('구매 가격은 1원 이상 2147483647원 이하의 정수로 입력해주세요.');
+    const reward = rewardRate === '' ? 0 : rewardRate;
+    if (!Number.isInteger(reward) || reward < 0 || reward > 100) return toast.error('적립 포인트는 0부터 100 사이의 정수로 입력해주세요.');
+    if (!seriesFile || !seriesImage) return toast.error('시리즈 이미지를 등록해주세요.');
+    if (Object.values(isAiProcessing).some(Boolean)) return toast.error('이미지 자동완성이 끝난 후 저장해주세요.');
+
+    const products = Object.entries(rankData).flatMap(([grade, items]) => items.map(item => ({ grade, ...item })));
+    if (products.length === 0) return toast.error('최소 1개 이상의 상품을 등록해주세요.');
+    for (const product of products) {
+      if (!product.name.trim() || product.name.trim().length > 100) return toast.error(`${product.grade}상 상품명은 1자 이상 100자 이내로 입력해주세요.`);
+      if (!Number.isInteger(product.stock) || product.stock < 1 || product.stock > 100000) return toast.error(`${product.grade}상 수량은 1개 이상 100000개 이하의 정수로 입력해주세요.`);
+      if (!product.image || !productFiles[product.id]) return toast.error(`${product.grade}상 상품 이미지를 등록해주세요.`);
     }
 
-    if (!seriesFile) {
-      toast.error('시리즈 이미지를 등록해주세요');
-      return;
-    }
-
-    const hasProducts = Object.keys(rankData).length > 0 && Object.values(rankData).some(products => products.length > 0);
-    if (!hasProducts) {
-      toast.error('최소 1개 이상의 상품을 등록해주세요');
-      return;
-    }
-
+    registeringRef.current = true;
     setIsRegistering(true);
+    let boardId: number | null = null;
     try {
-      // 1. Create Kuji Board
-      const boardId = await createKujiBoard({
-        title: seriesName,
-        pricePerDraw: Number(pricePerDraw) || 0,
-        status: 'PREPARING',
-        rewardRate: Number(rewardRate) || 0
-      });
-
-      // 2. Upload Series Image as THUMBNAIL
+      boardId = await createKujiBoard({ title: seriesName.trim(), pricePerDraw: Number(pricePerDraw), status: 'PREPARING', rewardRate: reward });
       await uploadBoardImages(boardId, 'THUMBNAIL', [seriesFile]);
-      
-      // 3. Prepare Items Data and Files in synchronized order
-      const allItemsData: { grade: string; name: string; totalQty: number }[] = [];
-      const allItemFiles: File[] = [];
-
-      // Iterate through all ranks and products
-      Object.entries(rankData).forEach(([rank, products]) => {
-        products.forEach(product => {
-          allItemsData.push({
-            grade: rank,
-            name: product.name,
-            totalQty: product.stock
-          });
-          
-          // Get the corresponding file for this product
-          const file = productFiles[product.id];
-          if (file) {
-            allItemFiles.push(file);
-          } else {
-            // Push an empty blob to maintain array index mapping with allItemsData
-            allItemFiles.push(new File([new Blob()], "empty.bin", { type: "application/octet-stream" }));
-          }
-        });
-      });
-
-      // 4. Register All Items
-      if (allItemsData.length > 0) {
-        // Only call if there are items, although we validated this above
-        await import('../api/kuji').then(m => m.registerBoardItems(boardId, allItemsData, allItemFiles));
-      }
-      
-      toast.success('쿠지 상품과 경품 리스트가 성공적으로 등록되었습니다.');
-      onComplete?.();
+      await registerBoardItems(boardId,
+        products.map(product => ({ grade: product.grade, name: product.name.trim(), totalQty: product.stock })),
+        products.map(product => productFiles[product.id]));
     } catch (error) {
-      console.error('Registration failed:', error);
-      toast.error('상품 등록 중 오류가 발생했습니다.');
+      const message = error instanceof Error ? error.message : '상품 저장에 실패했습니다.';
+      if (boardId !== null) {
+        try {
+          await deleteKujiBoard(boardId);
+          toast.error(`${message} 생성 중인 준비 상품은 정리했습니다. 입력 내용을 확인하고 다시 저장해주세요.`);
+        } catch {
+          setUnfinishedBoardId(boardId);
+          toast.error(`${message} 준비 상품 ${boardId}번이 남아 있습니다. 상품 관리에서 확인해주세요.`);
+        }
+      } else {
+        toast.error(message);
+      }
+      return;
     } finally {
+      registeringRef.current = false;
       setIsRegistering(false);
     }
-  };
 
-  const handleTempSave = () => {
-    if (!seriesName.trim()) {
-      toast.error('시리즈명을 입력해주세요');
-      return;
+    // 상위 화면은 저장된 상품 목록을 서버에서 다시 조회한다.
+    setUnfinishedBoardId(boardId);
+    if (!onComplete) toast.success('운영예정 상품으로 저장했습니다. 상품 관리에서 판매를 시작할 수 있습니다.');
+    try {
+      await onComplete?.();
+    } catch {
+      toast.error('상품은 저장됐지만 목록을 새로 불러오지 못했습니다. 상품 관리에서 확인해주세요.');
     }
-
-    // Validate that all ranks have at least one product
-    const hasProducts = Object.keys(rankData).length > 0 && 
-      Object.values(rankData).some(products => products.length > 0);
-
-    if (!hasProducts) {
-      toast.error('최소 1개 이상의 상품을 등록해주세요');
-      return;
-    }
-
-    // In real app, save data here
-    console.log('Temp Saving:', { seriesName, seriesImage, rankData });
-    
-    // Notify the parent component
-    onTempSave?.('임시 저장되었습니다');
   };
 
   const totalProductCount = Object.values(rankData).reduce((sum, products) => sum + products.length, 0);
@@ -279,6 +243,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
         <div className="flex items-center justify-between p-4">
           <button
             onClick={onBack}
+            disabled={isRegistering}
             className="p-2 bg-pink-500 rounded-full hover:bg-pink-600 transition-colors"
           >
             <ChevronLeft className="w-6 h-6 text-white" />
@@ -286,15 +251,8 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
           <h1 className="text-white text-xl">쿠지 상품 등록</h1>
           <div className="flex items-center gap-2">
             <button
-              onClick={handleTempSave}
-              className="px-3 py-1.5 bg-amber-500/80 hover:bg-amber-500 rounded-lg text-white text-sm flex items-center gap-1 transition-colors"
-            >
-              <Save className="w-4 h-4" />
-              <span className="hidden sm:inline">임시 저장</span>
-            </button>
-            <button
               onClick={handleRegister}
-              disabled={isRegistering}
+              disabled={isRegistering || unfinishedBoardId !== null}
               className={`px-3 py-1.5 bg-teal-500 hover:bg-teal-600 rounded-lg text-white text-sm flex items-center gap-1 transition-colors ${isRegistering ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
               {isRegistering ? (
@@ -302,13 +260,19 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
               ) : (
                 <Check className="w-4 h-4" />
               )}
-              <span className="hidden sm:inline">등록</span>
+              <span>준비 상품 저장</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-4xl space-y-4 px-3 py-4 sm:px-4">
+      {unfinishedBoardId !== null && (
+        <div role="alert" className="mx-auto mt-4 max-w-4xl rounded-xl border border-amber-300/30 bg-amber-400/10 p-4 text-sm text-amber-100">
+          준비 상품 {unfinishedBoardId}번이 저장되어 있습니다. 중복 등록을 막기 위해 다시 저장할 수 없습니다. 상품 관리에서 내용을 확인해주세요.
+          <button onClick={onBack} className="ml-3 underline">상품 관리로 돌아가기</button>
+        </div>
+      )}
+      <fieldset disabled={isRegistering || unfinishedBoardId !== null} className="mx-auto max-w-4xl space-y-4 px-3 py-4 sm:px-4 disabled:opacity-70">
         {/* Series Info */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -316,6 +280,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
           className="rounded-2xl border border-white/15 bg-gradient-to-br from-white/20 to-white/5 p-4 shadow-lg ring-1 ring-white/5 backdrop-blur-sm sm:p-6"
         >
           <h2 className="text-white text-lg mb-4">시리즈 정보</h2>
+          <p className="mb-4 text-sm text-white/60">저장한 상품은 운영예정으로 보관됩니다. 상품 관리에서 구성을 확인한 후 판매를 시작해주세요.</p>
           
           {/* Series Image */}
           <div className="mb-4">
@@ -361,11 +326,12 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
                 type="number"
                 value={pricePerDraw === 0 || pricePerDraw === '' ? '' : pricePerDraw}
                 onChange={(e) => {
-                  const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                  const val = e.target.value === '' ? '' : Number(e.target.value);
                   setPricePerDraw(val as number | '');
                 }}
                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-teal-400"
                 placeholder="예: 10000"
+                min="1" max="2147483647" step="1"
               />
             </div>
             <div>
@@ -375,11 +341,12 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
                   type="number"
                   value={rewardRate === 0 || rewardRate === '' ? '' : rewardRate}
                   onChange={(e) => {
-                    const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                    const val = e.target.value === '' ? '' : Number(e.target.value);
                     setRewardRate(val as number | '');
                   }}
                   className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-teal-400"
                   placeholder="예: 100"
+                  min="0" max="100" step="1"
                 />
                 <span className="text-white/70">P</span>
               </div>
@@ -553,12 +520,12 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
                                 type="number"
                                 value={product.stock === 0 ? '' : product.stock}
                                 onChange={(e) => {
-                                  const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                  const val = e.target.value === '' ? 0 : Number(e.target.value);
                                   handleProductChange(rank, product.id, 'stock', val);
                                 }}
                                 className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/40 focus:outline-none focus:border-teal-400"
                                 placeholder="재고 수량"
-                                min="0"
+                                min="1" max="100000" step="1"
                               />
                             </div>
                           </div>
@@ -583,20 +550,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {/* Temp Save Button */}
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleTempSave}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 py-4 text-white shadow-xl"
-          >
-            <Save className="w-5 h-5" />
-            <span>임시 저장</span>
-          </motion.button>
+        <div className="grid grid-cols-1 gap-3">
 
           <motion.button
             initial={{ opacity: 0, y: 20 }}
@@ -605,7 +559,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
             whileHover={{ scale: isRegistering ? 1 : 1.02 }}
             whileTap={{ scale: isRegistering ? 1 : 0.98 }}
             onClick={handleRegister}
-            disabled={isRegistering}
+            disabled={isRegistering || unfinishedBoardId !== null}
             className={`flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 to-blue-500 py-4 text-white shadow-xl ${isRegistering ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
             {isRegistering ? (
@@ -613,7 +567,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
             ) : (
               <Check className="w-5 h-5" />
             )}
-            <span>{isRegistering ? '등록 중...' : '상품 등록'}</span>
+            <span>{isRegistering ? '저장 중...' : '준비 상품 저장'}</span>
           </motion.button>
         </div>
 
@@ -636,7 +590,7 @@ export default function BusinessProductRegister({ onBack, onComplete, onTempSave
             </div>
           </div>
         </motion.div>
-      </div>
+      </fieldset>
     </div>
   );
 }

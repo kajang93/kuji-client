@@ -80,6 +80,10 @@ export const updateKujiBoardRewardRate = async (
   await axiosInstance.patch(`${API_BASE_URL}/${boardId}/reward-rate?rewardRate=${rewardRate}`);
 };
 
+export const updateKujiBoardTitle = async (boardId: number, title: string): Promise<void> => {
+  await axiosInstance.patch(`${API_BASE_URL}/${boardId}/title`, { title });
+};
+
 /**
  * Register multiple items for a kuji board with images.
  */

@@ -13,6 +13,8 @@ type SignupProps = {
 };
 
 export default function Signup({ userType, onBack, onComplete }: SignupProps) {
+  const submittingRef = useRef(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   // Get today's date in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];
   
@@ -176,7 +178,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       setBusinessNumberValid(isValid);
       setBusinessNumberChecked(true);
       if (isValid) {
-        toast.success('유효한 사업자번호입니다.');
+        toast.success('사업자번호 형식이 확인되었습니다. 실제 사업자 정보는 등록증 심사에서 확인합니다.');
       } else {
         toast.error('유효하지 않은 사업자번호입니다.');
       }
@@ -212,6 +214,10 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (!['image/jpeg', 'image/png', 'application/pdf'].includes(file.type)) {
+        toast.error('사업자등록증은 JPG, PNG 또는 PDF로 첨부해주세요.');
+        return;
+      }
       let fileToUpload = file;
       
       // 이미지만 압축 (PDF 등은 그대로 통과)
@@ -219,8 +225,8 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
         fileToUpload = await compressImageFile(file);
       }
       
-      if (fileToUpload.size > 10 * 1024 * 1024) {
-        toast.error('파일 용량은 10MB를 초과할 수 없습니다.');
+      if (fileToUpload.size > 5 * 1024 * 1024) {
+        toast.error('파일 용량은 5MB를 초과할 수 없습니다.');
         return;
       }
       setFormData({ ...formData, businessFile: fileToUpload });
@@ -229,6 +235,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
 
     if (!agreeTerms || !agreePrivacy) {
       toast.error('필수 이용약관에 동의해주세요.');
@@ -323,7 +330,9 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       isMarketingAgreed: agreeMarketing
     };
 
-    signup(signupData)
+    submittingRef.current = true;
+    setIsSubmitting(true);
+    signup(signupData, userType === 'business' ? formData.businessFile : undefined)
       .then(() => {
         if (userType === 'business') {
           toast.success('사업자 등록 신청이 완료되었습니다. 관리자 승인 후 이용 가능합니다.');
@@ -335,6 +344,10 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       })
       .catch((error) => {
         toast.error(error.message);
+      })
+      .finally(() => {
+        submittingRef.current = false;
+        setIsSubmitting(false);
       });
   };
 
@@ -796,7 +809,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                 <input
                   type="file"
                   onChange={handleFileChange}
-                  accept="image/*,.pdf"
+                  accept="image/jpeg,image/png,application/pdf"
                   className="hidden"
                   id="business-file"
                   required
@@ -884,10 +897,11 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           type="submit"
+          disabled={isSubmitting}
           className="flex items-center justify-center w-full py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-xl text-lg shadow-2xl mt-8"
         >
           
-            {userType === 'business' ? '신청 요청' : '회원가입 완료'}
+            {isSubmitting ? '신청을 저장하고 있습니다…' : userType === 'business' ? '신청 요청' : '회원가입 완료'}
           
         </motion.button>
       </form>

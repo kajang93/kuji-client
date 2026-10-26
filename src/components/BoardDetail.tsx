@@ -9,10 +9,11 @@ import {
   fetchComments, createComment, updateComment, deleteComment 
 } from '../api/community';
 import { toast } from 'sonner';
+import { isCommunityAuthor } from '../utils/communityOwnership';
 
 interface BoardDetailProps {
   postId: number;
-  user: any;
+  user: { memberId?: number } | null;
   onBack: () => void;
   onEdit: () => void;
 }
@@ -22,6 +23,8 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
   const [comments, setComments] = useState<PostComment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const deletingRef = useRef(false);
   const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
   
   // Comment states
@@ -32,7 +35,7 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const editCommentRef = useRef<HTMLTextAreaElement>(null);
 
-  const isAuthor = user && post && user.email === post.authorEmail;
+  const isAuthor = post?.id === postId && isCommunityAuthor(user, post);
 
   useEffect(() => {
     loadPostData();
@@ -49,7 +52,7 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
       setComments(commentsData);
     } catch (error) {
       console.error('Failed to load post data:', error);
-      toast.error('데이터를 불러올 수 없습니다.');
+      toast.error(error instanceof Error ? error.message : '게시글을 불러올 수 없습니다.');
       onBack();
     } finally {
       setIsLoading(false);
@@ -70,14 +73,26 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
   };
 
   const handleDelete = async () => {
+    if (!isAuthor) return toast.error('내가 작성한 게시글만 삭제할 수 있습니다.');
+    if (deletingRef.current) return;
     if (!window.confirm('정말 이 게시글을 삭제하시겠습니까?')) return;
+    deletingRef.current = true;
+    setIsDeleting(true);
     try {
       await deletePost(postId);
       toast.success('게시글이 삭제되었습니다.');
       onBack();
     } catch (error: any) {
       toast.error(error.message);
+    } finally {
+      deletingRef.current = false;
+      setIsDeleting(false);
     }
+  };
+
+  const handleEdit = () => {
+    if (!isAuthor) return toast.error('내가 작성한 게시글만 수정할 수 있습니다.');
+    onEdit();
   };
 
   const handleLike = async () => {
@@ -197,6 +212,9 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
   };
 
   const handleCommentEditSubmit = async (commentId: number) => {
+    if (!isCommunityAuthor(user, comments.find(comment => comment.id === commentId))) {
+      return toast.error('내가 작성한 댓글만 수정할 수 있습니다.');
+    }
     const editValue = editCommentRef.current?.value?.trim();
     if (!editValue) return;
     try {
@@ -210,6 +228,9 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
   };
 
   const handleCommentDelete = async (commentId: number) => {
+    if (!isCommunityAuthor(user, comments.find(comment => comment.id === commentId))) {
+      return toast.error('내가 작성한 댓글만 삭제할 수 있습니다.');
+    }
     if (!window.confirm('댓글을 삭제하시겠습니까?')) return;
     try {
       await deleteComment(postId, commentId);
@@ -252,6 +273,8 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
             <div className="relative">
               <button 
                 onClick={() => setShowMenu(!showMenu)}
+                aria-label="내 게시글 관리"
+                aria-expanded={showMenu}
                 className="p-2 hover:bg-white/5 rounded-full transition-colors"
               >
                 <MoreVertical className="w-5 h-5 text-slate-400" />
@@ -260,7 +283,8 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
               {showMenu && (
                 <div className="absolute right-0 mt-2 w-32 bg-slate-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-20">
                   <button 
-                    onClick={onEdit}
+                    onClick={handleEdit}
+                    disabled={isDeleting}
                     className="w-full px-4 py-3 flex items-center gap-2 text-white hover:bg-white/5 text-sm"
                   >
                     <Edit2 className="w-4 h-4 text-cyan-400" />
@@ -268,10 +292,11 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
                   </button>
                   <button 
                     onClick={handleDelete}
+                    disabled={isDeleting}
                     className="w-full px-4 py-3 flex items-center gap-2 text-rose-400 hover:bg-white/5 text-sm border-t border-white/5"
                   >
                     <Trash2 className="w-4 h-4" />
-                    삭제하기
+                    {isDeleting ? '삭제 중...' : '삭제하기'}
                   </button>
                 </div>
               )}
@@ -428,7 +453,7 @@ export default function BoardDetail({ postId, user, onBack, onEdit }: BoardDetai
                           <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap break-words">
                             {comment.content}
                           </p>
-                          {user && user.email === comment.authorEmail && (
+                          {isCommunityAuthor(user, comment) && (
                             <div className="flex gap-3 mt-3">
                               <button 
                                 onClick={() => {

@@ -13,6 +13,7 @@ import { Capacitor } from '@capacitor/core';
 
 type LoginProps = {
   onLogin: (user: {
+    memberId?: number;
     name: string;
     email: string;
     type: 'social' | 'business' | 'admin';
@@ -23,6 +24,8 @@ type LoginProps = {
     joinDate?: string;
     points?: number;
     isActive?: boolean;
+    businessStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+    businessRejectReason?: string | null;
     profileImageUrl?: string;
   }) => void;
   onBack: () => void;
@@ -186,6 +189,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
       }
       
       onLogin({
+        memberId: userData.memberId,
         name: userData.nickname || userData.email,
         email: userData.email,
         type: userRole === "ROLE_BUSINESS" || userRole === "BIZ" ? "business" : userRole === "ROLE_ADMIN" || userRole === "ADMIN" ? "admin" : "social",
@@ -195,7 +199,9 @@ export default function Login({ onLogin, onBack }: LoginProps) {
         addressDetail: userData.addressDetail,
         joinDate: userData.createdAt ? String(userData.createdAt).substring(0, 10) : undefined,
         points: userData.points || 0,
-        isActive: userData.isActive !== undefined ? userData.isActive : true,
+        isActive: userRole === 'BIZ' || userRole === 'ROLE_BUSINESS' ? userData.businessStatus === 'APPROVED' : true,
+        businessStatus: userData.businessStatus,
+        businessRejectReason: userData.businessRejectReason,
         profileImageUrl: userData.profileImageUrl || ""
       });
 
