@@ -1,17 +1,22 @@
-import React, { useState } from 'react'
+import React, { useCallback, useState } from 'react'
 
 const ERROR_IMG_SRC =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODgiIGhlaWdodD0iODgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBvcGFjaXR5PSIuMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIzLjciPjxyZWN0IHg9IjE2IiB5PSIxNiIgd2lkdGg9IjU2IiBoZWlnaHQ9IjU2IiByeD0iNiIvPjxwYXRoIGQ9Im0xNiA1OCAxNi0xOCAzMiAzMiIvPjxjaXJjbGUgY3g9IjUzIiBjeT0iMzUiIHI9IjciLz48L3N2Zz4KCg=='
 
 export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElement>) {
+  return <FallbackImage key={`${props.src ?? ''}|${props.srcSet ?? ''}`} {...props} />;
+}
+
+const FallbackImage: React.FC<React.ImgHTMLAttributes<HTMLImageElement>> = (props) => {
   const [didError, setDidError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const { src, alt, style, className, loading = 'lazy', decoding = 'async', fetchPriority, onLoad, onError, ...rest } = props;
 
-  const handleError = () => {
-    setDidError(true);
-  };
-
-  const { src, alt, style, className, ...rest } = props;
+  const handleImageRef = useCallback((image: HTMLImageElement | null) => {
+    if (image?.complete && image.naturalWidth > 0) {
+      setIsLoaded(true);
+    }
+  }, []);
 
   return didError ? (
     <div
@@ -27,17 +32,23 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
         <div className="absolute inset-0 bg-slate-800 animate-pulse" />
       )}
       <img
+        {...rest}
+        {...(fetchPriority ? { fetchpriority: fetchPriority } : {})}
+        ref={handleImageRef}
         src={src}
         alt={alt}
-        loading="lazy"
-        decoding="async"
-        className={`w-full h-full object-cover transition-opacity duration-500 ease-in-out ${
-          isLoaded ? 'opacity-100' : 'opacity-0'
-        }`}
-        onLoad={() => setIsLoaded(true)}
-        onError={handleError}
-        {...rest}
+        loading={loading}
+        decoding={decoding}
+        className="w-full h-full object-cover"
+        onLoad={(event) => {
+          setIsLoaded(true);
+          onLoad?.(event);
+        }}
+        onError={(event) => {
+          setDidError(true);
+          onError?.(event);
+        }}
       />
     </div>
   );
-}
+};

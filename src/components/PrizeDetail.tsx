@@ -197,6 +197,8 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                                <ImageWithFallback
                                  src={prize.image}
                                  alt={prize.name}
+                                 loading={rank === sortedRanks[0] && rankPrizes.indexOf(prize) < 4 ? 'eager' : 'lazy'}
+                                 fetchPriority={rank === sortedRanks[0] && prize === rankPrizes[0] ? 'high' : 'auto'}
                                  className="w-full h-full object-cover"
                                />
                             </div>
@@ -331,6 +333,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                   <ImageWithFallback
                     src={anime.image}
                     alt={anime.name}
+                    loading="eager"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -505,6 +508,8 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                 <ImageWithFallback
                   src={imagePopup.images[imagePopup.currentIndex]}
                   alt={imagePopup.prizeName}
+                  loading="eager"
+                  fetchPriority="high"
                   className="w-full h-auto max-h-[70vh] object-contain"
                 />
 

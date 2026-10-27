@@ -44,7 +44,7 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
               key={anime.id}
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1, type: "spring", bounce: 0.4 }}
+              transition={{ delay: Math.min(index * 0.03, 0.15), type: "spring", bounce: 0.4 }}
               className="relative"
             >
               <Tilt options={{ max: 15, scale: 1.02, speed: 400, glare: true, "max-glare": 0.3 }}>
@@ -54,6 +54,8 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
                     <ImageWithFallback
                       src={anime.image}
                       alt={anime.name}
+                      loading={index < 2 ? 'eager' : 'lazy'}
+                      fetchPriority={index === 0 ? 'high' : 'auto'}
                       className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-[#09090b]/70 to-transparent" />

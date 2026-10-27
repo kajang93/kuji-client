@@ -11,6 +11,13 @@ export const API_HOST = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DE
  */
 export const toAbsoluteUrl = (url: string | undefined | null): string => {
   if (!url) return "";
+  const publicImagePrefix = "https://kuji-image.s3.eu-north-1.amazonaws.com/";
+  if (url.startsWith(publicImagePrefix)) {
+    const imagePath = new URL(url).pathname.slice(1);
+    if (/^(boards|items|prizes)\//.test(imagePath)) {
+      return `${API_HOST || "https://kujishop.shop"}/media/kuji/${imagePath}`;
+    }
+  }
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
   return `${API_HOST}${url}`;
 };
