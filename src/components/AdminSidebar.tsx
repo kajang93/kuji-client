@@ -21,6 +21,7 @@ export default function AdminSidebar({ isOpen, onClose, onNavigate, onLogout, us
     { id: 'adminEventManagement', icon: Calendar, label: '이벤트 관리' },
     { id: 'adminUserManagement', icon: Users, label: '사용자 관리' },
     { id: 'adminInquiryManagement', icon: MessageSquare, label: '1:1 문의 관리' },
+    { id: 'adminRefunds', icon: Shield, label: '환불 요청 관리' },
     { id: 'adminStatistics', icon: TrendingUp, label: '통계/분석' },
   ];
 

@@ -6,6 +6,7 @@ import { fetchMyDrawHistory } from '../api/kuji';
 
 type PurchaseHistoryProps = {
   onBack: () => void;
+  onRefund?: () => void;
 };
 
 type PurchaseItem = {
@@ -17,7 +18,7 @@ type PurchaseItem = {
   status: 'completed' | 'pending' | 'cancelled';
 };
 
-export default function PurchaseHistory({ onBack }: PurchaseHistoryProps) {
+export default function PurchaseHistory({ onBack, onRefund }: PurchaseHistoryProps) {
   const [selectedPurchase, setSelectedPurchase] = useState<PurchaseItem | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -128,6 +129,7 @@ export default function PurchaseHistory({ onBack }: PurchaseHistoryProps) {
 
       {/* Content */}
       <div className="p-6 max-w-2xl mx-auto space-y-4">
+        {onRefund && <button onClick={onRefund} className="w-full rounded-xl border border-cyan-400/30 bg-cyan-400/10 p-4 text-sm text-cyan-100">구매 상품 환불 요청 · 처리 상태 확인</button>}
         {purchases.length === 0 ? (
           <div className="text-center py-20">
             <Package className="w-16 h-16 text-white/30 mx-auto mb-4" />

@@ -29,6 +29,8 @@ export interface KujiBoard {
   totalCount?: number;
   remainCount?: number;
   gradeCount?: number; // 추가
+  hasLastPrize?: boolean;
+  lastPrizeAvailable?: boolean;
   isWished?: boolean; // 추가
   prizes?: KujiItemResponse[];
 }
@@ -36,6 +38,7 @@ export interface KujiBoard {
 export interface KujiItemResponse {
   id: number;
   grade: string;
+  lastPrize?: boolean;
   name: string;
   totalQty: number;
   remainQty: number;
@@ -48,6 +51,7 @@ export interface KujiItemResponse {
 export type Prize = {
   id: string;
   rank: string;
+  lastPrize?: boolean;
   name: string;
   image: string;
   totalCount: number;
@@ -65,6 +69,8 @@ export type AnimeCollection = {
   image: string;
   totalKuji: number;
   remainingKuji: number;
+  hasLastPrize?: boolean;
+  lastPrizeAvailable?: boolean;
   gradeCount?: number; // 추가
   prizes: Prize[];
   operationStatus?: "scheduled" | "active" | "ended";
@@ -158,6 +164,7 @@ export type ScreenType =
   | "profile"
   | "profileEdit"
   | "purchase"
+  | "refunds"
   | "winning"
   | "wishlist"
   | "settings"
@@ -183,6 +190,7 @@ export type ScreenType =
   | "adminUserManagement"
   | "adminPromotionManagement"
   | "adminStatistics"
+  | "adminRefunds"
   | "kakaoCallback"
   | "naverCallback"
   | "googleCallback"

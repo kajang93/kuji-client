@@ -7,6 +7,7 @@ import AdminMainBannerManagement from "../AdminMainBannerManagement";
 import AdminUserManagement from "../AdminUserManagement";
 import AdminPromotionManagement from "../AdminPromotionManagement";
 import AdminStatistics from "../AdminStatistics";
+import RefundCenter from "../RefundCenter";
 import { Banner, ScreenType } from "../../shared-types";
 
 type AdminScreensProps = {
@@ -27,6 +28,7 @@ export default function AdminScreens({
 }: AdminScreensProps) {
   return (
     <>
+      {screen === "adminRefunds" && <RefundCenter admin onBack={() => setScreen("adminDashboard")} />}
       {screen === "adminDashboard" && (
         <AdminDashboard
           onNavigate={(target) => {

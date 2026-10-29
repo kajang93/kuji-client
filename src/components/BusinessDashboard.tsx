@@ -15,6 +15,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
   const [sellerSummary, setSellerSummary] = useState<SellerSummary | null>(null);
   const [dailySales, setDailySales] = useState<DailySales[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [statsError, setStatsError] = useState(false);
 
   useEffect(() => {
     const loadStats = async () => {
@@ -26,6 +27,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
         setSellerSummary(summaryData);
         setDailySales(salesData);
       } catch (error) {
+        setStatsError(true);
         console.error("Failed to load seller stats", error);
       } finally {
         setIsLoadingStats(false);
@@ -36,24 +38,24 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
   // 판매자 요약 통계 (fetchSellerSummary 실데이터 기반)
   const stats = [
     {
-      title: '총 발생 매출',
-      value: isLoadingStats ? '-' : `₩${sellerSummary?.totalSalesPoints?.toLocaleString() || '0'}`,
+      title: '확인된 구매 매출',
+      value: sellerSummary?.confirmedSalesAmount == null || sellerSummary?.pendingSalesAmount == null ? '-' : `₩${(sellerSummary.confirmedSalesAmount + sellerSummary.pendingSalesAmount).toLocaleString()}`,
       icon: ShoppingCart,
       color: 'from-blue-600 to-blue-700',
       bgColor: 'bg-blue-500/20',
       iconColor: 'text-blue-300',
     },
     {
-      title: '총 수익 발생금',
-      value: isLoadingStats ? '-' : `₩${sellerSummary?.estimatedSettlement?.toLocaleString() || '0'}`,
+      title: '배송 완료 정산대상액',
+      value: sellerSummary?.confirmedSettlementAmount == null ? '-' : `₩${sellerSummary.confirmedSettlementAmount.toLocaleString()}`,
       icon: DollarSign,
       color: 'from-cyan-600 to-cyan-700',
       bgColor: 'bg-cyan-500/20',
       iconColor: 'text-cyan-300',
     },
     {
-      title: '적용 수수료율',
-      value: isLoadingStats ? '-' : `${sellerSummary?.appliedFeeRate || '0'}%`,
+      title: '현재 판매 수수료율',
+      value: !sellerSummary ? '-' : `${sellerSummary.appliedFeeRate}%`,
       icon: TrendingUp,
       color: 'from-purple-600 to-purple-700',
       bgColor: 'bg-purple-500/20',
@@ -61,7 +63,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
     },
     {
       title: '배송 대기',
-      value: isLoadingStats ? '-' : `${sellerSummary?.pendingShippingCount?.toLocaleString() || '0'}건`,
+      value: !sellerSummary ? '-' : `${sellerSummary.pendingShippingCount.toLocaleString()}건`,
       icon: Truck,
       color: 'from-pink-600 to-pink-700',
       bgColor: 'bg-pink-500/20',
@@ -70,7 +72,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
     },
     {
       title: '등록 상품 수',
-      value: isLoadingStats ? '-' : `${sellerSummary?.totalRegisteredProducts?.toLocaleString() || '0'}개`,
+      value: !sellerSummary ? '-' : `${sellerSummary.totalRegisteredProducts.toLocaleString()}개`,
       icon: Package,
       color: 'from-amber-600 to-amber-700',
       bgColor: 'bg-amber-500/20',
@@ -79,7 +81,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
     },
     {
       title: '받은 찜 횟수',
-      value: isLoadingStats ? '-' : `${sellerSummary?.totalWishlistCount?.toLocaleString() || '0'}회`,
+      value: !sellerSummary ? '-' : `${sellerSummary.totalWishlistCount.toLocaleString()}회`,
       icon: Heart,
       color: 'from-rose-600 to-rose-700',
       bgColor: 'bg-rose-500/20',
@@ -125,8 +127,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
   };
 
   const chartSeries = [
-    { name: '총 발생 매출', data: dailySales.map(d => d.totalAmount) },
-    { name: '총 수익 발생금', data: dailySales.map(d => Math.floor(d.totalAmount * (100 - (sellerSummary?.appliedFeeRate || 8)) / 100)) }
+    { name: '구매 기록 금액', data: dailySales.map(d => d.totalAmount) },
   ];
 
   const quickActions = [
@@ -182,6 +183,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
       </div>
 
       <div className="p-4 max-w-6xl mx-auto">
+        {statsError && <p role="alert" className="mb-4 rounded-xl bg-rose-400/10 p-4 text-sm text-rose-200">통계를 불러오지 못했습니다. 잠시 후 새로고침해 주세요.</p>}
         {/* Statistics Cards - Compact */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
           {stats.map((stat, index) => (
@@ -203,6 +205,29 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
             </motion.div>
           ))}
         </div>
+
+        {sellerSummary && !statsError && (
+          <section aria-label="실제 정산 내역" className="mb-5 rounded-2xl border border-cyan-400/20 bg-slate-900/80 p-5">
+            <h2 className="font-semibold text-cyan-100">실제 정산 내역</h2>
+            <p className="mt-2 text-xs leading-relaxed text-slate-400">주문에 포함된 모든 상품이 배송 완료된 뒤 거래 당시 수수료를 차감합니다. 환불 검토 중인 주문은 보류하며, 정산대상액과 실제 입금액은 구분합니다.</p>
+            <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-4 text-sm">
+              {([
+                ['배송 완료 매출', sellerSummary.confirmedSalesAmount],
+                ['확정 판매 수수료', sellerSummary.platformFeeAmount],
+                ['배송·검토 대기 매출', sellerSummary.pendingSalesAmount],
+                ['대기 판매 수수료', sellerSummary.pendingFeeAmount],
+                ['배송 완료 정산대상액', sellerSummary.confirmedSettlementAmount],
+                ['대기 정산대상액', sellerSummary.pendingSettlementAmount],
+                ['지급 완료액', sellerSummary.paidSettlementAmount],
+                ['확정 후 미지급액', sellerSummary.unpaidSettlementAmount],
+              ] as const).map(([label, amount]) => <div key={label}><dt className="text-xs text-slate-400">{label}</dt><dd className="mt-1 font-semibold text-white">{amount == null ? '확인 중' : `${amount.toLocaleString()}원`}</dd></div>)}
+            </dl>
+            {sellerSummary.refundReviewHoldAmount > 0 && <p className="mt-4 text-xs text-amber-200">대기 정산대상액 중 {sellerSummary.refundReviewHoldAmount.toLocaleString()}원은 환불 검토로 보류 중입니다.</p>}
+            {sellerSummary.legacyReviewCount > 0 && <p className="mt-4 rounded-xl bg-amber-400/10 p-3 text-xs leading-relaxed text-amber-100">과거 거래 {sellerSummary.legacyReviewCount.toLocaleString()}건은 주문 연결과 당시 수수료를 확인해야 합니다. 과거 구매 기록 {sellerSummary.legacySalesAmount.toLocaleString()}원은 차트에 포함되며 정산 확정액에는 포함되지 않습니다.{sellerSummary.legacyUnreconciledCount > 0 && ` 금액·영수증 대사가 필요한 ${sellerSummary.legacyUnreconciledCount}건은 구매 금액 집계에서도 제외됩니다.`}</p>}
+            {sellerSummary.testSalesAmount > 0 && <p className="mt-3 text-xs text-slate-400">테스트 구매 {sellerSummary.testSalesAmount.toLocaleString()}원은 실매출과 정산에서 제외됩니다.</p>}
+            {sellerSummary.unknownSalesAmount > 0 && <p className="mt-3 text-xs text-amber-200">결제 환경을 확인할 수 없는 구매 {sellerSummary.unknownSalesAmount.toLocaleString()}원은 정산을 보류합니다.</p>}
+          </section>
+        )}
 
         {/* Quick Actions - Always Visible */}
         <div className="mb-4">
@@ -240,7 +265,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
           >
             {isLoadingStats ? (
               <div className="h-[250px] flex items-center justify-center text-white/50">데이터를 불러오는 중입니다...</div>
-            ) : (
+            ) : statsError ? <p className="py-10 text-center text-sm text-slate-400">통계 조회 실패로 차트를 표시할 수 없습니다.</p> : (
               <div className="h-[250px] w-full">
                 <Chart options={chartOptions} series={chartSeries} type="area" height="100%" />
               </div>

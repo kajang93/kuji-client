@@ -9,13 +9,13 @@ type SidebarProps = {
   user: { name: string; email: string; type: 'social' | 'business'; points?: number; profileImageUrl?: string } | null;
   onLogout: () => void;
   onLogin: () => void;
-  onNavigate: (screen: 'profile' | 'purchase' | 'winning' | 'wishlist' | 'settings' | 'support' | 'community' | 'events' | 'notice') => void;
+  onNavigate: (screen: 'profile' | 'purchase' | 'refunds' | 'winning' | 'wishlist' | 'settings' | 'support' | 'community' | 'events' | 'notice') => void;
 };
 
 export default function Sidebar({ isOpen, onClose, user, onLogout, onLogin, onNavigate }: SidebarProps) {
   const [isCommunityOpen, setIsCommunityOpen] = useState(false);
 
-  const handleMenuClick = (screen: 'profile' | 'purchase' | 'winning' | 'wishlist' | 'settings' | 'support' | 'community' | 'events' | 'notice') => {
+  const handleMenuClick = (screen: 'profile' | 'purchase' | 'refunds' | 'winning' | 'wishlist' | 'settings' | 'support' | 'community' | 'events' | 'notice') => {
     if (screen === 'profile' && !user) {
       return; // Don't navigate if not logged in
     }
@@ -30,6 +30,7 @@ export default function Sidebar({ isOpen, onClose, user, onLogout, onLogin, onNa
   const menuItems = [
     { icon: User, label: '내 프로필', screen: 'profile' as const, requireLogin: true },
     { icon: ShoppingBag, label: '구매내역', screen: 'purchase' as const, requireLogin: false },
+    { icon: History, label: '환불 요청', screen: 'refunds' as const, requireLogin: true },
     { icon: History, label: '당첨내역', screen: 'winning' as const, requireLogin: false },
     { icon: Heart, label: '찜 목록', screen: 'wishlist' as const, requireLogin: false },
     { icon: Gift, label: '이벤트', screen: 'events' as const, requireLogin: false },

@@ -5,6 +5,7 @@ import { ArrowRight, ArrowUpRight, Hand, LoaderCircle, Package, RotateCcw, Spark
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { toast } from 'sonner';
 import type { Prize } from '@/shared-types';
+import { isLastPrize } from '../utils/kujiMappers';
 import confetti from 'canvas-confetti';
 import { playDrawHaptic, stopDrawHaptics } from '../utils/drawHaptics';
 
@@ -16,6 +17,7 @@ type KujiRevealProps = {
 type RevealStage = 'ready' | 'tearing' | 'revealed';
 const DRAG_THRESHOLD = 132;
 const RANK_TONES: Record<string, { color: string; soft: string; particles: number }> = {
+  LAST: { color: '#ffe3a3', soft: '#c9862c', particles: 40 },
   S: { color: '#f5cf83', soft: '#bc842e', particles: 32 },
   A: { color: '#f5cf83', soft: '#bc842e', particles: 28 },
   B: { color: '#9ac7ff', soft: '#477ace', particles: 20 },
@@ -37,7 +39,9 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
   const progressScale = useTransform(x, [0, DRAG_THRESHOLD], [0, 1]);
   const paperId = useId().replace(/:/g, '');
   const currentPrize = prizes[currentIndex];
-  const tone = RANK_TONES[currentPrize.rank] || { color: '#aebdd7', soft: '#64748b', particles: 10 };
+  const isLastBonus = isLastPrize(currentPrize.rank);
+  const hasLastBonus = prizes.some(prize => isLastPrize(prize.rank));
+  const tone = RANK_TONES[isLastBonus ? 'LAST' : currentPrize.rank] || { color: '#aebdd7', soft: '#64748b', particles: 10 };
 
   const mountedRef = useRef(true);
   const stageRef = useRef<RevealStage>('ready');
@@ -285,6 +289,12 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
           </div>
         </header>
 
+        {hasLastBonus && (
+          <div role="status" className="mt-5 rounded-2xl border border-amber-200/25 bg-amber-200/[0.07] px-4 py-3 text-center text-sm text-amber-100">
+            마지막 일반 쿠지를 뽑았어요. 라스트상 1개도 함께 개봉해요.
+          </div>
+        )}
+
         <main className="flex flex-1 flex-col justify-center py-8 sm:py-10">
           <AnimatePresence mode="wait" initial={false}>
             {stage !== 'revealed' ? (
@@ -380,17 +390,17 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
               <motion.div key={'result-' + currentIndex} initial={{ opacity: 0, y: reducedMotion ? 0 : 18, scale: reducedMotion ? 1 : 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: reducedMotion ? 0.12 : 0.35 }} onAnimationComplete={() => headingRef.current?.focus({ preventScroll: true })}>
                 <div className="mb-5 text-center">
                   <div className="mx-auto mb-2 flex items-center justify-center gap-1.5 text-[10px] font-medium tracking-[0.22em]" style={{ color: tone.color }}><Sparkles aria-hidden="true" className="h-3 w-3" />YOUR LUCKY MOMENT</div>
-                  <p className="text-sm text-slate-400">기다리던 행운이 도착했어요.</p>
+                  <p className="text-sm text-slate-400">{isLastBonus ? '마지막 한 장의 주인공에게 드리는 보너스예요.' : '기다리던 행운이 도착했어요.'}</p>
                 </div>
                 <div className="relative overflow-hidden rounded-[26px] border bg-gradient-to-b from-slate-800/80 to-slate-900/95 p-3.5 shadow-2xl" style={{ borderColor: tone.color + '40', boxShadow: '0 0 70px -25px ' + tone.soft + '65' }}>
                   <div aria-hidden="true" className="pointer-events-none absolute -top-20 left-1/2 h-44 w-64 -translate-x-1/2 rounded-full opacity-15 blur-3xl" style={{ backgroundColor: tone.color }} />
                   <div className="relative flex h-[min(38dvh,300px)] min-h-[180px] items-center justify-center overflow-hidden rounded-[17px] bg-[#f3f3f1]">
                     <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,#fff_20%,#e7e8e6_100%)]" />
                     <ImageWithFallback src={currentPrize.image} alt={currentPrize.name} className="relative h-full w-full object-contain p-5" />
-                    <div className="absolute left-3 top-3 rounded-full border border-white/70 bg-slate-950/90 px-3 py-1.5 text-[11px] font-bold shadow-lg" style={{ color: tone.color }}>{currentPrize.rank}상</div>
+                    <div className="absolute left-3 top-3 rounded-full border border-white/70 bg-slate-950/90 px-3 py-1.5 text-[11px] font-bold shadow-lg" style={{ color: tone.color }}>{isLastBonus ? '라스트상 보너스' : `${currentPrize.rank}상`}</div>
                   </div>
                   <div className="relative px-2 pb-3 pt-5 text-center">
-                    <p className="mb-1 text-[10px] font-medium tracking-[0.18em]" style={{ color: tone.color }}>{currentPrize.rank}상 당첨</p>
+                    <p className="mb-1 text-[10px] font-medium tracking-[0.18em]" style={{ color: tone.color }}>{isLastBonus ? '라스트상 추가 지급' : `${currentPrize.rank}상 당첨`}</p>
                     <h2 ref={headingRef} tabIndex={-1} className="break-keep text-xl font-semibold leading-relaxed tracking-tight text-white outline-none sm:text-2xl">{currentPrize.name}</h2>
                     <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-slate-400"><Package aria-hidden="true" className="h-3 w-3" />보관함에 안전하게 담았어요.</div>
                   </div>

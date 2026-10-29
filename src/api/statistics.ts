@@ -21,7 +21,23 @@ export interface DailySales {
 
 export interface SellerSummary {
   totalSalesPoints: number;
-  estimatedSettlement: number;
+  confirmedSalesAmount: number;
+  pendingSalesAmount: number;
+  platformFeeAmount: number;
+  pendingFeeAmount: number;
+  refundedAmount: number;
+  confirmedSettlementAmount: number;
+  pendingSettlementAmount: number;
+  paidSettlementAmount: number;
+  unpaidSettlementAmount: number;
+  refundReviewHoldAmount: number;
+  legacySalesAmount: number;
+  legacyReviewCount: number;
+  legacyUnreconciledCount: number;
+  settlementReviewRequired: boolean;
+  settlementNotice: string;
+  testSalesAmount: number;
+  unknownSalesAmount: number;
   appliedFeeRate: number;
   isFirstMonthFree: boolean;
   pendingShippingCount: number;

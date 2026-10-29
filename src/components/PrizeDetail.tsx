@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, X, Plus, Minus, ChevronRight } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import type { AnimeCollection, Prize } from '@/shared-types';
+import { getRegularPrizeStock, isLastPrize } from '../utils/kujiMappers';
 
 type PrizeDetailProps = {
   anime: AnimeCollection;
@@ -13,7 +14,7 @@ type PrizeDetailProps = {
 
 const normalizeRank = (rank: string) => {
   const trimmedRank = rank?.trim().toUpperCase() || '';
-  if (trimmedRank.includes('LAST') || trimmedRank.includes('라스트')) return 'LAST';
+  if (isLastPrize(trimmedRank)) return 'LAST';
   return trimmedRank.replace(/상/g, '');
 };
 
@@ -22,6 +23,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
   const [purchaseCount, setPurchaseCount] = useState(1);
   const [pointsToUse, setPointsToUse] = useState(0);
   const [imagePopup, setImagePopup] = useState<{ images: string[]; currentIndex: number; prizeName: string } | null>(null);
+  const { hasLastPrize, lastPrizeAvailable } = getRegularPrizeStock(anime.prizes);
   const pricePerKuji = anime.pricePerDraw || 15000; // 1장당 가격 (백엔드 기본값 매핑)
   const groupedPrizes = anime.prizes.reduce((acc, prize) => {
     const rank = normalizeRank(prize.rank);
@@ -124,6 +126,18 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
 
       </div>
 
+      {hasLastPrize && (
+        <div role="note" aria-label="라스트상 안내" className="mx-4 mt-4 rounded-2xl border border-amber-300/30 bg-gradient-to-r from-amber-400/15 to-rose-400/10 p-4">
+          <p className="font-semibold text-amber-200">{lastPrizeAvailable ? '마지막 한 장에는, 라스트상까지' : '라스트상 지급 완료'}</p>
+          <p className="mt-1 text-sm leading-relaxed text-amber-100/80">
+            {lastPrizeAvailable
+              ? '일반 쿠지를 모두 뽑으면 마지막 구매자에게 라스트상 1개를 추가로 드려요. 별도 결제는 없어요.'
+              : '이 시리즈의 라스트상은 이미 지급되었습니다. 남은 일반 쿠지만 구매할 수 있어요.'}
+          </p>
+          <p className="mt-2 text-xs text-white/50">표시된 티켓 수량과 구매 수량에는 라스트상이 포함되지 않아요.</p>
+        </div>
+      )}
+
       {/* Status Board (현황판) */}
       <div className="px-4 mt-4">
         <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-4">
@@ -170,7 +184,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                         </div>
                         <div className="text-right flex-shrink-0">
                           <div className="text-cyan-200 text-sm font-bold">{remainingCount}/{totalCount}</div>
-                          <div className="text-white/40 text-[10px]">남은 수량</div>
+                          <div className="text-white/40 text-[10px]">{rank === 'LAST' ? '추가 지급 수량' : '남은 수량'}</div>
                         </div>
                       </div>
 

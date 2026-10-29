@@ -6,6 +6,7 @@ import type { AnimeCollection, Prize } from '@/shared-types';
 import { updateKujiItem, updateKujiItemImage, deleteKujiItem, registerBoardItems, updateKujiBoardStatus, uploadBoardImages, updateKujiBoardRewardRate, updateKujiBoardTitle } from '../api/kuji';
 import { validateImageFile, compressImageFile } from '../api/client';
 import { toast } from 'sonner';
+import { isLastPrize } from '../utils/kujiMappers';
 
 type BusinessProductEditProps = {
   onBack: () => void;
@@ -78,7 +79,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
       toast.error('등급 이름을 입력해주세요. (예: A, LAST)');
       return;
     }
-    const rank = newRankName.trim().toUpperCase();
+    const rank = isLastPrize(newRankName) ? 'LAST' : newRankName.trim().toUpperCase();
     if (rank.length > 10) return toast.error('등급명은 10자 이내로 입력해주세요.');
     if (rankOrder.includes(rank)) {
       toast.error('이미 존재하는 등급입니다.');
@@ -93,10 +94,10 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
       });
       return newOrder;
     });
-    setRankTypes(prev => ({ ...prev, [rank]: newRankType }));
+    setRankTypes(prev => ({ ...prev, [rank]: isLastPrize(rank) ? 'single' : newRankType }));
     setPrizes(prev => ({
       ...prev,
-      [rank]: [{ id: `${rank}-${Date.now()}`, name: '', image: '', stock: 0 }]
+      [rank]: [{ id: `${rank}-${Date.now()}`, name: '', image: '', stock: isLastPrize(rank) ? 1 : 0 }]
     }));
     setNewRankName('');
     setShowAddRank(false);
@@ -133,7 +134,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
   };
 
   const handleAddProduct = (rank: string) => {
-    if (!isEditingAllowed) return;
+    if (!isEditingAllowed || (isLastPrize(rank) && prizes[rank]?.length)) return;
     setPrizes(prev => ({
       ...prev,
       [rank]: [
@@ -158,7 +159,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
     setPrizes(prev => ({
       ...prev,
       [rank]: prev[rank].map((product, i) => 
-        i === index ? { ...product, [field]: value } : product
+        i === index ? { ...product, [field]: field === 'stock' && isLastPrize(rank) ? 1 : value } : product
       )
     }));
   };
@@ -195,6 +196,8 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
       if (!seriesImage) return toast.error('시리즈 이미지를 등록해주세요.');
       if (!Number.isInteger(rewardRate) || rewardRate < 0 || rewardRate > 100) return toast.error('적립 포인트는 0부터 100 사이의 정수로 입력해주세요.');
       if (products.length === 0) return toast.error('최소 1개 이상의 상품을 남겨주세요.');
+      if (!products.some(product => !isLastPrize(product.grade))) return toast.error('라스트상 외에 일반 쿠지 상품을 남겨주세요.');
+      if (products.filter(product => isLastPrize(product.grade)).length > 1 || products.some(product => isLastPrize(product.grade) && product.stock !== 1)) return toast.error('라스트상은 한 종류, 수량 1개만 등록할 수 있습니다.');
       for (const product of products) {
         if (!product.name.trim() || product.name.trim().length > 100) return toast.error(`${product.grade}상 상품명은 1자 이상 100자 이내로 입력해주세요.`);
         if (!Number.isInteger(product.stock) || product.stock < 1 || product.stock > 100000) return toast.error(`${product.grade}상 수량은 1개 이상 100000개 이하의 정수로 입력해주세요.`);
@@ -231,19 +234,19 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
             await updateKujiItemImage(Number(product.id), product.file);
           }
         }
-        const newItems = products.filter(product => !product.originalData);
-        if (newItems.length > 0) {
-          mutationStarted = true;
-          await registerBoardItems(boardId,
-            newItems.map(product => ({ grade: product.grade, name: product.name.trim(), totalQty: product.stock })),
-            newItems.map(product => product.file || new File([], 'empty.bin', { type: 'application/octet-stream' })));
-        }
         const remainingIds = new Set(products.filter(product => product.originalData).map(product => product.id));
         for (const original of collection.prizes) {
           if (!remainingIds.has(original.id)) {
             mutationStarted = true;
             await deleteKujiItem(Number(original.id));
           }
+        }
+        const newItems = products.filter(product => !product.originalData);
+        if (newItems.length > 0) {
+          mutationStarted = true;
+          await registerBoardItems(boardId,
+            newItems.map(product => ({ grade: product.grade, name: product.name.trim(), totalQty: product.stock })),
+            newItems.map(product => product.file || new File([], 'empty.bin', { type: 'application/octet-stream' })));
         }
       }
 
@@ -490,13 +493,13 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
                     <div>
                       <h3 className={`text-lg font-bold ${rank === 'LAST' ? 'text-yellow-400' : 'text-white'}`}>{rank === 'LAST' ? '라스트상 (LAST)' : `${rank}상`}</h3>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${rankTypes[rank] === 'single' ? 'bg-blue-500/20 text-blue-300' : 'bg-purple-500/20 text-purple-300'}`}>
-                        {rankTypes[rank] === 'single' ? '단품 (1종)' : '다종 (여러 종류)'}
+                        {isLastPrize(rank) ? '마지막 구매자 보너스 · 수량 1개' : rankTypes[rank] === 'single' ? '단품 (1종)' : '다종 (여러 종류)'}
                       </span>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    {rankTypes[rank] !== 'single' && (
+                    {rankTypes[rank] !== 'single' && !isLastPrize(rank) && (
                       <button
                         onClick={() => handleAddProduct(rank)}
                         disabled={!isEditingAllowed}
@@ -583,7 +586,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
                                   : 'bg-white/5 text-white/50 cursor-not-allowed'
                               }`}
                               placeholder="재고 수량"
-                              min="1" max="100000" step="1"
+                              min="1" max={isLastPrize(rank) ? 1 : 100000} step="1" readOnly={isLastPrize(rank)}
                             />
                             {isEditingAllowed ? (
                               <p className="text-cyan-300 text-xs mt-1 flex items-center gap-1">

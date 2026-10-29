@@ -7,6 +7,7 @@ import { validateImageFile, compressImageFile } from '../api/client';
 import { processAiImage, fetchItemSuggestion } from '../api/admin';
 import { rankColors } from '../constants/rankColors';
 import { toast } from 'sonner';
+import { isLastPrize } from '../utils/kujiMappers';
 
 type BusinessProductRegisterProps = {
   onBack: () => void;
@@ -28,7 +29,7 @@ const createEmptyProducts = (rank: string, count: number): ProductItem[] =>
     id: `${rank}-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
     image: null,
     name: '',
-    stock: 0
+    stock: isLastPrize(rank) ? 1 : 0
   }));
 
 export default function BusinessProductRegister({ onBack, onComplete }: BusinessProductRegisterProps) {
@@ -92,10 +93,10 @@ export default function BusinessProductRegister({ onBack, onComplete }: Business
   };
 
   const handleAddProducts = (rank: string, count: number) => {
-    setRankData(prev => ({
-      ...prev,
-      [rank]: [...(prev[rank] || []), ...createEmptyProducts(rank, count)]
-    }));
+    setRankData(prev => {
+      if (isLastPrize(rank) && (prev[rank]?.length || 0) > 0) return prev;
+      return { ...prev, [rank]: [...(prev[rank] || []), ...createEmptyProducts(rank, isLastPrize(rank) ? 1 : count)] };
+    });
   };
 
   const handleApplyRecommendedStructure = () => {
@@ -127,7 +128,7 @@ export default function BusinessProductRegister({ onBack, onComplete }: Business
     setRankData(prev => ({
       ...prev,
       [rank]: prev[rank]?.map(p =>
-        p.id === productId ? { ...p, [field]: value } : p
+        p.id === productId ? { ...p, [field]: field === 'stock' && isLastPrize(rank) ? 1 : value } : p
       ) || []
     }));
   };
@@ -167,7 +168,7 @@ export default function BusinessProductRegister({ onBack, onComplete }: Business
       setRankData(prev => ({
         ...prev,
         [rank]: prev[rank]?.map(p =>
-          p.id === productId ? { ...p, image: result.imageUrl, name: `[${suggestedName}] ${result.description}`, stock: suggestedStock } : p
+          p.id === productId ? { ...p, image: result.imageUrl, name: `[${suggestedName}] ${result.description}`, stock: isLastPrize(rank) ? 1 : suggestedStock } : p
         ) || []
       }));
       toast.success('누적 데이터 분석 및 AI 이미지 처리가 완료되었습니다!');
@@ -190,6 +191,8 @@ export default function BusinessProductRegister({ onBack, onComplete }: Business
 
     const products = Object.entries(rankData).flatMap(([grade, items]) => items.map(item => ({ grade, ...item })));
     if (products.length === 0) return toast.error('최소 1개 이상의 상품을 등록해주세요.');
+    if (!products.some(product => !isLastPrize(product.grade))) return toast.error('라스트상 외에 일반 쿠지 상품을 등록해주세요.');
+    if (products.filter(product => isLastPrize(product.grade)).length > 1 || products.some(product => isLastPrize(product.grade) && product.stock !== 1)) return toast.error('라스트상은 한 종류, 수량 1개만 등록할 수 있습니다.');
     for (const product of products) {
       if (!product.name.trim() || product.name.trim().length > 100) return toast.error(`${product.grade}상 상품명은 1자 이상 100자 이내로 입력해주세요.`);
       if (!Number.isInteger(product.stock) || product.stock < 1 || product.stock > 100000) return toast.error(`${product.grade}상 수량은 1개 이상 100000개 이하의 정수로 입력해주세요.`);
@@ -405,7 +408,7 @@ export default function BusinessProductRegister({ onBack, onComplete }: Business
                     <div>
                       <h3 className="text-white text-lg">{rank === 'LAST' ? '라스트상 상품' : `${rank}상 상품`}</h3>
                       <span className={`text-xs ${isSingleItemRank ? 'text-amber-300' : 'text-cyan-300'}`}>
-                        {isSingleItemRank ? '단품 권장' : '다품 권장'}
+                        {isLastPrize(rank) ? '마지막 일반 티켓 구매자에게 추가 지급 · 1개 고정' : isSingleItemRank ? '단품 권장' : '다품 권장'}
                       </span>
                     </div>
                   </div>
@@ -413,6 +416,7 @@ export default function BusinessProductRegister({ onBack, onComplete }: Business
                     <button
                       type="button"
                       onClick={() => handleAddProducts(rank, 1)}
+                      disabled={isLastPrize(rank) && currentProducts.length > 0}
                       className="flex items-center justify-center gap-1.5 rounded-xl bg-green-500 px-3 py-2.5 text-sm text-white transition-colors hover:bg-green-600 sm:py-2"
                     >
                       <Plus className="w-4 h-4" />
@@ -525,7 +529,7 @@ export default function BusinessProductRegister({ onBack, onComplete }: Business
                                 }}
                                 className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/40 focus:outline-none focus:border-teal-400"
                                 placeholder="재고 수량"
-                                min="1" max="100000" step="1"
+                                min="1" max={isLastPrize(rank) ? 1 : 100000} step="1" readOnly={isLastPrize(rank)}
                               />
                             </div>
                           </div>

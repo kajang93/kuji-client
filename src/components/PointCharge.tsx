@@ -8,6 +8,7 @@ import { readPaymentRecovery } from '../utils/paymentRecovery';
 type PointChargeProps = {
   currentPoints: number;
   onBack: () => void;
+  onRefund?: () => void;
   onChargeComplete?: (newPoints: number) => void;
 };
 
@@ -18,7 +19,7 @@ const PRESET_AMOUNTS = [
   { value: 100000, label: '10만원', bonus: 5000 },
 ];
 
-export default function PointCharge({ currentPoints, onBack }: PointChargeProps) {
+export default function PointCharge({ currentPoints, onBack, onRefund }: PointChargeProps) {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
   const [isCustom, setIsCustom] = useState(false);
@@ -135,6 +136,7 @@ export default function PointCharge({ currentPoints, onBack }: PointChargeProps)
 
   return (
     <div className="min-h-full pb-32">
+      {onRefund && <button onClick={onRefund} className="mx-5 mt-5 rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">충전 포인트 환불 요청</button>}
       {/* Header */}
       <div className="sticky top-0 z-20 bg-gradient-to-r from-purple-900 to-blue-900 border-b-2 border-cyan-400/50 shadow-lg">
         <div className="flex items-center justify-between p-4">

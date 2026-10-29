@@ -14,6 +14,8 @@ import BusinessScreens from "./components/screens/BusinessScreens";
 import Profile from "./components/Profile";
 import ProfileEdit from "./components/ProfileEdit";
 import PurchaseHistory from "./components/PurchaseHistory";
+import RefundCenter from "./components/RefundCenter";
+import type { RefundTargetType } from "./api/refunds";
 import WinningHistory from "./components/WinningHistory";
 import Wishlist from "./components/Wishlist";
 import Settings from "./components/Settings";
@@ -44,7 +46,7 @@ import { fetchSellerShippingList, completeShipping, updateTrackingInfo } from ".
 import { confirmPointCharge } from "./api/points";
 import { fetchPaymentStatus, type PaymentStatus } from "./api/payments";
 import { clearPaymentRecovery, readPaymentRecovery, resolvePaymentRecovery, savePaymentReturn, type PaymentKind, type PendingPaymentRecovery } from "./utils/paymentRecovery";
-import { mapBoardToCollection, mapKujiItemToPrize } from "./utils/kujiMappers";
+import { mapBoardToCollection, mapKujiItemToPrize, getRegularPrizeStock, isLastPrize } from "./utils/kujiMappers";
 
 import {
   Prize,
@@ -72,6 +74,7 @@ export default function App() {
   const [kujiStatus, setKujiStatus] = useState<boolean[]>([]);
   const [revealedPrizes, setRevealedPrizes] = useState<Prize[]>([]);
   const [purchaseCount, setPurchaseCount] = useState(1);
+  const [refundInitialType, setRefundInitialType] = useState<RefundTargetType>("DRAW_HISTORY");
   const [pointsToUse, setPointsToUse] = useState(0);
   const [user, setUser] = useState<{
     memberId?: number;
@@ -132,8 +135,7 @@ useRefreshOnPageShow(handleRefresh);
         return {
           ...collection,
           prizes: detailPrizes,
-          totalKuji: detailPrizes.reduce((sum, prize) => sum + prize.totalCount, 0),
-          remainingKuji: detailPrizes.reduce((sum, prize) => sum + prize.remainingCount, 0),
+          ...getRegularPrizeStock(detailPrizes),
         };
       }),
     );
@@ -410,11 +412,11 @@ async function handleRefresh() {
       // 세션이 무효인데 로그인 전제 화면에 머물러 있으면 빈 화면이 되므로 메인으로 복귀
       setScreen(prev =>
         ([
-          "profile", "profileEdit", "pointCharge", "purchase", "winning", "wishlist",
+          "profile", "profileEdit", "pointCharge", "purchase", "refunds", "winning", "wishlist",
           "businessDashboard", "businessProfile", "businessProducts", "businessRegister",
           "businessShipping", "businessInquiries", "businessPending", "businessProductEdit",
           "adminDashboard", "adminNoticeManagement", "adminEventManagement", "adminInquiryManagement",
-          "adminMainBannerManagement", "adminUserManagement", "adminPromotionManagement", "adminStatistics",
+          "adminMainBannerManagement", "adminUserManagement", "adminPromotionManagement", "adminStatistics", "adminRefunds",
         ] as ScreenType[]).includes(prev) ? "main" : prev
       );
     }
@@ -539,8 +541,7 @@ async function handleRefresh() {
       const updatedAnime = {
         ...anime,
         prizes: updatedPrizes,
-        totalKuji: updatedPrizes.reduce((sum, p) => sum + p.totalCount, 0),
-        remainingKuji: updatedPrizes.reduce((sum, p) => sum + p.remainingCount, 0)
+        ...getRegularPrizeStock(updatedPrizes),
       };
 
       setSelectedAnime(updatedAnime);
@@ -548,7 +549,7 @@ async function handleRefresh() {
 
       // Initialize kuji status from backend data
       const status: boolean[] = [];
-      updatedPrizes.forEach(p => {
+      updatedPrizes.filter(prize => !isLastPrize(prize.rank)).forEach(p => {
         if (p.opened) {
           status.push(...p.opened);
         }
@@ -687,8 +688,7 @@ async function handleRefresh() {
 
       // 3. Update the board state locally
       const updatedPrizes = selectedAnime.prizes.map(p => {
-        // Count how many items of this rank were won
-        const countWon = response.results.filter((r: any) => (r.grade || r.rank) === p.rank).length;
+        const countWon = response.results.filter((result: any) => String(result.id) === p.id).length;
         return {
           ...p,
           remainingCount: Math.max(0, p.remainingCount - countWon)
@@ -698,6 +698,7 @@ async function handleRefresh() {
       const updatedAnime = {
         ...selectedAnime,
         prizes: updatedPrizes,
+        ...getRegularPrizeStock(updatedPrizes),
         remainingKuji: response.totalRemaining
       };
 
@@ -761,16 +762,14 @@ async function handleRefresh() {
       console.error("Failed to update winning history:", error);
     }
 
-    // 포인트 적립: 쿠지 판에 설정된 적립 포인트(rewardRate) 반영
+    // 라스트상 무료 지급이나 결제 복구가 포인트를 중복 적립한 것처럼 보이지 않게 서버 잔액을 사용합니다.
     if (user) {
-      const earnedPoints = revealedPrizes.length * (selectedAnime?.rewardRate || 0);
-      setUser((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          points: (prev.points || 0) + earnedPoints,
-        };
-      });
+      try {
+        const profile = await fetchMyProfile();
+        setUser(previous => previous ? { ...previous, points: profile.points || 0 } : previous);
+      } catch (error) {
+        console.warn("포인트 잔액 새로고침 실패", error);
+      }
     }
 
     // Go to destination
@@ -788,6 +787,7 @@ async function handleRefresh() {
     navScreen:
       | "profile"
       | "purchase"
+      | "refunds"
       | "winning"
       | "wishlist"
       | "settings"
@@ -831,7 +831,8 @@ async function handleRefresh() {
       | "adminInquiryManagement"
       | "adminMainBannerManagement"
       | "adminUserManagement"
-      | "adminStatistics",
+      | "adminStatistics"
+      | "adminRefunds",
   ) => {
     setScreen(navScreen);
   };
@@ -1106,6 +1107,8 @@ async function handleRefresh() {
           <KujiSelection
             boardId={Number(selectedAnime.id)}
             totalKuji={selectedAnime.totalKuji}
+            hasLastPrize={selectedAnime.hasLastPrize}
+            lastPrizeAvailable={selectedAnime.lastPrizeAvailable}
             purchaseCount={purchaseCount}
             pointsToUse={pointsToUse}
             pricePerKuji={selectedAnime.pricePerDraw || 15000}
@@ -1145,11 +1148,13 @@ async function handleRefresh() {
         {screen === "pointCharge" && user && (
           <PointCharge
             currentPoints={user.points || 0}
+            onRefund={() => { setRefundInitialType("POINT_CHARGE"); setScreen("refunds"); }}
             onBack={() => setScreen("main")}
           />
         )}
+        {screen === "refunds" && user && <RefundCenter initialTargetType={refundInitialType} onBack={() => setScreen("main")} />}
         {screen === "purchase" && (
-          <PurchaseHistory onBack={() => setScreen("main")} />
+          <PurchaseHistory onBack={() => setScreen("main")} onRefund={() => { setRefundInitialType("DRAW_HISTORY"); setScreen("refunds"); }} />
         )}
         {screen === "winning" && (
           <WinningHistory

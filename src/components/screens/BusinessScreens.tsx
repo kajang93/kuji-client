@@ -8,7 +8,7 @@ import BusinessShippingManagement from "../BusinessShippingManagement";
 import BusinessPending from "../BusinessPending";
 import SellerInquiries from "../SellerInquiries";
 import { fetchKujiBoardDetail, deleteKujiBoard } from "../../api/kuji";
-import { mapKujiItemToPrize } from "../../utils/kujiMappers";
+import { getRegularPrizeStock, mapKujiItemToPrize } from "../../utils/kujiMappers";
 import {
   AnimeCollection,
   CustomerInquiry,
@@ -121,8 +121,7 @@ export default function BusinessScreens({
                 c.id === id ? {
                   ...c,
                   prizes: updatedPrizes,
-                  totalKuji: updatedPrizes.reduce((sum, p) => sum + p.totalCount, 0),
-                  remainingKuji: updatedPrizes.reduce((sum, p) => sum + p.remainingCount, 0)
+                  ...getRegularPrizeStock(updatedPrizes)
                 } : c
               ));
 

@@ -15,11 +15,13 @@ type KujiSelectionProps = {
   pointsToUse: number;
   pricePerKuji: number;
   kujiStatus: boolean[];
+  hasLastPrize?: boolean;
+  lastPrizeAvailable?: boolean;
   onConfirm: (selectedIndices: number[]) => void | Promise<void>;
   onBack: () => void;
 };
 
-export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pricePerKuji, kujiStatus, onConfirm, onBack }: KujiSelectionProps) {
+export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pricePerKuji, kujiStatus, hasLastPrize = false, lastPrizeAvailable = false, onConfirm, onBack }: KujiSelectionProps) {
   const [selectedKuji, setSelectedKuji] = useState<number[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const processingRef = useRef(false);
@@ -182,6 +184,19 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
           <div className="w-10" /> {/* Placeholder for right spacing to let the Menu button sit without overlap */}
         </div>
       </div>
+
+      {hasLastPrize && (
+        <div role="note" aria-label="라스트상 지급 안내" className="mx-auto mt-5 max-w-xl px-4 sm:px-6">
+          <div className="rounded-2xl border border-amber-300/25 bg-amber-300/[0.07] p-4">
+            <p className="text-sm font-semibold text-amber-200">{lastPrizeAvailable ? '마지막 일반 쿠지를 뽑으면 라스트상 추가 지급' : '이 시리즈의 라스트상은 지급 완료됐어요'}</p>
+            <p className="mt-1 text-xs leading-relaxed text-amber-100/70">
+              {lastPrizeAvailable
+                ? '일반 쿠지가 모두 소진되는 순간, 마지막 구매자에게 라스트상 1개를 함께 드려요. 선택할 티켓과 결제 금액에는 포함되지 않아요.'
+                : '남은 일반 쿠지만 선택할 수 있으며 라스트상은 다시 지급되지 않아요.'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Random Select Button */}
       <div className="mx-auto max-w-xl px-4 pb-4 pt-6 sm:px-6">
