@@ -20,6 +20,7 @@ export type NotificationSettingsState = {
   marketingRestock: boolean;
   marketingEvent: boolean;
   nightPush: boolean;
+  marketingAgreed?: boolean;
 };
 
 type SettingsProps = {
@@ -31,9 +32,11 @@ type SettingsProps = {
 
 export default function Settings({ onBack, user, settings, onUpdateSettings }: SettingsProps) {
   const [showModal, setShowModal] = useState<'privacy' | 'terms' | 'info' | null>(null);
-  const [isKakaoExpanded, setIsKakaoExpanded] = useState(true);
+  const [isTransactionExpanded, setIsTransactionExpanded] = useState(true);
   const [isMarketingExpanded, setIsMarketingExpanded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [hasDeviceToken, setHasDeviceToken] = useState(() => Boolean(localStorage.getItem('fcm_token')));
+  const pushConnected = settings.pushEnabled && hasDeviceToken;
 
   // 설정 화면 진입 시 서버에서 현재 알림 설정 불러오기
   useEffect(() => {
@@ -51,6 +54,11 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
   // 토글 클릭 → 로컬 즉시 반영 + 백엔드 동기화
   const toggleSetting = async (key: keyof NotificationSettingsState) => {
     if (isSyncing) return;
+    if (['marketingOpen', 'marketingRestock', 'marketingEvent', 'nightPush'].includes(key)
+        && settings.marketingAgreed !== true) {
+      toast.info('마케팅 수신에 동의한 계정에서 혜택 알림을 설정할 수 있습니다.');
+      return;
+    }
     const newSettings = { ...settings, [key]: !settings[key] };
     onUpdateSettings(newSettings); // 즉시 UI 반영 (낙관적 업데이트)
 
@@ -69,57 +77,49 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
   };
 
   const handlePushToggle = async () => {
-    const isTurningOn = !settings.pushEnabled;
-    
-    if (isTurningOn) {
-      try {
-        // 브라우저 알림 권한 요청
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          toast.success("알림 권한이 허용되었습니다. 토큰을 발급합니다...");
-          const token = await requestFirebaseToken();
-          
-          if (token) {
-            try {
-              // 백엔드로 토큰 전송
-              await registerDeviceToken(token);
-              // notification_setting 테이블에도 pushEnabled=true 동기화
-              await updateNotificationSettings({ pushEnabled: true });
-              localStorage.setItem('fcm_token', token);
-              toast.success("푸시 알림 설정이 완료되었습니다! 🎉");
-              onUpdateSettings({ ...settings, pushEnabled: true });
-            } catch (apiError) {
-              console.error("백엔드 토큰 등록 실패:", apiError);
-              toast.error("서버에 알림 정보를 등록하지 못했습니다. 다시 로그인 후 시도해주세요.");
-            }
-          } else {
-            toast.error("토큰 발급에 실패했습니다.");
-          }
-        } else {
-          toast.error("알림 권한이 차단되어 있습니다. 브라우저 설정에서 허용해주세요.");
+    if (isSyncing) return;
+    if (!user) {
+      toast.info('로그인 후 푸시 알림을 설정해 주세요.');
+      return;
+    }
+    setIsSyncing(true);
+    try {
+      if (!pushConnected) {
+        const token = await requestFirebaseToken();
+        if (!token) {
+          toast.error('기기 알림 권한과 브라우저 지원 여부를 확인해 주세요.');
+          return;
         }
-      } catch (error) {
-        console.error("알림 권한 요청 중 오류:", error);
-        toast.error("알림을 설정하는 중 오류가 발생했습니다.");
+        await registerDeviceToken(token);
+        await updateNotificationSettings({ pushEnabled: true });
+        localStorage.setItem('fcm_token', token);
+        setHasDeviceToken(true);
+        onUpdateSettings({ ...settings, pushEnabled: true });
+        toast.success('앱 푸시 알림을 켰습니다.');
+      } else {
+        // 한 요청이 실패해도 서버 수신 설정과 기기 토큰을 각각 정리합니다.
+        const results = await Promise.allSettled([
+          updateNotificationSettings({ pushEnabled: false }),
+          deleteDeviceToken(),
+        ]);
+        if (results.every(result => result.status === 'rejected')) {
+          throw new Error('알림 설정을 저장하지 못했습니다.');
+        }
+        localStorage.removeItem('fcm_token');
+        setHasDeviceToken(false);
+        onUpdateSettings({ ...settings, pushEnabled: false });
+        if (results.some(result => result.status === 'rejected')) {
+          toast.error('일부 기기 설정을 저장하지 못했습니다. 잠시 후 다시 확인해 주세요.');
+        } else {
+          toast.success('앱 푸시 알림을 껐습니다.');
+        }
       }
-    } else {
-      // 알림 끄기 — API 실패해도 로컬 토큰은 반드시 삭제 (best-effort)
-      localStorage.removeItem('fcm_token');
-      onUpdateSettings({ ...settings, pushEnabled: false });
-      try {
-        await deleteDeviceToken();
-        await updateNotificationSettings({ pushEnabled: false });
-        toast.success("앱 푸시 알림을 껐습니다.");
-      } catch (apiError) {
-        console.error("백엔드 토큰 삭제 실패:", apiError);
-        // 로컬은 이미 지웠으므로 UI는 꺼진 상태 유지, 서버 오류만 알림
-        toast.error("서버 동기화에 실패했습니다. 다시 로그인 후 확인해주세요.");
-      }
+    } catch {
+      toast.error('알림 설정을 저장하지 못했습니다. 기기 권한과 네트워크를 확인해 주세요.');
+    } finally {
+      setIsSyncing(false);
     }
   };
-
-
-  const isBusiness = user?.type === 'business';
 
   return (
     <div className="min-h-screen pb-6">
@@ -156,19 +156,19 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
               </div>
               <div className="flex-1">
                 <div className="text-white mb-1">앱 푸시 알림</div>
-                <div className="text-white/60 text-sm">기기 알림을 받습니다</div>
+                <div className="text-white/60 text-sm">{pushConnected ? '거래·배송 소식을 기기 알림으로 받습니다' : '이 기기의 알림 권한을 연결해 주세요'}</div>
               </div>
               <button
                 onClick={handlePushToggle}
                 className={`relative w-16 h-10 rounded-xl transition-colors ${
-                  settings.pushEnabled ? 'bg-indigo-500' : 'bg-white/20'
+                  pushConnected ? 'bg-indigo-500' : 'bg-white/20'
                 }`}
               >
                 <motion.div
-                  animate={{ x: settings.pushEnabled ? 28 : 4 }}
+                  animate={{ x: pushConnected ? 28 : 4 }}
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   className={`absolute top-1 w-8 h-8 rounded-lg shadow-lg ${
-                    settings.pushEnabled ? 'bg-white' : 'bg-white/60'
+                    pushConnected ? 'bg-white' : 'bg-white/60'
                   }`}
                 />
               </button>
@@ -234,30 +234,30 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
           </div>
         </div>
 
-        {/* 2. KakaoTalk Notification Settings */}
+        {/* 거래와 배송 푸시 설정 */}
         <div className="space-y-3 pt-4">
-          <h2 className="text-white/80 text-sm font-medium px-2">카카오톡 알림 설정</h2>
+          <h2 className="text-white/80 text-sm font-medium px-2">거래·배송 알림</h2>
           
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-gradient-to-br from-[#FAE100]/20 to-[#FAE100]/5 backdrop-blur-sm rounded-2xl border border-[#FAE100]/30 shadow-lg overflow-hidden"
+            className="bg-gradient-to-br from-cyan-400/20 to-indigo-500/5 backdrop-blur-sm rounded-2xl border border-cyan-400/30 shadow-lg overflow-hidden"
           >
             <div className="p-5 flex items-center gap-4">
-              <div className="w-12 h-12 bg-[#FAE100] rounded-xl flex items-center justify-center flex-shrink-0">
-                <MessageCircle className="w-6 h-6 text-[#371D1E]" />
+              <div className="w-12 h-12 bg-cyan-300 rounded-xl flex items-center justify-center flex-shrink-0">
+                <MessageCircle className="w-6 h-6 text-slate-950" />
               </div>
               <div className="flex-1">
-                <div className="text-white mb-1">알림톡 설정</div>
-                <div className="text-white/60 text-sm">주요 정보를 카카오톡으로 받습니다</div>
+                <div className="text-white mb-1">거래·배송 푸시</div>
+                <div className="text-white/60 text-sm">앱 알림함에 기록하고 푸시로 알려드립니다</div>
               </div>
               <button
-                onClick={() => setIsKakaoExpanded(!isKakaoExpanded)}
+                onClick={() => setIsTransactionExpanded(!isTransactionExpanded)}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
                 <motion.div
-                  animate={{ rotate: isKakaoExpanded ? 180 : 0 }}
+                  animate={{ rotate: isTransactionExpanded ? 180 : 0 }}
                   transition={{ duration: 0.2 }}
                 >
                   <ChevronDown className="w-5 h-5 text-white" />
@@ -266,7 +266,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
             </div>
 
             <AnimatePresence>
-              {isKakaoExpanded && (
+              {isTransactionExpanded && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
@@ -274,91 +274,91 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                   className="overflow-hidden"
                 >
                   <div className="px-5 pb-5 space-y-4 border-t border-white/10 pt-4">
-                    {/* Winning/Order Notification */}
+                    {/* 당첨 결과 푸시 */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                          <Gift className="w-4 h-4 text-[#FAE100]" />
+                          <Gift className="w-4 h-4 text-cyan-300" />
                         </div>
                         <div>
                           <div className="text-white text-sm">
-                            {user?.type === 'business' ? '신규 주문 접수 알림' : '당첨 내역 알림'}
+                            당첨 내역 알림
                           </div>
                           <div className="text-white/40 text-xs">
-                            {user?.type === 'business' ? '고객의 새로운 배송 요청 접수 시' : '쿠지 당첨 시 실시간 알림'}
+                            당첨 결과를 보관함과 푸시로 확인
                           </div>
                         </div>
                       </div>
                       <button
-                        onClick={() => toggleSetting(isBusiness ? 'kakaoBizOrder' : 'kakaoWinning')}
+                        onClick={() => toggleSetting('kakaoWinning')}
                         className={`relative w-10 h-6 rounded-full transition-colors ${
-                          (isBusiness ? settings.kakaoBizOrder : settings.kakaoWinning) ? 'bg-[#FAE100]' : 'bg-white/20'
+                          settings.kakaoWinning ? 'bg-cyan-300' : 'bg-white/20'
                         }`}
                       >
                         <motion.div
-                          animate={{ x: (isBusiness ? settings.kakaoBizOrder : settings.kakaoWinning) ? 22 : 2 }}
+                          animate={{ x: settings.kakaoWinning ? 22 : 2 }}
                           className={`absolute top-1 w-4 h-4 rounded-full shadow-sm ${
-                            (isBusiness ? settings.kakaoBizOrder : settings.kakaoWinning) ? 'bg-[#371D1E]' : 'bg-white/60'
+                            settings.kakaoWinning ? 'bg-slate-950' : 'bg-white/60'
                           }`}
                         />
                       </button>
                     </div>
 
-                    {/* Delivery/Cancellation Notification */}
+                    {/* 배송 현황 푸시 */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                          <Truck className="w-4 h-4 text-[#FAE100]" />
+                          <Truck className="w-4 h-4 text-cyan-300" />
                         </div>
                         <div>
                           <div className="text-white text-sm">
-                            {user?.type === 'business' ? '취소/반품 접수 알림' : '배송 현황 알림'}
+                            배송 현황 알림
                           </div>
                           <div className="text-white/40 text-xs">
-                            {user?.type === 'business' ? '고객의 취소 및 반품 요청 발생 시' : '배송 시작/완료 알림'}
+                            배송 신청·발송·완료 시
                           </div>
                         </div>
                       </div>
                       <button
-                        onClick={() => toggleSetting(isBusiness ? 'kakaoBizCancel' : 'kakaoDelivery')}
+                        onClick={() => toggleSetting('kakaoDelivery')}
                         className={`relative w-10 h-6 rounded-full transition-colors ${
-                          (isBusiness ? settings.kakaoBizCancel : settings.kakaoDelivery) ? 'bg-[#FAE100]' : 'bg-white/20'
+                          settings.kakaoDelivery ? 'bg-cyan-300' : 'bg-white/20'
                         }`}
                       >
                         <motion.div
-                          animate={{ x: (isBusiness ? settings.kakaoBizCancel : settings.kakaoDelivery) ? 22 : 2 }}
+                          animate={{ x: settings.kakaoDelivery ? 22 : 2 }}
                           className={`absolute top-1 w-4 h-4 rounded-full shadow-sm ${
-                            (isBusiness ? settings.kakaoBizCancel : settings.kakaoDelivery) ? 'bg-[#371D1E]' : 'bg-white/60'
+                            settings.kakaoDelivery ? 'bg-slate-950' : 'bg-white/60'
                           }`}
                         />
                       </button>
                     </div>
 
-                    {/* Inquiry Notification */}
+                    {/* 문의 답변 푸시 */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                          <MessageCircle className="w-4 h-4 text-[#FAE100]" />
+                          <MessageCircle className="w-4 h-4 text-cyan-300" />
                         </div>
                         <div>
                           <div className="text-white text-sm">
-                            {user?.type === 'business' ? '신규 고객 문의 알림' : '문의 답변 알림'}
+                            문의 답변 알림
                           </div>
                           <div className="text-white/40 text-xs">
-                            {user?.type === 'business' ? '내 상품에 1:1 문의 등록 시' : '1:1 문의 답변 등록 시'}
+                            내 1:1 문의에 답변이 등록되면 알림
                           </div>
                         </div>
                       </div>
                       <button
-                        onClick={() => toggleSetting(isBusiness ? 'kakaoBizInquiry' : 'kakaoInquiry')}
+                        onClick={() => toggleSetting('kakaoInquiry')}
                         className={`relative w-10 h-6 rounded-full transition-colors ${
-                          (isBusiness ? settings.kakaoBizInquiry : settings.kakaoInquiry) ? 'bg-[#FAE100]' : 'bg-white/20'
+                          settings.kakaoInquiry ? 'bg-cyan-300' : 'bg-white/20'
                         }`}
                       >
                         <motion.div
-                          animate={{ x: (isBusiness ? settings.kakaoBizInquiry : settings.kakaoInquiry) ? 22 : 2 }}
+                          animate={{ x: settings.kakaoInquiry ? 22 : 2 }}
                           className={`absolute top-1 w-4 h-4 rounded-full shadow-sm ${
-                            (isBusiness ? settings.kakaoBizInquiry : settings.kakaoInquiry) ? 'bg-[#371D1E]' : 'bg-white/60'
+                            settings.kakaoInquiry ? 'bg-slate-950' : 'bg-white/60'
                           }`}
                         />
                       </button>
@@ -386,7 +386,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
               </div>
               <div className="flex-1">
                 <div className="text-white mb-1">혜택 알림</div>
-                <div className="text-white/60 text-sm">이벤트 및 오픈 소식 받기</div>
+                <div className="text-white/60 text-sm">동의한 혜택 소식만 선택해 받습니다</div>
               </div>
               <button
                 onClick={() => setIsMarketingExpanded(!isMarketingExpanded)}
@@ -410,6 +410,9 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                   className="overflow-hidden"
                 >
                   <div className="px-5 pb-5 space-y-4 border-t border-white/10 pt-4">
+                    {settings.marketingAgreed !== true && (
+                      <p className="text-white/60 text-xs">마케팅 수신에 동의한 계정에서 사용할 수 있습니다. 거래·배송 알림에는 영향을 주지 않습니다.</p>
+                    )}
                     {/* Open Notification */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -441,8 +444,8 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                           <AlertCircle className="w-4 h-4 text-purple-300" />
                         </div>
                         <div>
-                          <div className="text-white text-sm">재입고/마감임박 알림</div>
-                          <div className="text-white/40 text-xs">재고 10개 미만 시 알림</div>
+                          <div className="text-white text-sm">재입고 알림</div>
+                          <div className="text-white/40 text-xs">찜한 상품이 재입고되면 알림</div>
                         </div>
                       </div>
                       <button
@@ -458,6 +461,29 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                       </button>
                     </div>
 
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+                          <AlertCircle className="w-4 h-4 text-purple-300" />
+                        </div>
+                        <div>
+                          <div className="text-white text-sm">마감 임박 알림</div>
+                          <div className="text-white/40 text-xs">찜한 상품의 남은 수량이 적을 때</div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => toggleSetting('marketingEvent')}
+                        className={`relative w-10 h-6 rounded-full transition-colors ${
+                          settings.marketingEvent ? 'bg-purple-500' : 'bg-white/20'
+                        }`}
+                      >
+                        <motion.div
+                          animate={{ x: settings.marketingEvent ? 22 : 2 }}
+                          className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
+                        />
+                      </button>
+                    </div>
+
                     {/* Night Notification */}
                     <div className="flex items-center justify-between pt-2 border-t border-white/10">
                       <div className="flex items-center gap-3">
@@ -465,8 +491,8 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                           <Moon className="w-4 h-4 text-purple-300" />
                         </div>
                         <div>
-                          <div className="text-white text-sm">야간 알림 허용</div>
-                          <div className="text-white/40 text-xs">21:00 ~ 08:00 알림 수신</div>
+                          <div className="text-white text-sm">야간 혜택 알림 허용</div>
+                          <div className="text-white/40 text-xs">한국 시간 21:00 ~ 08:00 혜택 소식 수신</div>
                         </div>
                       </div>
                       <button

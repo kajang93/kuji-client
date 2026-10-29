@@ -76,7 +76,8 @@ export const logoutSession = (): Promise<void> => {
   if (!logoutRequest) {
     logoutRequest = (async () => {
       await refreshRequest?.catch(() => undefined);
-      const requestLogout = () => axiosInstance.post('/api/members/logout');
+      const deviceId = localStorage.getItem('kuji_device_id');
+      const requestLogout = () => axiosInstance.post('/api/members/logout', { deviceId });
       try {
         await requestLogout();
       } catch (error) {
@@ -89,6 +90,7 @@ export const logoutSession = (): Promise<void> => {
       }
       localStorage.removeItem('token');
       sessionStorage.removeItem('token');
+      localStorage.removeItem('fcm_token');
     })().finally(() => {
       logoutRequest = null;
     });

@@ -56,6 +56,7 @@ export default function BusinessPending({ onBack, onRefreshAccount, user }: Prop
         {loading && <p role="status" className="mt-5 text-slate-400">신청 정보를 불러오고 있습니다…</p>}
         {needsDocument && !loading && <div className="mt-6 space-y-3">
           <p className="text-sm text-amber-200">등록증을 첨부해 신청을 보완해주세요. 파일은 본인과 관리자만 확인할 수 있습니다.</p>
+          <p className="text-xs text-slate-400">주민등록번호 등 심사에 필요하지 않은 정보는 가린 사본을 첨부해 주세요.</p>
           {(['businessNumber', 'companyName', 'ceoName', 'businessAddress'] as const).map((field, index) => <label key={field} className="block text-sm text-slate-300">
             {['사업자번호', '상호', '대표자명', '사업장 주소'][index]}
             <input value={application[field] || ''} disabled={busy} onChange={event => setApplication({ ...application, [field]: event.target.value })}

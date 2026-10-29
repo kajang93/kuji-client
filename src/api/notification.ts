@@ -2,6 +2,7 @@ import axiosInstance from "./axiosInstance";
 import { v4 as uuidv4 } from 'uuid';
 
 export interface NotificationSettingDto {
+  marketingAgreed?: boolean;
   pushEnabled: boolean;
   kakaoWinning: boolean;
   kakaoDelivery: boolean;

@@ -159,6 +159,21 @@ export const verifySms = async (phoneNumber: string, code: string): Promise<void
   await axiosInstance.post(`${API_BASE_URL}/verify-sms`, { phoneNumber, code });
 };
 
+export type SignupPhoneVerification = {
+  verificationToken: string;
+  expiresAt: string;
+};
+
+/** 가입 요청에 한 번만 사용할 휴대폰 인증 증명을 받습니다. */
+export const verifySignupSms = async (phoneNumber: string, code: string): Promise<SignupPhoneVerification> => {
+  const { data } = await axiosInstance.post(`${API_BASE_URL}/verify-sms`, { phoneNumber, code, purpose: 'SIGNUP' });
+  if (!data || !/^[A-Za-z0-9_-]{43}$/.test(data.verificationToken)
+      || !Number.isFinite(Date.parse(data.expiresAt)) || Date.parse(data.expiresAt) <= Date.now()) {
+    throw new Error('휴대폰 인증 정보를 확인하지 못했습니다. 다시 인증해 주세요.');
+  }
+  return data;
+};
+
 /**
  * 아이디 찾기
  */

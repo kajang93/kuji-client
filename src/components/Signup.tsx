@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Check, Upload, X } from './icons';
 import { toast } from 'sonner';
-import { signup, checkEmail, sendSms, verifySms } from '../api/auth';
+import { signup, checkEmail, sendSms, verifySignupSms } from '../api/auth';
 import { compressImageFile, validatePasswordRules } from '../api/client';
 import AddressSearchModal from './AddressSearchModal';
 
@@ -15,6 +15,12 @@ type SignupProps = {
 export default function Signup({ userType, onBack, onComplete }: SignupProps) {
   const submittingRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const phoneRequestVersion = useRef(0);
+  const sendingSmsRef = useRef(false);
+  const verifyingPhoneRef = useRef(false);
+  const [isSendingVerification, setIsSendingVerification] = useState(false);
+  const [isVerifyingPhone, setIsVerifyingPhone] = useState(false);
+  const [phoneVerification, setPhoneVerification] = useState<{phone: string; token: string; expiresAt: number} | null>(null);
   // Get today's date in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];
   
@@ -88,7 +94,12 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       } else {
         formatted = `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7, 11)}`;
       }
-      setFormData({ ...formData, [field]: formatted });
+      if (formatted !== formData.phone) {
+        phoneRequestVersion.current += 1;
+        setPhoneVerification(null);
+        setPhoneVerificationSent(false);
+        setFormData(previous => ({ ...previous, phone: formatted, phoneVerified: false, verificationCode: '' }));
+      }
       return;
     }
     
@@ -186,30 +197,54 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
   };
 
   const handleSendVerification = async () => {
-    if (formData.phone.length >= 10) {
-      try {
-        await sendSms(formData.phone);
-        setPhoneVerificationSent(true);
-        toast.success('인증번호가 전송되었습니다.');
-      } catch (error: any) {
-        toast.error(error.message || '인증번호 전송에 실패했습니다.');
-      }
+    if (sendingSmsRef.current || verifyingPhoneRef.current) return;
+    const phone = formData.phone.replace(/[^0-9]/g, '');
+    if (!/^01[016789][0-9]{7,8}$/.test(phone)) {
+      toast.error('올바른 휴대폰 번호를 입력해 주세요.');
+      return;
+    }
+    sendingSmsRef.current = true;
+    setIsSendingVerification(true);
+    const version = ++phoneRequestVersion.current;
+    setPhoneVerification(null);
+    setPhoneVerificationSent(false);
+    setFormData(previous => ({ ...previous, phoneVerified: false, verificationCode: '' }));
+    try {
+      await sendSms(phone);
+      if (phoneRequestVersion.current !== version) return;
+      setPhoneVerificationSent(true);
+      toast.success('인증번호가 전송되었습니다.');
+    } catch (error: any) {
+      if (phoneRequestVersion.current === version) toast.error(error.message || '인증번호 전송에 실패했습니다.');
+    } finally {
+      sendingSmsRef.current = false;
+      setIsSendingVerification(false);
     }
   };
 
   const handleVerifyPhone = async () => {
-    if (formData.verificationCode.length === 6) {
-      try {
-        await verifySms(formData.phone, formData.verificationCode);
-        setFormData({ ...formData, phoneVerified: true });
-        toast.success('휴대폰 인증이 완료되었습니다.');
-      } catch (error: any) {
+    if (verifyingPhoneRef.current || sendingSmsRef.current || formData.verificationCode.length !== 6) return;
+    verifyingPhoneRef.current = true;
+    setIsVerifyingPhone(true);
+    const version = phoneRequestVersion.current;
+    const phone = formData.phone.replace(/[^0-9]/g, '');
+    try {
+      const proof = await verifySignupSms(phone, formData.verificationCode);
+      if (phoneRequestVersion.current !== version) return;
+      setPhoneVerification({phone, token: proof.verificationToken, expiresAt: Date.parse(proof.expiresAt)});
+      setFormData(previous => ({ ...previous, phoneVerified: true }));
+      toast.success('휴대폰 인증이 완료되었습니다. 10분 안에 가입해 주세요.');
+    } catch (error: any) {
+      if (phoneRequestVersion.current === version) {
+        setPhoneVerification(null);
+        setFormData(previous => ({ ...previous, phoneVerified: false }));
         toast.error(error.message || '인증번호 확인에 실패했습니다.');
       }
+    } finally {
+      verifyingPhoneRef.current = false;
+      setIsVerifyingPhone(false);
     }
   };
-
-
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -229,7 +264,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
         toast.error('파일 용량은 5MB를 초과할 수 없습니다.');
         return;
       }
-      setFormData({ ...formData, businessFile: fileToUpload });
+      setFormData(previous => ({ ...previous, businessFile: fileToUpload }));
     }
   };
 
@@ -283,8 +318,16 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       return;
     }
 
-    if (!formData.phoneVerified) {
+    if (!formData.phoneVerified || !phoneVerification
+        || phoneVerification.phone !== formData.phone.replace(/[^0-9]/g, '')) {
       toast.error('휴대폰 인증을 완료해주세요.');
+      return;
+    }
+    if (!Number.isFinite(phoneVerification.expiresAt) || phoneVerification.expiresAt <= Date.now()) {
+      setPhoneVerification(null);
+      setPhoneVerificationSent(false);
+      setFormData(previous => ({ ...previous, phoneVerified: false }));
+      toast.error('휴대폰 인증 시간이 만료되었습니다. 다시 인증해 주세요.');
       return;
     }
 
@@ -319,6 +362,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       password: formData.password,
       nickname: formData.nickname || (userType === 'customer' ? formData.name : formData.businessName),
       phoneNumber: formData.phone,
+      phoneVerificationToken: phoneVerification.token,
       birthDate: userType === 'customer' ? formData.birthdate : null,
       role: userType === 'business' ? 'BIZ' : 'USER',
       businessNumber: userType === 'business' ? formData.businessNumber : null,
@@ -635,21 +679,21 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
               }}
               placeholder="010-0000-0000"
               className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
-              disabled={formData.phoneVerified}
+              disabled={isSubmitting}
               required
             />
             {!formData.phoneVerified && (
               <button
                 type="button"
                 onClick={handleSendVerification}
-                disabled={formData.phone.length < 10}
+                disabled={formData.phone.length < 10 || isSendingVerification || isVerifyingPhone}
                 className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap shrink-0 ${
                   formData.phone.length >= 10
                     ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                인증
+                {isSendingVerification ? '발송 중' : '인증'}
               </button>
             )}
           </div>
@@ -672,20 +716,20 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
               <button
                 type="button"
                 onClick={handleVerifyPhone}
-                disabled={formData.verificationCode.length !== 6}
+                disabled={formData.verificationCode.length !== 6 || isVerifyingPhone || isSendingVerification}
                 className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap shrink-0 ${
                   formData.verificationCode.length === 6
                     ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                확인
+                {isVerifyingPhone ? '확인 중' : '확인'}
               </button>
             </div>
           )}
 
           {formData.phoneVerified && (
-            <p className="mt-1 text-sm text-green-400">✓ 휴대폰 인증이 완료되었습니다</p>
+            <p className="mt-1 text-sm text-green-400">✓ 휴대폰 인증이 완료되었습니다. 10분 안에 가입해 주세요</p>
           )}
         </div>
 
@@ -822,6 +866,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                   <span>{formData.businessFile ? formData.businessFile.name : '파일 선택 (이미지 또는 PDF)'}</span>
                 </label>
               </div>
+              <p className="mt-2 text-xs text-white/60">주민등록번호 등 심사에 필요하지 않은 정보는 가린 사본을 첨부해 주세요.</p>
               {formData.businessFile && (
                 <div className="flex items-center gap-2 mt-2 p-3 bg-white/10 rounded-xl">
                   <Check className="w-5 h-5 text-green-400" />
