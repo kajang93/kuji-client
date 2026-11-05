@@ -107,8 +107,8 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
           orderId: prepareRes.orderId,
           orderName: prepareRes.boardTitle || "쿠지 뽑기",
           customerName: "쿠지 유저",
-          successUrl: `${window.location.origin}/?payment=success`,
-          failUrl: `${window.location.origin}/?payment=fail`
+          successUrl: `${window.location.origin}/payment/return?payment=success`,
+          failUrl: `${window.location.origin}/payment/return?payment=fail`
         });
       } catch (error: any) {
         console.warn("Payment process aborted/error:", error);

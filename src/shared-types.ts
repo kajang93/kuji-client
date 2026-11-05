@@ -161,6 +161,7 @@ export type ScreenType =
   | "login"
   | "selection"
   | "reveal"
+  | "paymentReturn"
   | "profile"
   | "profileEdit"
   | "purchase"

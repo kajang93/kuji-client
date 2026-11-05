@@ -44,8 +44,8 @@ import { toggleWishlist, fetchMyWishlist } from "./api/wishlist";
 import { onForegroundMessage } from "./api/firebase";
 import { fetchSellerShippingList, completeShipping, updateTrackingInfo } from "./api/shipping";
 import { confirmPointCharge } from "./api/points";
-import { fetchPaymentStatus, type PaymentStatus } from "./api/payments";
-import { clearPaymentRecovery, readPaymentRecovery, resolvePaymentRecovery, savePaymentReturn, type PaymentKind, type PendingPaymentRecovery } from "./utils/paymentRecovery";
+import { fetchCompletedKujiResult, fetchPaymentStatus, type CompletedKujiResult, type PaymentStatus } from "./api/payments";
+import { clearPaymentRecovery, clearUnopenedKujiOrder, readPaymentRecovery, readUnopenedKujiOrder, resolvePaymentRecovery, savePaymentReturn, saveUnopenedKujiOrder, type PaymentKind, type PendingPaymentRecovery } from "./utils/paymentRecovery";
 import { mapBoardToCollection, mapKujiItemToPrize, getRegularPrizeStock, isLastPrize } from "./utils/kujiMappers";
 
 import {
@@ -88,10 +88,27 @@ export default function App() {
     profileImageUrl?: string; // 추가: 사용자 프로필 이미지
   } | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [pendingPayment, setPendingPayment] = useState<PendingPaymentRecovery | null>(readPaymentRecovery);
+  const [pendingPayment, setPendingPayment] = useState<PendingPaymentRecovery | null>(() => {
+    const recovery = readPaymentRecovery();
+    const unopenedOrder = readUnopenedKujiOrder();
+    return recovery || (unopenedOrder ? { kind: "kuji", orderId: unopenedOrder } : null);
+  });
   const [paymentRecoveryBusy, setPaymentRecoveryBusy] = useState(false);
+  const [viewingRecoveryHistory, setViewingRecoveryHistory] = useState(false);
   const [paymentRecoveryMessage, setPaymentRecoveryMessage] = useState("이전에 진행한 결제의 결과를 확인하고 있습니다.");
-  const paymentRequests = useRef(new Set<string>());
+  const paymentRequests = useRef(new Map<string, number>());
+  const activePayment = useRef(pendingPayment);
+  const revealedOrder = useRef<string | null>(null);
+  const mounted = useRef(false);
+  const paymentRequestVersion = useRef(0);
+  const authVersion = useRef(0);
+  const currentScreen = useRef(screen);
+  currentScreen.current = screen;
+  const callbackParams = new URLSearchParams(window.location.search);
+  const hasPaymentReturn = callbackParams.has("payment") || callbackParams.has("pointCharge");
+  const isAuthCallback = screen === "kakaoCallback" || screen === "naverCallback" || screen === "googleCallback";
+  const showingPaymentReturn = screen === "paymentReturn" || (!isAuthCallback && screen !== "login"
+    && !(viewingRecoveryHistory && screen === "winning") && (Boolean(pendingPayment) || hasPaymentReturn));
   const pointDrawPending = useRef(false);
   const [returnToScreen, setReturnToScreen] = useState<
     "detail" | "list" | null
@@ -119,6 +136,15 @@ export default function App() {
 useRefreshOnPageShow(handleRefresh);
   const [animeCollections, setAnimeCollections] = useState<AnimeCollection[]>([]);
   const [sellerCollections, setSellerCollections] = useState<AnimeCollection[]>([]);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      paymentRequestVersion.current += 1;
+      paymentRequests.current.clear();
+    };
+  }, []);
 
   // Fetch Kuji Boards from server
   const fetchSellerCollectionsWithPrizes = async () => {
@@ -188,8 +214,6 @@ async function handleRefresh() {
   // Foreground FCM message handler
   useEffect(() => {
     const unsubscribe = onForegroundMessage((payload) => {
-      console.log("Foreground push notification received:", payload);
-      
       // 당첨 알림(WINNING)은 KujiReveal에서 개별적으로 토스트를 띄우므로(스포일러 방지) 여기서 무시
       if (payload.data?.subType === 'WINNING') {
         return;
@@ -228,14 +252,10 @@ async function handleRefresh() {
     const amount = urlParams.get("amount");
     const sharedPostId = Number(urlParams.get("postId"));
 
-    if (payment === "success" && paymentKey && orderId && amount) {
-      handlePaymentReturn("kuji", orderId, { paymentKey, amount });
-    } else if (payment === "fail") {
-      handlePaymentReturn("kuji", orderId);
-    } else if (pointCharge === "success" && paymentKey && orderId && amount) {
-      handlePaymentReturn("points", orderId, { paymentKey, amount });
-    } else if (pointCharge === "fail") {
-      handlePaymentReturn("points", orderId);
+    if (payment !== null) {
+      handlePaymentReturn("kuji", orderId, payment === "success" && paymentKey && amount ? { paymentKey, amount } : undefined);
+    } else if (pointCharge !== null) {
+      handlePaymentReturn("points", orderId, pointCharge === "success" && paymentKey && amount ? { paymentKey, amount } : undefined);
     } else if (Number.isInteger(sharedPostId) && sharedPostId > 0) {
       setSelectedPostId(sharedPostId);
       setScreen("communityDetail");
@@ -263,6 +283,13 @@ async function handleRefresh() {
       handleFetchUserInfo();
     }
 
+    if (screen === "paymentReturn" && payment === null && pointCharge === null && !activePayment.current) {
+      setPaymentRecoveryMessage("확인할 결제 정보가 없습니다. 결제한 계정과 결제 내역을 확인해 주세요.");
+    }
+
+    // 결제 복구와 미개봉 주문은 저장된 결과를 먼저 복원한다.
+    if (payment !== null || pointCharge !== null || activePayment.current || screen === "paymentReturn") return;
+
     // 새로고침으로 화면에 필요한 선택 상태가 사라지면 목록으로 돌아갑니다.
     if ((screen === "detail" || screen === "selection") && payment !== "success") {
       setScreen("list");
@@ -278,28 +305,39 @@ async function handleRefresh() {
   }, []);
 
   const handlePaymentReturn = (kind: PaymentKind, orderId: string | null, callback?: { paymentKey: string; amount: string }) => {
+    setViewingRecoveryHistory(false);
+    setScreen("paymentReturn");
     try {
       if (!orderId) throw new Error("주문 정보가 없습니다.");
       // 복구 정보를 저장한 뒤 주소에서 결제 키를 제거한다.
       const recovery = savePaymentReturn(kind, orderId, callback);
+      activePayment.current = recovery;
       setPendingPayment(recovery);
-      window.history.replaceState({}, document.title, window.location.pathname);
       void recoverPayment(recovery);
     } catch {
-      setScreen("main");
-      toast.error("결제 정보를 확인하지 못했습니다. 이 화면을 유지하고 고객센터에 문의해 주세요.");
+      setPaymentRecoveryMessage("결제 정보를 확인하지 못했습니다. 추가 결제 없이 고객센터에 문의해 주세요.");
+    } finally {
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   };
 
   const applyPaymentStatus = async (payment: PendingPaymentRecovery, status: PaymentStatus) => {
     if (status === "COMPLETED") {
+      // 쿠지 완료 결과를 받지 못했다면 복구 정보를 유지하고 재조회한다.
+      if (payment.kind === "kuji") {
+        setPaymentRecoveryMessage("결제는 완료됐지만 개봉 결과를 아직 불러오지 못했습니다. 추가 결제 없이 상태를 다시 확인해 주세요.");
+        return;
+      }
       clearPaymentRecovery(payment);
+      activePayment.current = null;
       setPendingPayment(null);
-      await handleFetchUserInfo();
-      setScreen(payment.kind === "kuji" ? "winning" : "main");
-      toast.success(payment.kind === "kuji" ? "이미 완료된 결제입니다. 당첨 내역에서 결과를 확인해 주세요." : "충전이 완료됐습니다. 포인트와 충전 내역을 확인해 주세요.");
+      setScreen("main");
+      void handleFetchUserInfo(true);
+      toast.success("충전이 완료됐습니다. 포인트와 충전 내역을 확인해 주세요.");
     } else if (status === "CANCELLED" || status === "FAILED") {
       clearPaymentRecovery(payment);
+      if (payment.kind === "kuji") clearUnopenedKujiOrder(payment.orderId);
+      activePayment.current = null;
       setPendingPayment(null);
       setScreen("main");
       toast.info(status === "CANCELLED" ? "결제 취소가 확인됐습니다." : "결제가 승인되지 않은 것으로 확인됐습니다.");
@@ -312,67 +350,122 @@ async function handleRefresh() {
     }
   };
 
+  const loadCompletedKuji = async (orderId: string, isCurrent: () => boolean) => {
+    if (!isCurrent()) throw new Error("이전 결제 요청입니다.");
+    const completed = await fetchCompletedKujiResult(orderId);
+    if (!isCurrent()) throw new Error("이전 결제 요청입니다.");
+    let collection: AnimeCollection | undefined;
+    try {
+      const [boards, items] = await Promise.all([fetchKujiBoards(), fetchKujiBoardDetail(completed.boardId)]);
+      const board = boards.find(candidate => candidate.id === completed.boardId);
+      if (board) {
+        const prizes = items.map(mapKujiItemToPrize);
+        collection = { ...mapBoardToCollection(board), prizes, ...getRegularPrizeStock(prizes) };
+      }
+    } catch {
+      // 상품 정보 조회가 실패해도 결제가 끝난 쿠지의 개봉은 계속할 수 있다.
+    }
+    return { kind: "kuji" as const, completed, collection };
+  };
+
   const recoverPayment = async (payment: PendingPaymentRecovery) => {
     if (paymentRequests.current.has(payment.orderId)) return;
+    if (revealedOrder.current === payment.orderId && currentScreen.current === "reveal") return;
+    activePayment.current = payment;
+    setViewingRecoveryHistory(false);
     setPendingPayment(payment);
+    if (currentScreen.current !== "login" && !["kakaoCallback", "naverCallback", "googleCallback"].includes(currentScreen.current)) setScreen("paymentReturn");
     if (!getToken()) {
+      setPaymentRecoveryBusy(false);
       setPaymentRecoveryMessage("결제한 계정으로 로그인하면 이전 결제 결과를 계속 확인할 수 있습니다.");
       return;
     }
-    paymentRequests.current.add(payment.orderId);
+    const requestVersion = ++paymentRequestVersion.current;
+    const requestAuthVersion = authVersion.current;
+    const isCurrent = () => mounted.current && requestVersion === paymentRequestVersion.current
+      && requestAuthVersion === authVersion.current && activePayment.current?.orderId === payment.orderId;
+    paymentRequests.current.set(payment.orderId, requestVersion);
     setPaymentRecoveryBusy(true);
     setPaymentRecoveryMessage("이전에 진행한 결제의 결과를 확인하고 있습니다.");
     try {
-      const outcome = await resolvePaymentRecovery<{ kind: "kuji"; prizes: Prize[] } | { kind: "points"; totalPoints: number }>(payment, {
-        getStatus: fetchPaymentStatus,
+      const outcome = await resolvePaymentRecovery<{ kind: "kuji"; completed: CompletedKujiResult; collection?: AnimeCollection } | { kind: "points"; totalPoints: number }>(payment, {
+        getStatus: async orderId => {
+          const status = await fetchPaymentStatus(orderId);
+          if (!isCurrent()) throw new Error("이전 결제 요청입니다.");
+          return status;
+        },
+        getCompletedResult: saved => saved.kind === "kuji" ? loadCompletedKuji(saved.orderId, isCurrent) : Promise.resolve(undefined),
         confirm: async (saved) => {
+          if (!isCurrent()) throw new Error("이전 결제 요청입니다.");
           if (saved.kind === "kuji") {
-            const result = await drawKuji(saved.boardId!, {
+            await drawKuji(saved.boardId!, {
               count: saved.count!,
               paymentType: "PG",
               paymentKey: saved.paymentKey,
               orderId: saved.orderId,
               amount: saved.amount,
             });
-            return { kind: "kuji", prizes: result.results.map(mapKujiItemToPrize) };
+            return loadCompletedKuji(saved.orderId, isCurrent);
           }
           const result = await confirmPointCharge({ paymentKey: saved.paymentKey, orderId: saved.orderId, amount: saved.amount });
           return { kind: "points", totalPoints: result.totalPoints };
         },
       });
+      if (!isCurrent()) return;
       if (outcome.result) {
-        clearPaymentRecovery(payment);
-        setPendingPayment(null);
-        await handleFetchUserInfo();
         if (outcome.result.kind === "kuji") {
-          setRevealedPrizes(outcome.result.prizes);
+          const { completed, collection } = outcome.result;
+          const prizes = completed.results.map(mapKujiItemToPrize);
+          // 완료 결과와 결제 키를 저장하지 않고 개봉을 마칠 때까지 주문 번호만 남긴다.
+          saveUnopenedKujiOrder(payment.orderId);
+          revealedOrder.current = payment.orderId;
+          setRevealedPrizes(prizes);
+          setSelectedAnime(collection || null);
+          if (collection) {
+            setAnimeCollections(previous => previous.map(board => board.id === collection.id ? collection : board));
+            const opened = collection.prizes.filter(prize => !isLastPrize(prize.rank)).flatMap(prize => prize.opened || []);
+            setKujiStatus(opened.length ? opened : Array(collection.totalKuji).fill(false));
+          }
+          setPurchaseCount(completed.count);
+          setPointsToUse(0);
+        }
+        clearPaymentRecovery(payment);
+        activePayment.current = null;
+        setPendingPayment(null);
+        if (outcome.result.kind === "kuji") {
           setScreen("reveal");
         } else {
           setScreen("main");
           toast.success(`충전이 완료됐습니다. 총 보유 포인트는 ${outcome.result.totalPoints.toLocaleString()}P입니다.`);
         }
+        void handleFetchUserInfo(true);
       } else {
         await applyPaymentStatus(payment, outcome.status);
       }
     } catch {
+      if (!isCurrent()) return;
       setPaymentRecoveryMessage(getToken()
         ? "결제 상태를 아직 확인하지 못했습니다. 결제한 계정인지 확인하고 추가 결제 없이 상태를 다시 확인해 주세요."
         : "결제한 계정으로 로그인하면 이전 결제 결과를 계속 확인할 수 있습니다.");
     } finally {
-      paymentRequests.current.delete(payment.orderId);
-      setPaymentRecoveryBusy(false);
+      if (paymentRequests.current.get(payment.orderId) === requestVersion) paymentRequests.current.delete(payment.orderId);
+      if (mounted.current && requestVersion === paymentRequestVersion.current) setPaymentRecoveryBusy(false);
     }
   };
 
   useEffect(() => {
     if (screen === "kakaoCallback" || screen === "naverCallback" || screen === "googleCallback") return;
-    const recovery = readPaymentRecovery();
+    if (viewingRecoveryHistory && screen === "winning") return;
+    const unopenedOrder = readUnopenedKujiOrder();
+    const recovery = activePayment.current || readPaymentRecovery() || (unopenedOrder ? { kind: "kuji" as const, orderId: unopenedOrder } : null);
     if (recovery) void recoverPayment(recovery);
-  }, [user?.email]);
+  }, [user?.email, screen]);
 
-  const handleFetchUserInfo = async () => {
+  const handleFetchUserInfo = async (preserveScreen = false) => {
+    const requestAuthVersion = authVersion.current;
     try {
       const userData = await fetchMyProfile();
+      if (!mounted.current || requestAuthVersion !== authVersion.current) return;
       const userRole = userData.role || "USER";
       const formattedUser = {
         memberId: userData.memberId,
@@ -399,12 +492,14 @@ async function handleRefresh() {
       }
       handleFetchWinningHistory(formattedUser.type);
 
+      if (preserveScreen || activePayment.current || revealedOrder.current || currentScreen.current === "reveal") return;
       if (formattedUser.type === "business" && formattedUser.isActive === false) {
         setScreen("businessPending");
       } else if (formattedUser.type === 'business' && screen === 'businessPending') {
         setScreen('businessDashboard');
       }
     } catch (error) {
+      if (!mounted.current || requestAuthVersion !== authVersion.current) return;
       console.error("Session expired or invalid token:", error);
       localStorage.removeItem("token");
       sessionStorage.removeItem("token");
@@ -594,6 +689,9 @@ async function handleRefresh() {
     businessRejectReason?: string | null;
     points?: number;
   }) => {
+    authVersion.current += 1;
+    paymentRequestVersion.current += 1;
+    paymentRequests.current.clear();
     setUser(userData);
     setIsSidebarOpen(false);
 
@@ -602,8 +700,13 @@ async function handleRefresh() {
       handleFetchWishlist();
     }
 
-    // Business users go to dashboard (if active) or pending screen
-    if (userData.type === "business") {
+    const recovery = activePayment.current || readPaymentRecovery();
+    // 결제한 계정으로 돌아오면 일반 로그인 이동보다 개봉 복구를 먼저 처리한다.
+    if (recovery) {
+      setReturnToScreen(null);
+      setScreen("paymentReturn");
+      void recoverPayment(recovery);
+    } else if (userData.type === "business") {
       if (userData.businessStatus !== 'APPROVED') {
         setScreen("businessPending");
       } else {
@@ -621,6 +724,9 @@ async function handleRefresh() {
 
   const handleLogout = () => {
     showConfirm("로그아웃 하시겠습니까?", async () => {
+      authVersion.current += 1;
+      paymentRequestVersion.current += 1;
+      paymentRequests.current.clear();
       try {
         await logout();
         setUser(null);
@@ -637,6 +743,9 @@ async function handleRefresh() {
   // 소셜 로그인(카카오/네이버/구글) 콜백 공통 처리
   const handleSocialLoginSuccess = (successMessage: string) =>
     (token: string, userData: any) => {
+      authVersion.current += 1;
+      paymentRequestVersion.current += 1;
+      paymentRequests.current.clear();
       localStorage.setItem("token", token);
       sessionStorage.removeItem("token");
       const formattedUser = {
@@ -655,7 +764,13 @@ async function handleRefresh() {
       // Remove OAuth params from URL without refreshing
       window.history.replaceState({}, document.title, window.location.pathname);
 
-      if (formattedUser.type === "business") {
+      const unopenedOrder = readUnopenedKujiOrder();
+      const recovery = activePayment.current || readPaymentRecovery() || (unopenedOrder ? { kind: "kuji" as const, orderId: unopenedOrder } : null);
+      if (recovery) {
+        setReturnToScreen(null);
+        setScreen("paymentReturn");
+        void recoverPayment(recovery);
+      } else if (formattedUser.type === "business") {
         setScreen(formattedUser.businessStatus === 'APPROVED' ? 'businessDashboard' : 'businessPending');
       } else if (formattedUser.type === 'admin') {
         setScreen('adminDashboard');
@@ -733,8 +848,15 @@ async function handleRefresh() {
   const handleRevealComplete = async (
     destination: "winning" | "detail" = "winning",
   ) => {
+    if (revealedOrder.current) clearUnopenedKujiOrder(revealedOrder.current);
+    revealedOrder.current = null;
+    const completionVersion = ++paymentRequestVersion.current;
+    const completionAuthVersion = authVersion.current;
+    const isCurrent = () => mounted.current && completionVersion === paymentRequestVersion.current
+      && completionAuthVersion === authVersion.current && currentScreen.current === "reveal";
     try {
       const histories = await fetchMyDrawHistory();
+      if (!isCurrent()) return;
       const revealedIds = revealedPrizes.map(p => p.drawHistoryId);
 
       if (Array.isArray(histories)) {
@@ -766,6 +888,7 @@ async function handleRefresh() {
     if (user) {
       try {
         const profile = await fetchMyProfile();
+        if (!isCurrent()) return;
         setUser(previous => previous ? { ...previous, points: profile.points || 0 } : previous);
       } catch (error) {
         console.warn("포인트 잔액 새로고침 실패", error);
@@ -773,7 +896,8 @@ async function handleRefresh() {
     }
 
     // Go to destination
-    if (destination === "winning") {
+    if (!isCurrent()) return;
+    if (destination === "winning" || !selectedAnime) {
       setScreen("winning");
       setSelectedAnime(null);
     } else {
@@ -1055,13 +1179,13 @@ async function handleRefresh() {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-800 overflow-hidden w-full relative">
-      {/* Live Ticker - Show on all screens except login/reveal/detail */}
-      {screen !== "login" &&
+      {/* 티켓 선택과 결제 복귀와 개봉 중에는 당첨 알림을 숨긴다. */}
+      {!showingPaymentReturn && !pendingPayment && !isAuthCallback && screen !== "login" && screen !== "selection" &&
         screen !== "reveal" &&
         screen !== "detail" && <LiveTicker />}
 
       {/* Hamburger Menu Button - Fixed position */}
-      {screen !== "reveal" && screen !== "login" && screen !== "communityWrite" && screen !== "communityDetail" && (
+      {!showingPaymentReturn && screen !== "reveal" && screen !== "login" && screen !== "communityWrite" && screen !== "communityDetail" && (
         <button
           onClick={() => setIsSidebarOpen(true)}
           className="fixed top-12 right-4 z-30 p-3 bg-rose-500 rounded-full shadow-lg hover:bg-rose-600 transition-colors"
@@ -1071,7 +1195,26 @@ async function handleRefresh() {
       )}
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden relative w-full" id="main-scroll-container">
-
+        {showingPaymentReturn ? (
+          <PaymentRecoveryNotice
+            fullScreen
+            title={pendingPayment?.kind === "points" || callbackParams.has("pointCharge") ? "충전 결과를 확인하고 있어요" : undefined}
+            message={paymentRecoveryMessage}
+            busy={paymentRecoveryBusy}
+            needsLogin={!getToken()}
+            onCheck={() => { if (pendingPayment) void recoverPayment(pendingPayment); }}
+            onLogin={() => setScreen("login")}
+            onViewHistory={pendingPayment?.kind === "points" ? undefined : () => {
+              if (!getToken()) {
+                setScreen("login");
+                return;
+              }
+              setViewingRecoveryHistory(true);
+              setScreen("winning");
+              void handleFetchWinningHistory();
+            }}
+          />
+        ) : <>
         {screen === "main" && (
           <MainScreen
             onStart={() => setScreen("list")}
@@ -1338,7 +1481,7 @@ async function handleRefresh() {
             onLoginFailure={handleSocialLoginFailure}
           />
         )}
-
+        </>}
     </div>
 
       {/* Sidebar - Different for Business Users */}
@@ -1375,16 +1518,6 @@ async function handleRefresh() {
             setScreen("login");
           }}
           onNavigate={handleSidebarNavigate}
-        />
-      )}
-
-      {pendingPayment && (
-        <PaymentRecoveryNotice
-          message={paymentRecoveryMessage}
-          busy={paymentRecoveryBusy}
-          needsLogin={!getToken()}
-          onCheck={() => void recoverPayment(pendingPayment)}
-          onLogin={() => setScreen("login")}
         />
       )}
 

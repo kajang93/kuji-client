@@ -8,6 +8,7 @@ const SCREEN_PATHS: Record<ScreenType, string> = {
   login: '/login',
   selection: '/selection',
   reveal: '/reveal',
+  paymentReturn: '/payment/return',
   profile: '/profile',
   profileEdit: '/profile/edit',
   purchase: '/profile/purchase',

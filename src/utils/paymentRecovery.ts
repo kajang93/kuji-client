@@ -13,6 +13,7 @@ export interface PendingPaymentRecovery {
 
 type PaymentStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 const RECOVERY_KEY = "payment_recovery";
+const UNOPENED_KUJI_KEY = "kuji_unopened_order";
 const pendingKey = (kind: PaymentKind) => kind === "kuji" ? "kuji_pending_payment" : "point_charge_pending";
 const isPositiveInteger = (value: unknown): value is number => Number.isSafeInteger(value) && Number(value) > 0;
 const validOrder = (kind: PaymentKind, orderId: unknown): orderId is string =>
@@ -27,7 +28,14 @@ export function readPaymentRecovery(storage: PaymentStorage = sessionStorage): P
     if (value.paymentKey !== undefined && (typeof value.paymentKey !== "string" || !value.paymentKey || value.paymentKey.length > 200)) return null;
     if (value.boardId !== undefined && !isPositiveInteger(value.boardId)) return null;
     if (value.count !== undefined && !isPositiveInteger(value.count)) return null;
-    return value;
+    return {
+      kind: value.kind,
+      orderId: value.orderId,
+      ...(value.amount !== undefined ? { amount: value.amount } : {}),
+      ...(value.paymentKey !== undefined ? { paymentKey: value.paymentKey } : {}),
+      ...(value.boardId !== undefined ? { boardId: value.boardId } : {}),
+      ...(value.count !== undefined ? { count: value.count } : {}),
+    };
   } catch {
     return null;
   }
@@ -66,17 +74,42 @@ export async function resolvePaymentRecovery<T>(
   services: {
     getStatus: (orderId: string) => Promise<PaymentStatus>;
     confirm: (payment: PendingPaymentRecovery & { paymentKey: string; amount: number }) => Promise<T>;
+    getCompletedResult?: (payment: PendingPaymentRecovery) => Promise<T | undefined>;
   },
 ): Promise<{ status: PaymentStatus; result?: T }> {
   const status = await services.getStatus(payment.orderId);
+  if (status === "COMPLETED" && services.getCompletedResult) {
+    return { status, result: await services.getCompletedResult(payment) };
+  }
   if (status !== "PENDING" || !payment.paymentKey || !payment.amount ||
     (payment.kind === "kuji" && (!payment.boardId || !payment.count))) return { status };
   try {
     return { status: "COMPLETED", result: await services.confirm({ ...payment, paymentKey: payment.paymentKey, amount: payment.amount }) };
   } catch {
     // 응답 유실과 처리 실패를 구분하기 위해 원래 주문의 상태를 다시 조회한다.
-    return { status: await services.getStatus(payment.orderId) };
+    const recoveredStatus = await services.getStatus(payment.orderId);
+    return { status: recoveredStatus, ...(recoveredStatus === "COMPLETED" && services.getCompletedResult
+      ? { result: await services.getCompletedResult(payment) } : {}) };
   }
+}
+
+// 결제 키와 당첨 내용을 남기지 않고 아직 개봉할 주문 번호만 현재 탭에 보관한다.
+export function readUnopenedKujiOrder(storage: PaymentStorage = sessionStorage): string | null {
+  try {
+    const orderId = storage.getItem(UNOPENED_KUJI_KEY);
+    return validOrder("kuji", orderId) ? orderId : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveUnopenedKujiOrder(orderId: string, storage: PaymentStorage = sessionStorage): void {
+  if (!validOrder("kuji", orderId)) throw new Error("개봉할 주문 번호를 확인할 수 없습니다.");
+  storage.setItem(UNOPENED_KUJI_KEY, orderId);
+}
+
+export function clearUnopenedKujiOrder(orderId: string, storage: PaymentStorage = sessionStorage): void {
+  if (readUnopenedKujiOrder(storage) === orderId) storage.removeItem(UNOPENED_KUJI_KEY);
 }
 
 export function clearPaymentRecovery(

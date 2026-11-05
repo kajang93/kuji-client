@@ -8,19 +8,27 @@ interface PaymentRecoveryNoticeProps {
   needsLogin: boolean;
   onCheck: () => void;
   onLogin: () => void;
+  fullScreen?: boolean;
+  title?: string;
+  onViewHistory?: () => void;
 }
 
-const PaymentRecoveryNotice: FC<PaymentRecoveryNoticeProps> = ({ message, busy, needsLogin, onCheck, onLogin }) => (
-  <section role="status" aria-live="polite" className="fixed bottom-4 left-4 right-4 z-[90] mx-auto max-w-md rounded-2xl border border-amber-400/40 bg-slate-900 p-4 text-white shadow-xl">
+const PaymentRecoveryNotice: FC<PaymentRecoveryNoticeProps> = ({ message, busy, needsLogin, onCheck, onLogin, fullScreen = false, title, onViewHistory }) => (
+  <section role="status" aria-live="polite" className={fullScreen
+    ? "flex min-h-[100dvh] items-center justify-center bg-slate-950 px-6 text-white"
+    : "fixed bottom-4 left-4 right-4 z-[90] mx-auto max-w-md rounded-2xl border border-amber-400/40 bg-slate-900 p-4 text-white shadow-xl"}>
+    <div className={fullScreen ? "w-full max-w-md rounded-3xl border border-amber-200/20 bg-gradient-to-b from-slate-900 to-indigo-950 p-7 shadow-2xl" : ""}>
     <div className="flex items-start gap-3">
       {busy ? <LoaderCircle className="mt-1 h-5 w-5 shrink-0 animate-spin text-amber-300" /> : <Clock3 className="mt-1 h-5 w-5 shrink-0 text-amber-300" />}
       <div className="min-w-0 flex-1">
-        <h2 className="font-semibold text-amber-200">결제 결과 확인</h2>
+        <h2 className="font-semibold text-amber-200">{title || (fullScreen ? "개봉할 쿠지를 준비하고 있어요" : "결제 결과 확인")}</h2>
         <p className="mt-1 text-sm leading-relaxed text-slate-200">{message}</p>
         <button type="button" disabled={busy} onClick={needsLogin ? onLogin : onCheck} className="mt-3 rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-amber-300 disabled:opacity-50">
           {busy ? "확인 중" : needsLogin ? "결제한 계정으로 로그인" : "상태 다시 확인"}
         </button>
+        {onViewHistory && <button type="button" onClick={onViewHistory} disabled={busy} className="mt-3 block text-sm text-slate-300 underline disabled:opacity-50">당첨 보관함에서 확인</button>}
       </div>
+    </div>
     </div>
   </section>
 );
