@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { Ticket, ChevronRight, X } from './icons';
+import { Ticket, ChevronRight } from './icons';
 
 type Banner = {
   id: string;
@@ -25,25 +25,6 @@ export default function MainScreen({ onStart, banners }: MainScreenProps) {
   const activeBanners = banners.filter(b => b.isActive).sort((a, b) => a.order - b.order);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Brochure Popup State
-  const [showBrochure, setShowBrochure] = useState(false);
-  const [doNotShowAgain, setDoNotShowAgain] = useState(false);
-
-  useEffect(() => {
-    // Check localStorage to see if user opted out
-    const hideBrochure = localStorage.getItem('hideBrochure');
-    if (!hideBrochure) {
-      setShowBrochure(true);
-    }
-  }, []);
-
-  const closeBrochure = () => {
-    if (doNotShowAgain) {
-      localStorage.setItem('hideBrochure', 'true');
-    }
-    setShowBrochure(false);
-  };
-
   useEffect(() => {
     if (activeBanners.length <= 1) return;
     
@@ -58,7 +39,7 @@ export default function MainScreen({ onStart, banners }: MainScreenProps) {
     title: '오시쿠지',
     subtitle: '推しクジ',
     imageUrl: 'https://images.unsplash.com/photo-1761129386720-82a53e04d9b7?w=1920',
-    buttonText: '시작하기'
+    buttonText: '쿠지 구경하기'
   };
 
   return (
@@ -120,7 +101,7 @@ export default function MainScreen({ onStart, banners }: MainScreenProps) {
           >
             <span className="flex items-center gap-3 text-white text-xl md:text-2xl font-bold tracking-wider uppercase group-hover:text-cyan-300 transition-colors duration-300">
               <Ticket className="w-6 h-6 md:w-8 md:h-8 text-cyan-400 group-hover:rotate-12 transition-transform duration-300" />
-              {currentBanner.buttonText || 'Start Kuji'}
+              쿠지 구경하기
             </span>
             <ChevronRight className="w-6 h-6 text-white/50 group-hover:translate-x-2 group-hover:text-cyan-300 transition-all duration-300" />
             
@@ -128,6 +109,11 @@ export default function MainScreen({ onStart, banners }: MainScreenProps) {
             <div className="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-shine" />
           </button>
         </motion.div>
+
+        <p className="mt-5 text-sm text-slate-300">회원가입 없이 상품과 남은 수량을 볼 수 있어요.</p>
+        <a href="/brochure.html" className="mt-4 text-xs text-slate-400 underline underline-offset-4 transition-colors hover:text-cyan-300">
+          판매자 입점 안내
+        </a>
 
         {/* Slide Indicators */}
         {activeBanners.length > 1 && (
@@ -146,63 +132,7 @@ export default function MainScreen({ onStart, banners }: MainScreenProps) {
       </div>
 
 
-      {/* Brochure Popup */}
-      <AnimatePresence>
-        {showBrochure && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-3xl h-[85vh] bg-slate-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-700"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 bg-slate-800 border-b border-slate-700 shrink-0">
-                <h3 className="text-white font-bold">🎉 서비스 오픈 안내</h3>
-                <button
-                  onClick={closeBrochure}
-                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              {/* iframe Container */}
-              <div className="flex-1 w-full bg-black overflow-hidden relative">
-                <iframe 
-                  src="/brochure.html" 
-                  className="absolute inset-0 w-full h-full border-0"
-                  title="브로셔"
-                />
-              </div>
-              
-              {/* Footer */}
-              <div className="px-4 py-3 bg-slate-800 border-t border-slate-700 shrink-0 flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer text-white/70 hover:text-white transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={doNotShowAgain}
-                    onChange={(e) => setDoNotShowAgain(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-600 text-pink-500 focus:ring-pink-500 focus:ring-offset-slate-800 bg-slate-700"
-                  />
-                  <span className="text-sm">다음에 안 띄우기</span>
-                </label>
-                <button
-                  onClick={closeBrochure}
-                  className="px-4 py-1.5 rounded-lg bg-pink-500 hover:bg-pink-600 text-white text-sm font-bold transition-colors"
-                >
-                  닫기
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
     </div>
   );
 }

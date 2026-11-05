@@ -218,9 +218,9 @@ export default function Login({ onLogin, onBack }: LoginProps) {
     window.scrollTo(0, 0);
   }, []);
 
-  const handleSignupComplete = () => {
+  const handleSignupComplete = (type: 'registered' | 'requested') => {
     setShowSignup(false);
-    setActiveTab('customer');
+    setActiveTab(type === 'requested' ? 'business' : 'customer');
   };
 
   const formatPhone = (val: string) => {

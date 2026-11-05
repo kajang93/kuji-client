@@ -21,9 +21,6 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
   const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [isVerifyingPhone, setIsVerifyingPhone] = useState(false);
   const [phoneVerification, setPhoneVerification] = useState<{phone: string; token: string; expiresAt: number} | null>(null);
-  // Get today's date in YYYY-MM-DD format
-  const today = new Date().toISOString().split('T')[0];
-  
   // Refs for input fields
   const passwordRef = useRef<HTMLInputElement>(null);
   const passwordConfirmRef = useRef<HTMLInputElement>(null);
@@ -40,10 +37,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
     phone: '',
     phoneVerified: false,
     verificationCode: '',
-    address: '',
-    addressDetail: '',
-    zonecode: '',
-    birthdate: today,
+    birthdate: '',
     businessNumber: '',
     businessName: '',
     managerName: '',
@@ -63,7 +57,6 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
   const [agreeMarketing, setAgreeMarketing] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [showTermsModal, setShowTermsModal] = useState(false);
-  const [showAddressModal, setShowAddressModal] = useState(false);
   const [showShippingAddressModal, setShowShippingAddressModal] = useState(false);
   const [passwordChecked, setPasswordChecked] = useState(false);
 
@@ -189,9 +182,9 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       setBusinessNumberValid(isValid);
       setBusinessNumberChecked(true);
       if (isValid) {
-        toast.success('사업자번호 형식이 확인되었습니다. 실제 사업자 정보는 등록증 심사에서 확인합니다.');
+        toast.success('번호 형식 확인 완료 · 등록증 심사 예정');
       } else {
-        toast.error('유효하지 않은 사업자번호입니다.');
+        toast.error('사업자번호 형식을 확인해 주세요.');
       }
     }
   };
@@ -331,12 +324,8 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       return;
     }
 
-    if (userType === 'customer') {
-      if (!formData.address) {
-        toast.error('배송주소를 입력해주세요.');
-        return;
-      }
-    }
+    const businessAddress = [formData.shippingAddress, formData.shippingAddressDetail]
+      .map(value => value.trim()).filter(Boolean).join(' ');
 
     if (userType === 'business') {
       if (!formData.businessName) {
@@ -344,11 +333,15 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
         return;
       }
       if (!formData.managerName) {
-        toast.error('담당자명을 입력해주세요.');
+        toast.error('대표자명을 입력해주세요.');
         return;
       }
-      if (!formData.shippingAddress) {
-        toast.error('출고지 주소를 입력해주세요.');
+      if (!formData.shippingAddress.trim()) {
+        toast.error('사업장 주소를 입력해주세요.');
+        return;
+      }
+      if (businessAddress.length > 255) {
+        toast.error('사업장 주소는 상세주소를 포함해 255자 이내로 입력해주세요.');
         return;
       }
       if (!formData.businessFile) {
@@ -363,12 +356,12 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       nickname: formData.nickname || (userType === 'customer' ? formData.name : formData.businessName),
       phoneNumber: formData.phone,
       phoneVerificationToken: phoneVerification.token,
-      birthDate: userType === 'customer' ? formData.birthdate : null,
+      birthDate: userType === 'customer' ? formData.birthdate || undefined : null,
       role: userType === 'business' ? 'BIZ' : 'USER',
       businessNumber: userType === 'business' ? formData.businessNumber : null,
       companyName: userType === 'business' ? formData.businessName : null,
       ceoName: userType === 'business' ? formData.managerName : null,
-      businessAddress: userType === 'business' ? formData.shippingAddress : null,
+      businessAddress: userType === 'business' ? businessAddress : null,
       isTermsAgreed: agreeTerms,
       isPrivacyAgreed: agreePrivacy,
       isMarketingAgreed: agreeMarketing
@@ -452,7 +445,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
               </div>
               {businessNumberChecked && (
                 <p className={`mt-1 text-sm ${businessNumberValid ? 'text-green-400' : 'text-red-400'}`}>
-                  {businessNumberValid ? '✓ 유효한 사업자번호입니다' : '✗ 유효하지 않은 사업자번호입니다'}
+                  {businessNumberValid ? '✓ 번호 형식 확인 완료 · 등록증 심사 예정' : '✗ 사업자번호 형식을 확인해 주세요'}
                 </p>
               )}
             </div>
@@ -475,13 +468,13 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
             {/* Manager Name */}
             <div>
               <label className="block text-white mb-2">
-                담당자명 <span className="text-red-400">*</span>
+                대표자명 <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
                 value={formData.managerName}
                 onChange={(e) => handleChange('managerName', e.target.value)}
-                placeholder="담당자명을 입력하세요"
+                placeholder="대표자명을 입력하세요"
                 className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
                 required
               />
@@ -733,49 +726,9 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
           )}
         </div>
 
-        {/* Address - Customer Only */}
+        {/* 고객 프로필 */}
         {userType === 'customer' && (
           <>
-            <div>
-              <label className="block text-white mb-2">
-                배송주소 <span className="text-red-400">*</span>
-              </label>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={formData.zonecode}
-                  readOnly
-                  placeholder="우편번호"
-                  className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none cursor-pointer"
-                  onClick={() => setShowAddressModal(true)}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowAddressModal(true)}
-                  className="px-4 py-3 bg-amber-500 text-slate-900 rounded-xl border border-transparent hover:bg-amber-400 font-medium whitespace-nowrap shrink-0"
-                >
-                  우편번호 검색
-                </button>
-              </div>
-              <input
-                type="text"
-                value={formData.address}
-                readOnly
-                placeholder="기본 주소"
-                className="w-full px-4 py-3 mb-2 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none cursor-pointer"
-                onClick={() => setShowAddressModal(true)}
-                required
-              />
-              <input
-                type="text"
-                value={formData.addressDetail}
-                onChange={(e) => handleChange('addressDetail', e.target.value)}
-                placeholder="상세주소를 입력하세요"
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
-              />
-            </div>
-
             {/* Birthdate */}
             <div>
               <label className="block text-white mb-2">생년월일</label>
@@ -806,7 +759,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
           <>
             <div>
               <label className="block text-white mb-2">
-                출고지 주소 <span className="text-red-400">*</span>
+                사업장 주소 <span className="text-red-400">*</span>
               </label>
               <div className="flex gap-2 mb-2">
                 <input
@@ -830,7 +783,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                 type="text"
                 value={formData.shippingAddress}
                 readOnly
-                placeholder="기본 출고지 주소"
+                placeholder="기본 사업장 주소"
                 className="w-full px-4 py-3 mb-2 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none cursor-pointer"
                 onClick={() => setShowShippingAddressModal(true)}
                 required
@@ -1045,27 +998,12 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
         )}
       </AnimatePresence>
 
-      {/* Address Search Modal */}
-      <AddressSearchModal
-        isOpen={showAddressModal}
-        onClose={() => setShowAddressModal(false)}
-        title="배송주소 검색"
-        description="배송받을 주소를 검색해주세요"
-        onComplete={(result) => {
-          setFormData((prev) => ({
-            ...prev,
-            address: result.address,
-            zonecode: result.zonecode,
-          }));
-        }}
-      />
-
       {/* Shipping Address Search Modal */}
       <AddressSearchModal
         isOpen={showShippingAddressModal}
         onClose={() => setShowShippingAddressModal(false)}
-        title="출고지 주소 검색"
-        description="출고지 주소를 검색해주세요"
+        title="사업장 주소 검색"
+        description="사업장 주소를 검색해주세요"
         onComplete={(result) => {
           setFormData((prev) => ({
             ...prev,
