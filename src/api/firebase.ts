@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 
 // Your web app's Firebase configuration
@@ -20,7 +20,7 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase Cloud Messaging and get a reference to the service
 // Only initialize messaging if the browser supports it
 let messaging: any = null;
-if (typeof window !== "undefined" && "Notification" in window) {
+if (!Capacitor.isNativePlatform() && typeof window !== "undefined" && "Notification" in window) {
   messaging = getMessaging(app);
 }
 
@@ -31,7 +31,45 @@ export { app, messaging };
  */
 export const onForegroundMessage = (callback: (payload: any) => void) => {
   if (!messaging) return;
-  return onMessage(messaging, callback);
+  return onMessage(messaging, (payload) => {
+    if (payload.data?.subType === 'WINNING') return;
+    callback(payload);
+  });
+};
+
+let nativeTokenRequest: Promise<string | null> | null = null;
+
+const requestNativeToken = async (): Promise<string | null> => {
+  const listeners: PluginListenerHandle[] = [];
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  try {
+    let permStatus = await PushNotifications.checkPermissions();
+    if (permStatus.receive === 'prompt') {
+      permStatus = await PushNotifications.requestPermissions();
+    }
+    if (permStatus.receive !== 'granted') return null;
+
+    let resolveToken: (token: string | null) => void = () => {};
+    const tokenResult = new Promise<string | null>((resolve) => {
+      resolveToken = resolve;
+    });
+    listeners.push(await PushNotifications.addListener('registration', (token) => {
+      resolveToken(token.value);
+    }));
+    listeners.push(await PushNotifications.addListener('registrationError', () => {
+      resolveToken(null);
+    }));
+    timeoutId = setTimeout(() => resolveToken(null), 30000);
+    await PushNotifications.register();
+    return await tokenResult;
+  } catch {
+    console.error("네이티브 푸시 설정 실패");
+    return null;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+    // 토큰 발급에 사용한 구독만 해제하여 다른 알림 수신 구독을 보존합니다.
+    await Promise.allSettled(listeners.map(listener => listener.remove()));
+  }
 };
 
 /**
@@ -40,35 +78,12 @@ export const onForegroundMessage = (callback: (payload: any) => void) => {
  */
 export const requestFirebaseToken = async (): Promise<string | null> => {
   if (Capacitor.isNativePlatform()) {
-    try {
-      let permStatus = await PushNotifications.checkPermissions();
-      if (permStatus.receive === 'prompt') {
-        permStatus = await PushNotifications.requestPermissions();
-      }
-      if (permStatus.receive !== 'granted') {
-        console.log("앱 푸시 권한이 거부되었습니다.");
-        return null;
-      }
-
-      // Add listener to capture token
-      return new Promise(async (resolve) => {
-        await PushNotifications.removeAllListeners();
-        
-        PushNotifications.addListener('registration', (token) => {
-          resolve(token.value);
-        });
-
-        PushNotifications.addListener('registrationError', (error) => {
-          console.error("네이티브 FCM 토큰 등록 에러:", error);
-          resolve(null);
-        });
-
-        await PushNotifications.register();
+    if (!nativeTokenRequest) {
+      nativeTokenRequest = requestNativeToken().finally(() => {
+        nativeTokenRequest = null;
       });
-    } catch (err) {
-      console.error("네이티브 푸시 설정 실패:", err);
-      return null;
     }
+    return nativeTokenRequest;
   }
 
   if (!messaging) {
