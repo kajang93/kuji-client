@@ -15,6 +15,7 @@ type KujiRevealProps = {
 };
 
 type RevealStage = 'ready' | 'tearing' | 'revealed';
+type OpeningBeat = 'sealed' | 'dimming' | 'tension' | 'split' | 'burst';
 const DRAG_THRESHOLD = 132;
 const RANK_TONES: Record<string, { color: string; soft: string; particles: number }> = {
   LAST: { color: '#ffe3a3', soft: '#c9862c', particles: 40 },
@@ -29,6 +30,7 @@ const RANK_TONES: Record<string, { color: string; soft: string; particles: numbe
 const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [stage, setStage] = useState<RevealStage>('ready');
+  const [openingBeat, setOpeningBeat] = useState<OpeningBeat>('sealed');
   const [isAutoMode, setIsAutoMode] = useState(false);
   const [pullProgress, setPullProgress] = useState(0);
   const reducedMotion = useReducedMotion() ?? false;
@@ -52,6 +54,7 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
   const timersRef = useRef(new Map<number, (active: boolean) => void>());
   const pullSegmentRef = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const celebrationRef = useRef<ReturnType<typeof confetti.create> | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourcesRef = useRef(new Set<AudioBufferSourceNode>());
@@ -78,6 +81,13 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
       resolve(false);
     });
     timersRef.current.clear();
+    controls.stop();
+    stopDrawHaptics();
+    celebrationRef.current?.reset();
+    audioSourcesRef.current.forEach(source => {
+      try { source.stop(); } catch { /* 이미 끝난 소리는 다시 중지하지 않는다. */ }
+    });
+    audioSourcesRef.current.clear();
   };
 
   useEffect(() => {
@@ -86,10 +96,6 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
     return () => {
       mountedRef.current = false;
       cancelRun();
-      controls.stop();
-      stopDrawHaptics();
-      audioSourcesRef.current.forEach(source => source.stop());
-      audioSourcesRef.current.clear();
       const context = audioContextRef.current;
       audioContextRef.current = null;
       if (context && context.state !== 'closed') void context.close().catch(() => undefined);
@@ -97,10 +103,34 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
   }, [controls]);
 
   useEffect(() => {
+    const handleVisibility = () => {
+      if (!document.hidden) return;
+      cancelRun();
+      autoRef.current = false;
+      setIsAutoMode(false);
+      if (stageRef.current !== 'revealed') resetTicket(currentIndexRef.current);
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [controls]);
+
+  useEffect(() => {
+    if (!reducedMotion) return;
+    stopDrawHaptics();
+    if (stageRef.current === 'tearing') {
+      cancelRun();
+      autoRef.current = false;
+      setIsAutoMode(false);
+      resetTicket(currentIndexRef.current);
+    }
+  }, [reducedMotion]);
+
+  useEffect(() => {
     if (stage !== 'revealed') return;
     headingRef.current?.focus({ preventScroll: true });
-    if (reducedMotion || !canvasRef.current) return;
+    if (reducedMotion || document.hidden || !canvasRef.current) return;
     const celebration = confetti.create(canvasRef.current, { resize: true, useWorker: false });
+    celebrationRef.current = celebration;
     void celebration({
       particleCount: tone.particles,
       spread: 68,
@@ -112,10 +142,14 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
       scalar: 0.7,
       disableForReducedMotion: true,
     });
-    return () => celebration.reset();
+    return () => {
+      celebration.reset();
+      if (celebrationRef.current === celebration) celebrationRef.current = null;
+    };
   }, [stage, currentIndex, reducedMotion, tone.color, tone.soft, tone.particles]);
 
   const playTearSound = () => {
+    if (document.hidden || reducedMotion) return;
     const now = Date.now();
     if (now - lastTearSoundRef.current < 90) return;
     lastTearSoundRef.current = now;
@@ -163,25 +197,47 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
     pullSegmentRef.current = 0;
     setCurrentIndex(index);
     setStage('ready');
+    setOpeningBeat('sealed');
     setPullProgress(0);
     x.set(0);
-    controls.set({ x: 0, y: 0, opacity: 1 });
+    controls.set({ x: 0, y: 0, opacity: 1, scale: 1 });
   };
 
   const openTicket = async (index: number, run: number): Promise<boolean> => {
-    if (!isActive(run) || stageRef.current !== 'ready') return false;
+    if (!isActive(run) || document.hidden || stageRef.current !== 'ready') return false;
     stageRef.current = 'tearing';
     setStage('tearing');
     setPullProgress(100);
+    setOpeningBeat('dimming');
+    if (!reducedMotion) {
+      playDrawHaptic('select');
+      if (!await pause(180, run)) return false;
+      setOpeningBeat('tension');
+      playDrawHaptic('pull');
+      const pullFrom = Math.max(x.get(), 0);
+      const heldPull = Math.max(pullFrom, 44);
+      void controls.start({
+        x: [pullFrom, heldPull, heldPull - 5, heldPull + 3, heldPull],
+        scale: [1, 1.025, 1.025],
+        transition: { duration: 0.32, ease: 'easeInOut' },
+      });
+      if (!await pause(320, run)) return false;
+    }
+    setOpeningBeat('split');
     playDrawHaptic('open');
     playTearSound();
     void controls.start({
       x: reducedMotion ? 0 : Math.max(window.innerWidth, 480),
       y: reducedMotion ? 0 : -24,
       opacity: 0,
-      transition: { duration: reducedMotion ? 0.12 : 0.44, ease: [0.22, 0.7, 0.25, 1] },
+      scale: 1,
+      transition: { duration: reducedMotion ? 0.12 : 0.28, ease: [0.22, 0.7, 0.25, 1] },
     });
-    if (!await pause(reducedMotion ? 140 : 460, run)) return false;
+    if (!await pause(reducedMotion ? 140 : 280, run)) return false;
+    if (!reducedMotion) {
+      setOpeningBeat('burst');
+      if (!await pause(240, run)) return false;
+    }
     stageRef.current = 'revealed';
     setStage('revealed');
     playDrawHaptic('reveal');
@@ -193,8 +249,6 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
     if (completedRef.current) return;
     completedRef.current = true;
     cancelRun();
-    controls.stop();
-    stopDrawHaptics();
     onComplete(destination);
   };
 
@@ -223,6 +277,7 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
     if (distance >= DRAG_THRESHOLD || (distance >= 48 && info.velocity.x > 700)) {
       void openTicket(currentIndexRef.current, runRef.current);
     } else {
+      stopDrawHaptics();
       setPullProgress(0);
       pullSegmentRef.current = 0;
       void controls.start({ x: 0, y: 0, opacity: 1, transition: reducedMotion ? { duration: 0.1 } : { type: 'spring', stiffness: 420, damping: 28 } });
@@ -236,17 +291,25 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
 
   const handleNext = () => {
     if (autoRef.current || stageRef.current !== 'revealed') return;
-    playDrawHaptic('select');
     if (currentIndexRef.current < prizes.length - 1) {
       cancelRun();
       resetTicket(currentIndexRef.current + 1);
+      playDrawHaptic('select');
     } else {
       finish('detail');
     }
   };
 
+  const handleStopAutoOpen = () => {
+    if (!autoRef.current) return;
+    autoRef.current = false;
+    setIsAutoMode(false);
+    cancelRun();
+    if (stageRef.current !== 'revealed') resetTicket(currentIndexRef.current);
+  };
+
   const handleAutoOpen = async () => {
-    if (autoRef.current || stageRef.current !== 'ready' || completedRef.current) return;
+    if (document.hidden || autoRef.current || stageRef.current !== 'ready' || completedRef.current) return;
     autoRef.current = true;
     setIsAutoMode(true);
     playDrawHaptic('select');
@@ -271,6 +334,7 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
     <section aria-label="쿠지 개봉" className="relative isolate min-h-full w-full overflow-x-clip bg-[#080d19] text-white">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_28%,#252348_0%,transparent_62%)]" />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-[0.035]" style={{ backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 2px,#fff 3px,transparent 4px)', backgroundSize: '100% 4px' }} />
+      <motion.div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10 bg-[#02040b]" initial={false} animate={{ opacity: stage === 'tearing' && !reducedMotion ? 0.78 : 0 }} transition={{ duration: 0.18 }} />
       <canvas ref={canvasRef} aria-hidden="true" className="pointer-events-none absolute inset-0 z-30 h-full w-full" />
 
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 sm:px-8">
@@ -295,27 +359,36 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
           </div>
         )}
 
-        <main className="flex flex-1 flex-col justify-center py-8 sm:py-10">
+        <main className="relative z-20 flex flex-1 flex-col justify-center py-8 sm:py-10">
           <AnimatePresence mode="wait" initial={false}>
             {stage !== 'revealed' ? (
               <motion.div key={'ticket-' + currentIndex} initial={{ opacity: 0, y: reducedMotion ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reducedMotion ? 0.12 : 0.22 }}>
-                <div className="mb-9 text-center">
+                <motion.div className="mb-9 text-center" animate={{ opacity: stage === 'tearing' && !reducedMotion ? 0.25 : 1 }} transition={{ duration: 0.18 }}>
                   <p className="mb-3 text-[10px] font-medium tracking-[0.24em] text-amber-200/65">A LITTLE MOMENT OF LUCK</p>
                   <h1 className="text-[28px] font-semibold leading-[1.35] tracking-tight sm:text-[34px]">어떤 행운이<br /><span className="text-amber-100">기다리고 있을까요?</span></h1>
                   <p className="mt-3 text-sm text-slate-400">한 장의 설렘을, 내 손으로.</p>
-                </div>
+                </motion.div>
 
                 <div className="relative mx-auto w-full max-w-[390px]" style={{ perspective: '1100px' }}>
-                  <div aria-hidden="true" className="pointer-events-none absolute -inset-6 rounded-full bg-amber-100/[0.05] blur-3xl" />
+                  <motion.div aria-hidden="true" className="pointer-events-none absolute -inset-6 rounded-full bg-amber-100/15 blur-3xl" animate={{ opacity: openingBeat === 'tension' ? 0.8 : 0.3, scale: openingBeat === 'tension' && !reducedMotion ? 1.15 : 1 }} transition={{ duration: 0.3 }} />
                   <div className="relative aspect-[1.72] w-full rounded-[18px] shadow-[0_26px_65px_-20px_#000] sm:rounded-[22px]">
-                    <div aria-hidden="true" className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-[18px] border border-amber-100/30 bg-[#eee9dc] sm:rounded-[22px]">
-                      <div className="absolute inset-0 opacity-15" style={{ backgroundImage: 'repeating-linear-gradient(25deg,#a59a83 0px,transparent 1px,transparent 4px)' }} />
-                      <div className="absolute inset-3 rounded-xl border border-amber-900/15" />
-                      <div className="flex flex-col items-center text-[#735936]">
-                        <span className="text-[10px] font-semibold tracking-[0.3em]">YOUR LUCKY PRIZE</span>
-                        <span className="mt-1 font-serif text-6xl font-bold">{currentPrize.rank}<span className="ml-1 text-xl">상</span></span>
+                    <div aria-hidden="true" className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-[18px] border border-amber-100/20 bg-[#191b29] sm:rounded-[22px]">
+                      <div className="absolute inset-0 opacity-15" style={{ backgroundImage: 'repeating-linear-gradient(25deg,#b8a880 0px,transparent 1px,transparent 4px)' }} />
+                      <div className="absolute inset-3 rounded-xl border border-amber-100/10" />
+                      <div className="flex flex-col items-center gap-3 text-amber-100/60">
+                        <Sparkles className="h-8 w-8" />
+                        <span className="text-[10px] font-semibold tracking-[0.3em]">YOUR LUCK AWAITS</span>
                       </div>
                     </div>
+                    {!reducedMotion && (openingBeat === 'split' || openingBeat === 'burst') && (
+                      <motion.div key={'seal-' + currentIndex} aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 overflow-visible">
+                        <motion.div className="absolute inset-y-2 left-[19.5%] w-1 bg-amber-50 shadow-[0_0_18px_5px_#ffe9b0]" initial={{ scaleY: 0, opacity: 0 }} animate={{ scaleY: [0, 1, 1], opacity: [0, 1, 0] }} transition={{ duration: 0.32, times: [0, 0.35, 1] }} />
+                        {[-1, 1].map(direction => <motion.div key={direction} className="absolute left-[19.5%] top-1/2 h-[3px] w-14 bg-amber-100/80" initial={{ x: 0, y: 0, rotate: direction * 25, opacity: 1 }} animate={{ x: direction * 68, y: direction * 52, rotate: direction * 75, opacity: 0 }} transition={{ duration: 0.38 }} />)}
+                      </motion.div>
+                    )}
+                    {!reducedMotion && openingBeat === 'burst' && (
+                      <motion.div key={'burst-' + currentIndex} aria-hidden="true" className="pointer-events-none absolute -inset-24 z-30 rounded-full" style={{ background: 'radial-gradient(ellipse,#fff8de 0%,#ffe0a080 22%,#ffd58a20 46%,transparent 68%)' }} initial={{ opacity: 0, scale: 0.35 }} animate={{ opacity: [0, 0.9, 0], scale: [0.35, 1.65, 2] }} transition={{ duration: 0.36, times: [0, 0.5, 1] }} />
+                    )}
 
                     <motion.div
                       role="button"
@@ -380,7 +453,7 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
                     </div>
                     <div className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-400">
                       <Hand aria-hidden="true" className="h-3.5 w-3.5 text-amber-100/70" />
-                      <span>{stage === 'tearing' ? '당신의 행운을 확인하고 있어요' : pullProgress >= 100 ? '지금 손을 놓으면 열려요' : '오른쪽으로 천천히 당겨보세요'}</span>
+                      <span>{stage === 'tearing' ? openingBeat === 'dimming' ? '행운이 열리기 직전, 잠깐의 설렘' : openingBeat === 'tension' ? '봉인을 조금 더 당기고 있어요' : openingBeat === 'split' ? '봉인이 찢어지고 있어요' : '이제, 당신의 행운을 만나요' : pullProgress >= 100 ? '지금 손을 놓으면 열려요' : '오른쪽으로 천천히 당겨보세요'}</span>
                       {stage === 'ready' && <motion.span aria-hidden="true" animate={reducedMotion ? {} : { x: [0, 4, 0] }} transition={{ duration: 1.5, repeat: Infinity }}><ArrowRight className="h-3.5 w-3.5 text-amber-100/70" /></motion.span>}
                     </div>
                   </div>
@@ -415,7 +488,10 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
             <motion.div initial={false} animate={{ width: ((currentIndex + (stage === 'revealed' ? 1 : 0)) / prizes.length) * 100 + '%' }} transition={{ duration: reducedMotion ? 0 : 0.3 }} className="h-full rounded-full bg-amber-100/40" />
           </div>
           {isAutoMode ? (
-            <div role="status" aria-live="polite" className="flex min-h-12 items-center justify-center gap-2 text-sm text-slate-300"><LoaderCircle aria-hidden="true" className={'h-4 w-4 text-amber-200 ' + (reducedMotion ? '' : 'animate-spin')} />{currentIndex + 1} / {prizes.length} · 한 장씩 개봉하고 있어요.</div>
+            <div className="space-y-2">
+              <div role="status" aria-live="polite" className="flex min-h-12 items-center justify-center gap-2 text-sm text-slate-300"><LoaderCircle aria-hidden="true" className={'h-4 w-4 text-amber-200 ' + (reducedMotion ? '' : 'animate-spin')} />{currentIndex + 1} / {prizes.length} · 한 장씩 개봉하고 있어요.</div>
+              <button type="button" onClick={handleStopAutoOpen} className="flex min-h-11 w-full items-center justify-center rounded-xl border border-white/15 text-sm text-slate-300 transition-colors hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200">자동 오픈 멈추기</button>
+            </div>
           ) : stage === 'ready' ? (
             <div className="flex gap-2.5">
               <button type="button" onClick={handleManualOpen} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.045] px-4 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200">바로 뜯기<ArrowUpRight aria-hidden="true" className="h-4 w-4 text-slate-400" /></button>
