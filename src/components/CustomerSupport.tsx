@@ -11,8 +11,8 @@ type CustomerSupportProps = {
 };
 
 const INQUIRY_CATEGORIES: { label: string; value: InquiryType }[] = [
-  { label: '주문/배송', value: 'SHIPPING' },
-  { label: '상품 문의', value: 'PRODUCT' },
+  { label: '주문/결제/배송', value: 'SHIPPING' },
+  { label: '상품/하자 문의', value: 'PRODUCT' },
   { label: '계정/인증', value: 'ACCOUNT' },
   { label: '기타', value: 'ETC' },
 ];
@@ -97,6 +97,7 @@ export default function CustomerSupport({ onBack }: CustomerSupportProps) {
               <li>• 평일 09:00 ~ 18:00 운영 (주말/공휴일 휴무)</li>
               <li>• 문의 접수 후 1~2 영업일 내 답변 드립니다.</li>
               <li>• 본인 확인을 위해 답변 알림이 발송될 수 있습니다.</li>
+              <li>• 중복 결제, 상품 미제공, 하자 등의 문제는 주문번호와 내용을 함께 문의해 주세요.</li>
             </ul>
           </div>
 

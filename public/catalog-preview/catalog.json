@@ -1,0 +1,33 @@
+{
+  "version": "2026-11-06",
+  "previewOnly": true,
+  "notice": "화면 확인용 미리보기입니다. 실제 판매·재고·배송 상품이 아니며 결제와 추첨은 제공하지 않습니다. 이미지는 새로 생성한 오리지널 콘셉트 일러스트입니다.",
+  "collections": [
+    {
+      "slug": "moonlit-bookshop",
+      "title": "[미리보기] 달빛 서점의 작은 독서가들",
+      "description": "책장 사이에서 만나는 고양이들의 조용한 밤. 같은 오리지널 그림을 활용한 아트 굿즈 구성 예시입니다.",
+      "image": "/catalog-preview/moonlit-bookshop.webp",
+      "examplePrice": 5000,
+      "products": [
+        { "grade": "A", "name": "달빛 서점 아트프린트 · 구성 예시", "quantity": 2 },
+        { "grade": "B", "name": "작은 독서가 엽서 · 구성 예시", "quantity": 8 },
+        { "grade": "C", "name": "달빛 서점 스티커 · 구성 예시", "quantity": 10 },
+        { "grade": "LAST", "name": "라스트상 · 달빛 서점 대형 아트프린트 예시", "quantity": 1 }
+      ]
+    },
+    {
+      "slug": "cloud-garden",
+      "title": "[미리보기] 구름 위 토끼 정원",
+      "description": "구름 온실에서 꽃을 돌보는 토끼들. 같은 오리지널 그림을 활용한 아트 굿즈 구성 예시입니다.",
+      "image": "/catalog-preview/cloud-garden.webp",
+      "examplePrice": 5000,
+      "products": [
+        { "grade": "A", "name": "구름 정원 아트프린트 · 구성 예시", "quantity": 2 },
+        { "grade": "B", "name": "작은 정원사 엽서 · 구성 예시", "quantity": 8 },
+        { "grade": "C", "name": "구름 정원 스티커 · 구성 예시", "quantity": 10 },
+        { "grade": "LAST", "name": "라스트상 · 구름 정원 대형 아트프린트 예시", "quantity": 1 }
+      ]
+    }
+  ]
+}

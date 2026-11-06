@@ -14,12 +14,13 @@ import BusinessScreens from "./components/screens/BusinessScreens";
 import Profile from "./components/Profile";
 import ProfileEdit from "./components/ProfileEdit";
 import PurchaseHistory from "./components/PurchaseHistory";
-import RefundCenter from "./components/RefundCenter";
-import type { RefundTargetType } from "./api/refunds";
 import WinningHistory from "./components/WinningHistory";
 import Wishlist from "./components/Wishlist";
 import Settings from "./components/Settings";
 import CustomerSupport from "./components/CustomerSupport";
+import PolicyContent from "./components/PolicyContent";
+import CatalogPreview from "./components/CatalogPreview";
+import { POLICY_TITLES } from "./constants/policies";
 import PrizeSelection from "./components/PrizeSelection";
 import { useGlobalGestures } from "./hooks/useGlobalGestures";
 import { useRefreshOnPageShow } from "./hooks/useRefreshOnPageShow";
@@ -27,7 +28,7 @@ import Notice from "./components/Notice";
 import Events from "./components/Events";
 import AlertModal from "./components/AlertModal";
 import LiveTicker from "./components/LiveTicker";
-import { Menu } from "./components/icons";
+import { ChevronLeft, Menu } from "./components/icons";
 import { Toaster, toast, toast as sonnerToast } from "sonner";
 import KakaoCallback from "./components/KakaoCallback";
 import NaverCallback from "./components/NaverCallback";
@@ -74,7 +75,6 @@ export default function App() {
   const [kujiStatus, setKujiStatus] = useState<boolean[]>([]);
   const [revealedPrizes, setRevealedPrizes] = useState<Prize[]>([]);
   const [purchaseCount, setPurchaseCount] = useState(1);
-  const [refundInitialType, setRefundInitialType] = useState<RefundTargetType>("DRAW_HISTORY");
   const [pointsToUse, setPointsToUse] = useState(0);
   const [user, setUser] = useState<{
     memberId?: number;
@@ -107,7 +107,9 @@ export default function App() {
   const callbackParams = new URLSearchParams(window.location.search);
   const hasPaymentReturn = callbackParams.has("payment") || callbackParams.has("pointCharge");
   const isAuthCallback = screen === "kakaoCallback" || screen === "naverCallback" || screen === "googleCallback";
-  const showingPaymentReturn = screen === "paymentReturn" || (!isAuthCallback && screen !== "login"
+  const isPublicPolicy = screen === "privacy" || screen === "terms";
+  const isPublicReadOnly = isPublicPolicy || screen === "catalogPreview";
+  const showingPaymentReturn = screen === "paymentReturn" || (!isAuthCallback && !isPublicReadOnly && screen !== "support" && screen !== "login"
     && !(viewingRecoveryHistory && screen === "winning") && (Boolean(pendingPayment) || hasPaymentReturn));
   const pointDrawPending = useRef(false);
   const [returnToScreen, setReturnToScreen] = useState<
@@ -383,7 +385,8 @@ async function handleRefresh() {
     const requestVersion = ++paymentRequestVersion.current;
     const requestAuthVersion = authVersion.current;
     const isCurrent = () => mounted.current && requestVersion === paymentRequestVersion.current
-      && requestAuthVersion === authVersion.current && activePayment.current?.orderId === payment.orderId;
+      && requestAuthVersion === authVersion.current && activePayment.current?.orderId === payment.orderId
+      && !["privacy", "terms", "catalogPreview", "support"].includes(currentScreen.current);
     paymentRequests.current.set(payment.orderId, requestVersion);
     setPaymentRecoveryBusy(true);
     setPaymentRecoveryMessage("이전에 진행한 결제의 결과를 확인하고 있습니다.");
@@ -455,6 +458,7 @@ async function handleRefresh() {
 
   useEffect(() => {
     if (screen === "kakaoCallback" || screen === "naverCallback" || screen === "googleCallback") return;
+    if (screen === "privacy" || screen === "terms" || screen === "catalogPreview" || screen === "support") return;
     if (viewingRecoveryHistory && screen === "winning") return;
     const unopenedOrder = readUnopenedKujiOrder();
     const recovery = activePayment.current || readPaymentRecovery() || (unopenedOrder ? { kind: "kuji" as const, orderId: unopenedOrder } : null);
@@ -492,7 +496,7 @@ async function handleRefresh() {
       }
       handleFetchWinningHistory(formattedUser.type);
 
-      if (preserveScreen || activePayment.current || revealedOrder.current || currentScreen.current === "reveal") return;
+      if (preserveScreen || activePayment.current || revealedOrder.current || ["reveal", "privacy", "terms", "catalogPreview", "support"].includes(currentScreen.current)) return;
       if (formattedUser.type === "business" && formattedUser.isActive === false) {
         setScreen("businessPending");
       } else if (formattedUser.type === 'business' && screen === 'businessPending') {
@@ -507,7 +511,7 @@ async function handleRefresh() {
       // 세션이 무효인데 로그인 전제 화면에 머물러 있으면 빈 화면이 되므로 메인으로 복귀
       setScreen(prev =>
         ([
-          "profile", "profileEdit", "pointCharge", "purchase", "refunds", "winning", "wishlist",
+          "profile", "profileEdit", "pointCharge", "purchase", "winning", "wishlist",
           "businessDashboard", "businessProfile", "businessProducts", "businessRegister",
           "businessShipping", "businessInquiries", "businessPending", "businessProductEdit",
           "adminDashboard", "adminNoticeManagement", "adminEventManagement", "adminInquiryManagement",
@@ -911,7 +915,6 @@ async function handleRefresh() {
     navScreen:
       | "profile"
       | "purchase"
-      | "refunds"
       | "winning"
       | "wishlist"
       | "settings"
@@ -1180,12 +1183,12 @@ async function handleRefresh() {
   return (
     <div className="h-[100dvh] flex flex-col bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-800 overflow-hidden w-full relative">
       {/* 티켓 선택과 결제 복귀와 개봉 중에는 당첨 알림을 숨긴다. */}
-      {!showingPaymentReturn && !pendingPayment && !isAuthCallback && screen !== "login" && screen !== "selection" &&
+      {!showingPaymentReturn && !pendingPayment && !isAuthCallback && !isPublicReadOnly && screen !== "login" && screen !== "selection" &&
         screen !== "reveal" &&
         screen !== "detail" && <LiveTicker />}
 
       {/* Hamburger Menu Button - Fixed position */}
-      {!showingPaymentReturn && screen !== "reveal" && screen !== "login" && screen !== "communityWrite" && screen !== "communityDetail" && (
+      {!showingPaymentReturn && !isPublicReadOnly && screen !== "reveal" && screen !== "login" && screen !== "communityWrite" && screen !== "communityDetail" && (
         <button
           onClick={() => setIsSidebarOpen(true)}
           className="fixed top-12 right-4 z-30 p-3 bg-rose-500 rounded-full shadow-lg hover:bg-rose-600 transition-colors"
@@ -1218,9 +1221,11 @@ async function handleRefresh() {
         {screen === "main" && (
           <MainScreen
             onStart={() => setScreen("list")}
+            onPreview={() => setScreen("catalogPreview")}
             banners={banners}
           />
         )}
+        {screen === "catalogPreview" && <CatalogPreview onBack={() => setScreen("main")} />}
         {screen === "list" && (
           <AnimeList
             collections={animeCollections}
@@ -1291,13 +1296,11 @@ async function handleRefresh() {
         {screen === "pointCharge" && user && (
           <PointCharge
             currentPoints={user.points || 0}
-            onRefund={() => { setRefundInitialType("POINT_CHARGE"); setScreen("refunds"); }}
             onBack={() => setScreen("main")}
           />
         )}
-        {screen === "refunds" && user && <RefundCenter initialTargetType={refundInitialType} onBack={() => setScreen("main")} />}
         {screen === "purchase" && (
-          <PurchaseHistory onBack={() => setScreen("main")} onRefund={() => { setRefundInitialType("DRAW_HISTORY"); setScreen("refunds"); }} />
+          <PurchaseHistory onBack={() => setScreen("main")} />
         )}
         {screen === "winning" && (
           <WinningHistory
@@ -1424,6 +1427,20 @@ async function handleRefresh() {
 
         {screen === "support" && (
           <CustomerSupport onBack={() => setScreen("main")} />
+        )}
+
+        {isPublicPolicy && (screen === "terms" || screen === "privacy") && (
+          <section className="min-h-full bg-slate-950 pb-12 text-slate-100">
+            <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-white/10 bg-slate-950/95 p-5 backdrop-blur">
+              <button type="button" aria-label="홈으로 돌아가기" onClick={() => setScreen("main")} className="rounded-xl bg-white/5 p-2 transition-colors hover:bg-white/10">
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <h1 className="text-xl font-semibold">{POLICY_TITLES[screen]}</h1>
+            </header>
+            <div className="mx-auto max-w-3xl px-5 py-6">
+              <PolicyContent kind={screen} audience="all" />
+            </div>
+          </section>
         )}
 
         {screen === "notice" && (

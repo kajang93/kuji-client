@@ -1,8 +1,5 @@
-// 고객센터 / 관리자 문의 채널 설정
-//
-// ⚠️ 실제 카카오톡 채널 주소로 이 값 하나만 바꾸면 앱 전체(설정·사업자 프로필·승인 대기 화면)에 반영됩니다.
-//    형식: http://pf.kakao.com/_채널ID/chat  (채널 관리자센터 > 채널정보 > 채널 URL 에서 확인)
-export const KAKAO_CHANNEL_URL = "http://pf.kakao.com/_xxxxxxx/chat";
+// 공개 브로셔와 같은 오시쿠지 고객센터 채널을 공통으로 사용한다.
+export const KAKAO_CHANNEL_URL = "https://pf.kakao.com/_sdvGX/chat";
 
 // 카카오톡 채널 문의 열기 (공통 핸들러)
 export const openKakaoChannel = () => {

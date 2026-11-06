@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Ticket, ChevronRight } from './icons';
+import { OperatorDisclosure } from './PolicyContent';
 
 type Banner = {
   id: string;
@@ -18,10 +19,11 @@ type Banner = {
 
 type MainScreenProps = {
   onStart: () => void;
+  onPreview?: () => void;
   banners: Banner[];
 };
 
-export default function MainScreen({ onStart, banners }: MainScreenProps) {
+export default function MainScreen({ onStart, onPreview, banners }: MainScreenProps) {
   const activeBanners = banners.filter(b => b.isActive).sort((a, b) => a.order - b.order);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -43,7 +45,7 @@ export default function MainScreen({ onStart, banners }: MainScreenProps) {
   };
 
   return (
-    <div className="h-full w-full overflow-hidden relative aurora-bg text-white font-sans">
+    <div className="min-h-full w-full overflow-hidden relative aurora-bg text-white font-sans">
       {/* Background Slider */}
       <AnimatePresence mode="wait">
         <motion.div
@@ -64,7 +66,7 @@ export default function MainScreen({ onStart, banners }: MainScreenProps) {
       </AnimatePresence>
 
       {/* Content Layer */}
-      <div className="relative z-20 h-full flex flex-col items-center justify-center px-4 text-center">
+      <div className="relative z-20 min-h-[75dvh] flex flex-col items-center justify-center px-4 py-16 text-center">
         {/* Animated Title */}
         <motion.div
           key={`text-${currentIndex}`}
@@ -111,6 +113,7 @@ export default function MainScreen({ onStart, banners }: MainScreenProps) {
         </motion.div>
 
         <p className="mt-5 text-sm text-slate-300">회원가입 없이 상품과 남은 수량을 볼 수 있어요.</p>
+        {onPreview && <button onClick={onPreview} className="mt-4 rounded-full border border-cyan-200/25 bg-cyan-200/10 px-5 py-2 text-sm text-cyan-100 hover:bg-cyan-200/20">오리지널 상품 미리보기</button>}
         <a href="/brochure.html" className="mt-4 text-xs text-slate-400 underline underline-offset-4 transition-colors hover:text-cyan-300">
           판매자 입점 안내
         </a>
@@ -130,9 +133,13 @@ export default function MainScreen({ onStart, banners }: MainScreenProps) {
           </div>
         )}
       </div>
-
-
-
+      <footer className="relative z-20 border-t border-white/10 bg-black/40 px-5 py-6 text-center">
+        <div className="mx-auto max-w-3xl"><OperatorDisclosure /></div>
+        <nav aria-label="서비스 정책" className="mt-4 flex justify-center gap-5 text-xs text-slate-300">
+          <a href="/terms" className="underline underline-offset-4 hover:text-white">이용약관</a>
+          <a href="/privacy" className="font-semibold underline underline-offset-4 hover:text-white">개인정보 처리방침</a>
+        </nav>
+      </footer>
     </div>
   );
 }

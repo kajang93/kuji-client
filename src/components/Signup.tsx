@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 import { signup, checkEmail, sendSms, verifySignupSms } from '../api/auth';
 import { compressImageFile, validatePasswordRules } from '../api/client';
 import AddressSearchModal from './AddressSearchModal';
+import PolicyContent from './PolicyContent';
+import { POLICY_TITLES, type PolicyKind } from '../constants/policies';
 
 type SignupProps = {
   userType: 'customer' | 'business';
@@ -56,7 +58,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [agreeMarketing, setAgreeMarketing] = useState(false);
   const [passwordError, setPasswordError] = useState('');
-  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [openPolicy, setOpenPolicy] = useState<PolicyKind | null>(null);
   const [showShippingAddressModal, setShowShippingAddressModal] = useState(false);
   const [passwordChecked, setPasswordChecked] = useState(false);
 
@@ -860,9 +862,9 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
           {/* Individual Terms */}
           <div className="space-y-3 px-2">
             {[
-              { id: 'terms', label: '이용약관 동의', isRequired: true, state: agreeTerms, setter: setAgreeTerms },
-              { id: 'privacy', label: '개인정보 수집 및 이용 동의', isRequired: true, state: agreePrivacy, setter: setAgreePrivacy },
-              { id: 'marketing', label: '마케팅 정보 수신 동의', isRequired: false, state: agreeMarketing, setter: setAgreeMarketing }
+              { id: 'terms' as const, label: '이용약관 동의', isRequired: true, state: agreeTerms, setter: setAgreeTerms },
+              { id: 'privacy' as const, label: '개인정보 수집 및 이용 동의', isRequired: true, state: agreePrivacy, setter: setAgreePrivacy },
+              { id: 'marketing' as const, label: '마케팅 정보 수신 동의', isRequired: false, state: agreeMarketing, setter: setAgreeMarketing }
             ].map((item) => (
               <div key={item.id} className="flex items-center justify-between">
                 <div 
@@ -880,7 +882,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setShowTermsModal(true)}
+                  onClick={() => setOpenPolicy(item.id)}
                   className="text-white/40 text-xs underline hover:text-white/60"
                 >
                   전문 보기
@@ -906,89 +908,40 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
 
       {/* Terms Modal */}
       <AnimatePresence>
-        {showTermsModal && (
+        {openPolicy && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowTermsModal(false)}
+            onClick={() => setOpenPolicy(null)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gradient-to-br from-purple-900 to-blue-900 rounded-3xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col border-2 border-cyan-400/50"
+              role="dialog"
+              aria-modal="true"
+              aria-label={POLICY_TITLES[openPolicy]}
+              className="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-3xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col border-2 border-cyan-400/50"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-white text-xl">이용약관 및 개인정보 처리방침</h2>
+                <h2 className="text-white text-xl">{POLICY_TITLES[openPolicy]}</h2>
                 <button
-                  onClick={() => setShowTermsModal(false)}
+                  onClick={() => setOpenPolicy(null)}
                   className="p-2 bg-pink-500 rounded-full hover:bg-pink-600 transition-colors"
                 >
                   <X className="w-5 h-5 text-white" />
                 </button>
               </div>
               
-              <div className="flex-1 overflow-y-auto bg-white/10 rounded-2xl p-6 space-y-4 text-white/90 text-sm">
-                <section>
-                  <h3 className="font-semibold text-yellow-400 mb-2">제1조 (목적)</h3>
-                  <p>본 약관은 일본 오시쿠지 서비스(이하 "서비스")의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
-                </section>
-
-                <section>
-                  <h3 className="font-semibold text-yellow-400 mb-2">제2조 (서비스의 제공)</h3>
-                  <p>회사는 다음과 같은 서비스를 제공합니다:</p>
-                  <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
-                    <li>일본 애니메이션 관련 쿠지 복권 판매</li>
-                    <li>당첨 결과 확인 및 배송 서비스</li>
-                    <li>상품 구매 내역 및 당첨 내역 관리</li>
-                    <li>찜 목록 및 알림 서비스</li>
-                  </ul>
-                </section>
-
-                <section>
-                  <h3 className="font-semibold text-yellow-400 mb-2">제3조 (개인정보의 수집 및 이용)</h3>
-                  <p>회사는 다음의 목적으로 개인정보를 수집 및 이용합니다:</p>
-                  <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
-                    <li>회원가입 및 본인 확인</li>
-                    <li>상품 배송 및 고객 서비스 제공</li>
-                    <li>서비스 이용 통계 및 분석</li>
-                    <li>마케팅 및 광고 활용 (선택 동의 시)</li>
-                  </ul>
-                </section>
-
-                <section>
-                  <h3 className="font-semibold text-yellow-400 mb-2">제4조 (회원의 의무)</h3>
-                  <p>회원은 다음 행위를 하여서는 안 됩니다:</p>
-                  <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
-                    <li>타인의 정보를 도용하는 행위</li>
-                    <li>서비스의 정상적인 운영을 방해하는 행위</li>
-                    <li>불법적인 목적으로 서비스를 이용하는 행위</li>
-                  </ul>
-                </section>
-
-                <section>
-                  <h3 className="font-semibold text-yellow-400 mb-2">제5조 (환불 및 교환)</h3>
-                  <p>쿠지 복권의 특성상 구매 후 환불 및 교환이 불가능합니다. 단, 상품 하자 또는 배송 오류가 있는 경우 교환이 가능합니다.</p>
-                </section>
-
-                <section>
-                  <h3 className="font-semibold text-yellow-400 mb-2">제6조 (면책사항)</h3>
-                  <p>회사는 천재지변, 불가항력 또는 이에 준하는 사유로 서비스를 제공할 수 없는 경우 책임을 면합니다.</p>
-                </section>
-
-                <section>
-                  <h3 className="font-semibold text-yellow-400 mb-2">개인정보 처리방침</h3>
-                  <p className="mb-2">회사는 개인정보보호법에 따라 이용자의 개인정보를 보호하고 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보 처리방침을 수립·공개합니다.</p>
-                  <p className="text-white/70">수집하는 개인정보 항목: 이메일, 휴대폰번호, 배송주소, 결제정보</p>
-                  <p className="text-white/70 mt-1">보유 및 이용기간: 회원 탈퇴 시까지 (단, 관계 법령에 따라 보존할 필요가 있는 경우 해당 기간 동안 보관)</p>
-                </section>
+              <div className="flex-1 overflow-y-auto rounded-2xl bg-white/5 p-4 sm:p-6">
+                <PolicyContent kind={openPolicy} audience={userType} />
               </div>
 
               <button
-                onClick={() => setShowTermsModal(false)}
+                onClick={() => setOpenPolicy(null)}
                 className="mt-4 flex items-center justify-center w-full py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-xl hover:from-yellow-300 hover:to-yellow-400 transition-all"
               >
                 닫기
