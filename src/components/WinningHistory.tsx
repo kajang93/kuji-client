@@ -5,6 +5,7 @@ import type { WinningItem } from '@/shared-types';
 import { useState } from 'react';
 import DeliveryTracking from './DeliveryTracking';
 import AddressSearchModal from './AddressSearchModal';
+import { isLastPrize } from '../utils/kujiMappers';
 
 // Type Migration: WinningHistory updated.
 
@@ -292,6 +293,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                       <div className="p-4 flex items-center gap-4">
                          {/* Rank Badge - Unified Style */}
                          <div className={`w-12 h-12 rounded-lg bg-gradient-to-br shadow-md flex flex-col items-center justify-center flex-shrink-0 border border-white/20 ${
+                            isLastPrize(winning.rank) ? 'from-amber-200 to-yellow-600' :
                             winning.rank === 'A' ? 'from-yellow-400 to-orange-600' :
                             winning.rank === 'B' ? 'from-blue-400 to-indigo-600' :
                             winning.rank === 'C' ? 'from-orange-400 to-red-600' :
@@ -300,8 +302,8 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                             winning.rank === 'F' ? 'from-pink-400 to-rose-700' :
                             'from-gray-400 to-slate-700'
                          }`}>
-                           <span className="text-white font-black text-xl leading-none drop-shadow-sm">{winning.rank}</span>
-                           <span className="text-white/90 text-[9px] font-bold -mt-0.5">상</span>
+                           <span className={`${isLastPrize(winning.rank) ? 'text-slate-950 text-xs' : 'text-white text-xl'} font-black leading-none drop-shadow-sm`}>{isLastPrize(winning.rank) ? '라스트상' : winning.rank}</span>
+                           <span className={`${isLastPrize(winning.rank) ? 'text-slate-900/80' : 'text-white/90'} text-[9px] font-bold -mt-0.5`}>{isLastPrize(winning.rank) ? '추가 지급' : '상'}</span>
                          </div>
 
                         <div className="flex-1 min-w-0">
@@ -405,6 +407,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                       <div className="p-4 flex items-center gap-4">
                          {/* Rank Badge - Unified Style */}
                          <div className={`w-12 h-12 rounded-lg bg-gradient-to-br shadow-md flex flex-col items-center justify-center flex-shrink-0 border border-white/20 ${
+                            isLastPrize(winning.rank) ? 'from-amber-200 to-yellow-600' :
                             winning.rank === 'A' ? 'from-yellow-400 to-orange-600' :
                             winning.rank === 'B' ? 'from-blue-400 to-indigo-600' :
                             winning.rank === 'C' ? 'from-orange-400 to-red-600' :
@@ -413,8 +416,8 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                             winning.rank === 'F' ? 'from-pink-400 to-rose-700' :
                             'from-gray-400 to-slate-700'
                          }`}>
-                           <span className="text-white font-black text-xl leading-none drop-shadow-sm">{winning.rank}</span>
-                           <span className="text-white/90 text-[9px] font-bold -mt-0.5">상</span>
+                           <span className={`${isLastPrize(winning.rank) ? 'text-slate-950 text-xs' : 'text-white text-xl'} font-black leading-none drop-shadow-sm`}>{isLastPrize(winning.rank) ? '라스트상' : winning.rank}</span>
+                           <span className={`${isLastPrize(winning.rank) ? 'text-slate-900/80' : 'text-white/90'} text-[9px] font-bold -mt-0.5`}>{isLastPrize(winning.rank) ? '추가 지급' : '상'}</span>
                          </div>
 
                         <div className="flex-1 min-w-0 pt-1">
@@ -729,6 +732,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                       {/* Rank Icon (Square Style) */}
                       <div className="relative mb-6 mt-2">
                         <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br shadow-xl flex flex-col items-center justify-center border-2 border-white/30 mx-auto ${
+                             isLastPrize(certificatePopup.rank) ? 'from-amber-200 to-yellow-600' :
                              certificatePopup.rank === 'A' ? 'from-yellow-400 to-orange-600' :
                              certificatePopup.rank === 'B' ? 'from-blue-400 to-indigo-600' :
                              certificatePopup.rank === 'C' ? 'from-orange-400 to-red-600' :
@@ -737,8 +741,8 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                              certificatePopup.rank === 'F' ? 'from-pink-400 to-rose-700' :
                              'from-gray-400 to-slate-700'
                           }`}>
-                            <span className="text-white font-black text-5xl leading-none drop-shadow-md">{certificatePopup.rank}</span>
-                            <span className="text-white/90 text-sm font-bold mt-1">상</span>
+                            <span className={`${isLastPrize(certificatePopup.rank) ? 'text-slate-950 text-xl' : 'text-white text-5xl'} font-black leading-none drop-shadow-md`}>{isLastPrize(certificatePopup.rank) ? '라스트상' : certificatePopup.rank}</span>
+                            <span className={`${isLastPrize(certificatePopup.rank) ? 'text-slate-900/80' : 'text-white/90'} text-sm font-bold mt-1`}>{isLastPrize(certificatePopup.rank) ? '추가 지급' : '상'}</span>
                         </div>
                       </div>
                       

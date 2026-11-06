@@ -192,22 +192,23 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                       <div className="grid grid-cols-4 gap-2">
                         {rankPrizes.map((prize) => {
                           const isRemaining = prize.remainingCount > 0;
+                          const showPrizeImage = isRemaining || rank === 'LAST';
 
                           return (
                           <motion.button
-                            whileHover={isRemaining ? { scale: 1.1, zIndex: 10 } : {}}
-                            whileTap={isRemaining ? { scale: 0.95 } : {}}
+                            whileHover={showPrizeImage ? { scale: 1.1, zIndex: 10 } : {}}
+                            whileTap={showPrizeImage ? { scale: 0.95 } : {}}
                             key={prize.id}
-                            onClick={() => openImagePopup([prize.image], 0, `${rank}상 - ${prize.name}`)}
+                            onClick={() => openImagePopup([prize.image], 0, `${rank === 'LAST' ? '라스트상' : `${rank}상`} - ${prize.name}`)}
                             className={`
                               aspect-square rounded-lg border flex items-center justify-center relative overflow-hidden transition-all
-                              ${isRemaining
+                              ${showPrizeImage
                                 ? 'border-white/20 shadow-sm cursor-pointer hover:shadow-md hover:border-white/50'
                                 : 'bg-slate-900/80 border-white/5 opacity-20 cursor-default'}
                             `}
                           >
                             {/* Product Image Only - No Badge Inside */}
-                            <div className={`w-full h-full ${!isRemaining ? 'grayscale opacity-20' : ''}`}>
+                            <div className={`w-full h-full ${!showPrizeImage ? 'grayscale opacity-20' : ''}`}>
                                <ImageWithFallback
                                  src={prize.image}
                                  alt={prize.name}
@@ -218,11 +219,11 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                             </div>
 
                             <div className="absolute bottom-0 left-0 right-0 bg-black/65 px-1 py-0.5 text-[10px] text-white font-semibold leading-none">
-                              {prize.remainingCount}/{prize.totalCount}
+                              {rank === 'LAST' && !isRemaining ? '라스트상 지급 완료' : `${prize.remainingCount}/${prize.totalCount}`}
                             </div>
 
                             {/* Sold Out Overlay */}
-                            {!isRemaining && (
+                            {!showPrizeImage && (
                               <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                                 <div className="w-full h-px bg-white/30 rotate-45 absolute" />
                                 <div className="w-full h-px bg-white/30 -rotate-45 absolute" />
