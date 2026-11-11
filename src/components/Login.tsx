@@ -6,6 +6,7 @@ import { login, fetchMyProfile, findId, sendSms, verifySms, resetPasswordDirect 
 import { validatePasswordRules } from '../api/client';
 import Signup from './Signup';
 import { Capacitor } from '@capacitor/core';
+import { trackFunnelEvent } from '../utils/funnelAnalytics';
 
 // Auth Migration: Login.tsx updated.
 
@@ -63,6 +64,10 @@ export default function Login({ onLogin, onBack }: LoginProps) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    trackFunnelEvent('AUTH_VIEW', { audience: activeTab, method: 'none' });
+  }, [activeTab]);
 
   // Refs for input fields
   const customerPwRef = useRef<HTMLInputElement>(null);

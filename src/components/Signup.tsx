@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+// 가입 입력과 휴대폰 인증의 유효시간을 안내하고 검증된 정보로 가입을 요청한다.
+import { useState, useEffect, useRef, type FC } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Check, Upload, X } from './icons';
 import { toast } from 'sonner';
@@ -7,6 +8,7 @@ import { compressImageFile, validatePasswordRules } from '../api/client';
 import AddressSearchModal from './AddressSearchModal';
 import PolicyContent from './PolicyContent';
 import { POLICY_TITLES, type PolicyKind } from '../constants/policies';
+import { trackFunnelEvent } from '../utils/funnelAnalytics';
 
 type SignupProps = {
   userType: 'customer' | 'business';
@@ -14,8 +16,9 @@ type SignupProps = {
   onComplete: (type: 'registered' | 'requested') => void;
 };
 
-export default function Signup({ userType, onBack, onComplete }: SignupProps) {
+const Signup: FC<SignupProps> = ({ userType, onBack, onComplete }) => {
   const submittingRef = useRef(false);
+  const signupStarted = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const phoneRequestVersion = useRef(0);
   const sendingSmsRef = useRef(false);
@@ -33,9 +36,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
     passwordConfirm: '',
     name: '',
     nickname: '',
-    emailId: '',
-    emailDomain: 'naver.com',
-    customDomain: '',
+    email: '',
     phone: '',
     phoneVerified: false,
     verificationCode: '',
@@ -57,27 +58,52 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [agreeMarketing, setAgreeMarketing] = useState(false);
-  const [passwordError, setPasswordError] = useState('');
+  const passwordError = formData.password ? validatePasswordRules(formData.password) || '' : '';
   const [openPolicy, setOpenPolicy] = useState<PolicyKind | null>(null);
   const [showShippingAddressModal, setShowShippingAddressModal] = useState(false);
-  const [passwordChecked, setPasswordChecked] = useState(false);
+  const [checkedEmail, setCheckedEmail] = useState('');
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const emailRequestVersion = useRef(0);
+  const pendingEmailRequest = useRef<number | null>(null);
+  const mounted = useRef(false);
+  const [now, setNow] = useState(Date.now);
+  const [resendAvailableAt, setResendAvailableAt] = useState(0);
+  const [codeExpiresAt, setCodeExpiresAt] = useState(0);
+  const resendSeconds = Math.max(0, Math.ceil((resendAvailableAt - now) / 1000));
+  const codeSeconds = Math.max(0, Math.ceil((codeExpiresAt - now) / 1000));
+  const proofSeconds = Math.max(0, Math.ceil(((phoneVerification?.expiresAt || 0) - now) / 1000));
+  const clockLabel = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
   useEffect(() => {
+    mounted.current = true;
     window.scrollTo(0, 0);
+    trackFunnelEvent('SIGNUP_VIEW', { audience: userType, method: 'email' });
+    return () => {
+      mounted.current = false;
+      phoneRequestVersion.current += 1;
+      emailRequestVersion.current += 1;
+    };
   }, []);
 
-  const emailDomains = [
-    'naver.com',
-    'gmail.com',
-    'hanmail.net',
-    'kakao.com',
-    'daum.net',
-    'hotmail.com',
-    'yahoo.co.kr',
-    '직접입력',
-  ];
+  useEffect(() => {
+    if (!resendAvailableAt && !codeExpiresAt && !phoneVerification) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [resendAvailableAt, codeExpiresAt, phoneVerification]);
+
+  useEffect(() => {
+    if (!phoneVerification || phoneVerification.expiresAt > now) return;
+    setPhoneVerification(null);
+    setPhoneVerificationSent(false);
+    setCodeExpiresAt(0);
+    setFormData(previous => ({ ...previous, phoneVerified: false, verificationCode: '' }));
+  }, [now, phoneVerification]);
 
   const handleChange = (field: string, value: string) => {
+    if (!signupStarted.current) {
+      signupStarted.current = true;
+      trackFunnelEvent('SIGNUP_START', { audience: userType, method: 'email' });
+    }
     // Auto-format phone number with hyphens
     if (field === 'phone') {
       const cleaned = value.replace(/[^0-9]/g, '');
@@ -93,13 +119,18 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
         phoneRequestVersion.current += 1;
         setPhoneVerification(null);
         setPhoneVerificationSent(false);
+        setCodeExpiresAt(0);
         setFormData(previous => ({ ...previous, phone: formatted, phoneVerified: false, verificationCode: '' }));
       }
       return;
     }
     
     setFormData({ ...formData, [field]: value });
-    if (field === 'emailId' || field === 'emailDomain' || field === 'customDomain') {
+    if (field === 'email') {
+      emailRequestVersion.current += 1;
+      pendingEmailRequest.current = null;
+      setIsCheckingEmail(false);
+      setCheckedEmail('');
       setEmailChecked(false);
       setEmailAvailable(false);
     }
@@ -107,56 +138,33 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       setBusinessNumberChecked(false);
       setBusinessNumberValid(false);
     }
-    if (field === 'password') {
-      validatePassword(value);
-    }
-  };
-
-  const validatePassword = (password: string) => {
-    setPasswordChecked(false);
-    
-    const errorMsg = validatePasswordRules(password);
-    if (errorMsg) {
-      setPasswordError(errorMsg);
-      return false;
-    }
-    
-    setPasswordError('');
-    return true;
-  };
-
-  const handlePasswordCheck = () => {
-    const isValid = validatePassword(formData.password);
-    if (isValid) {
-      setPasswordChecked(true);
-      toast.success('사용 가능한 비밀번호입니다.');
-    } else if (formData.password.length === 0) {
-      toast.error('비밀번호를 입력해주세요.');
-    } else {
-      toast.error(passwordError || '비밀번호 형식을 확인해주세요.');
-    }
   };
 
   const handleEmailCheck = async () => {
-    const email = formData.emailDomain === '직접입력' 
-      ? `${formData.emailId}@${formData.customDomain}`
-      : `${formData.emailId}@${formData.emailDomain}`;
-
-    if (formData.emailId.length >= 2) {
-      try {
-        const isAvailable = await checkEmail(email);
-        setEmailAvailable(isAvailable);
-        setEmailChecked(true);
-        if (isAvailable) {
-          toast.success('사용 가능한 이메일입니다.');
-        } else {
-          toast.error('이미 사용중인 이메일입니다.');
-        }
-      } catch (error) {
-        toast.error('이메일 중복 확인에 실패했습니다.');
+    const email = formData.email.trim();
+    if (!/^[^\s@]+@[^\s@]+$/.test(email)) {
+      toast.error('이메일 주소를 확인해 주세요.');
+      return;
+    }
+    if (pendingEmailRequest.current !== null) return;
+    const version = ++emailRequestVersion.current;
+    pendingEmailRequest.current = version;
+    setIsCheckingEmail(true);
+    try {
+      const isAvailable = await checkEmail(email);
+      if (!mounted.current || emailRequestVersion.current !== version) return;
+      setEmailAvailable(isAvailable);
+      setEmailChecked(true);
+      setCheckedEmail(email);
+      if (isAvailable) toast.success('사용 가능한 이메일입니다.');
+      else toast.error('이미 사용중인 이메일입니다.');
+    } catch {
+      if (mounted.current && emailRequestVersion.current === version) toast.error('이메일 중복 확인에 실패했습니다.');
+    } finally {
+      if (pendingEmailRequest.current === version) {
+        pendingEmailRequest.current = null;
+        if (mounted.current) setIsCheckingEmail(false);
       }
-    } else {
-      toast.error('이메일 주소를 입력해주세요.');
     }
   };
 
@@ -192,7 +200,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
   };
 
   const handleSendVerification = async () => {
-    if (sendingSmsRef.current || verifyingPhoneRef.current) return;
+    if (sendingSmsRef.current || verifyingPhoneRef.current || Date.now() < resendAvailableAt) return;
     const phone = formData.phone.replace(/[^0-9]/g, '');
     if (!/^01[016789][0-9]{7,8}$/.test(phone)) {
       toast.error('올바른 휴대폰 번호를 입력해 주세요.');
@@ -206,38 +214,49 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
     setFormData(previous => ({ ...previous, phoneVerified: false, verificationCode: '' }));
     try {
       await sendSms(phone);
-      if (phoneRequestVersion.current !== version) return;
+      if (!mounted.current || phoneRequestVersion.current !== version) return;
+      const acceptedAt = Date.now();
+      setNow(acceptedAt);
+      setResendAvailableAt(acceptedAt + 60_000);
+      setCodeExpiresAt(acceptedAt + 180_000);
       setPhoneVerificationSent(true);
+      trackFunnelEvent('SMS_SEND_ACCEPTED', { audience: userType, method: 'email' });
       toast.success('인증번호가 전송되었습니다.');
     } catch (error: any) {
-      if (phoneRequestVersion.current === version) toast.error(error.message || '인증번호 전송에 실패했습니다.');
+      if (mounted.current && phoneRequestVersion.current === version) toast.error(error.message || '인증번호 전송에 실패했습니다.');
     } finally {
       sendingSmsRef.current = false;
-      setIsSendingVerification(false);
+      if (mounted.current) setIsSendingVerification(false);
     }
   };
 
   const handleVerifyPhone = async () => {
     if (verifyingPhoneRef.current || sendingSmsRef.current || formData.verificationCode.length !== 6) return;
+    if (!phoneVerificationSent || !codeExpiresAt || Date.now() >= codeExpiresAt) {
+      toast.error('인증번호 입력 시간이 만료되었습니다. 다시 전송해 주세요.');
+      return;
+    }
     verifyingPhoneRef.current = true;
     setIsVerifyingPhone(true);
     const version = phoneRequestVersion.current;
     const phone = formData.phone.replace(/[^0-9]/g, '');
     try {
       const proof = await verifySignupSms(phone, formData.verificationCode);
-      if (phoneRequestVersion.current !== version) return;
+      if (!mounted.current || phoneRequestVersion.current !== version) return;
       setPhoneVerification({phone, token: proof.verificationToken, expiresAt: Date.parse(proof.expiresAt)});
+      setNow(Date.now());
       setFormData(previous => ({ ...previous, phoneVerified: true }));
+      trackFunnelEvent('PHONE_VERIFIED', { audience: userType, method: 'email' });
       toast.success('휴대폰 인증이 완료되었습니다. 10분 안에 가입해 주세요.');
     } catch (error: any) {
-      if (phoneRequestVersion.current === version) {
+      if (mounted.current && phoneRequestVersion.current === version) {
         setPhoneVerification(null);
         setFormData(previous => ({ ...previous, phoneVerified: false }));
         toast.error(error.message || '인증번호 확인에 실패했습니다.');
       }
     } finally {
       verifyingPhoneRef.current = false;
-      setIsVerifyingPhone(false);
+      if (mounted.current) setIsVerifyingPhone(false);
     }
   };
 
@@ -266,63 +285,53 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (submittingRef.current) return;
+    const reject = (message: string) => {
+      trackFunnelEvent('VALIDATION_FAILED', { audience: userType, method: 'email' });
+      toast.error(message);
+    };
 
     if (!agreeTerms || !agreePrivacy) {
-      toast.error('필수 이용약관에 동의해주세요.');
+      reject('필수 이용약관에 동의해주세요.');
       return;
     }
 
-    if (!emailChecked || !emailAvailable) {
-      toast.error('이메일 중복확인을 완료해주세요.');
+    if (!emailChecked || !emailAvailable || checkedEmail !== formData.email.trim()) {
+      reject('이메일 중복확인을 완료해주세요.');
       return;
     }
 
     if (userType === 'business') {
       if (!businessNumberChecked || !businessNumberValid) {
-        toast.error('사업자번호 확인을 완료해주세요.');
+        reject('사업자번호 확인을 완료해주세요.');
         return;
       }
     }
 
-    if (!passwordChecked) {
-      toast.error('비밀번호 확인을 완료해주세요.');
+    if (!formData.password || passwordError) {
+      reject('비밀번호 형식을 확인해주세요.');
       return;
     }
-
-    if (passwordError) {
-      toast.error('비밀번호 형식을 확인해주세요.');
-      return;
-    }
-
     if (formData.password !== formData.passwordConfirm) {
-      toast.error('비밀번호가 일치하지 않습니다.');
+      reject('비밀번호가 일치하지 않습니다.');
       return;
     }
-
-    const email = formData.emailDomain === '직접입력' 
-      ? `${formData.emailId}@${formData.customDomain}`
-      : `${formData.emailId}@${formData.emailDomain}`;
-
-    if (!formData.emailId || (formData.emailDomain === '직접입력' && !formData.customDomain)) {
-      toast.error('이메일을 입력해주세요.');
-      return;
-    }
+    const email = formData.email.trim();
 
     if (!formData.phone) {
-      toast.error('휴대폰 번호를 입력해주세요.');
+      reject('휴대폰 번호를 입력해주세요.');
       return;
     }
 
     if (!formData.phoneVerified || !phoneVerification
         || phoneVerification.phone !== formData.phone.replace(/[^0-9]/g, '')) {
-      toast.error('휴대폰 인증을 완료해주세요.');
+      reject('휴대폰 인증을 완료해주세요.');
       return;
     }
     if (!Number.isFinite(phoneVerification.expiresAt) || phoneVerification.expiresAt <= Date.now()) {
       setPhoneVerification(null);
       setPhoneVerificationSent(false);
       setFormData(previous => ({ ...previous, phoneVerified: false }));
-      toast.error('휴대폰 인증 시간이 만료되었습니다. 다시 인증해 주세요.');
+      reject('휴대폰 인증 시간이 만료되었습니다. 다시 인증해 주세요.');
       return;
     }
 
@@ -331,23 +340,23 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
 
     if (userType === 'business') {
       if (!formData.businessName) {
-        toast.error('사업자명을 입력해주세요.');
+        reject('사업자명을 입력해주세요.');
         return;
       }
       if (!formData.managerName) {
-        toast.error('대표자명을 입력해주세요.');
+        reject('대표자명을 입력해주세요.');
         return;
       }
       if (!formData.shippingAddress.trim()) {
-        toast.error('사업장 주소를 입력해주세요.');
+        reject('사업장 주소를 입력해주세요.');
         return;
       }
       if (businessAddress.length > 255) {
-        toast.error('사업장 주소는 상세주소를 포함해 255자 이내로 입력해주세요.');
+        reject('사업장 주소는 상세주소를 포함해 255자 이내로 입력해주세요.');
         return;
       }
       if (!formData.businessFile) {
-        toast.error('사업자등록증 파일을 첨부해주세요.');
+        reject('사업자등록증 파일을 첨부해주세요.');
         return;
       }
     }
@@ -371,8 +380,11 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
 
     submittingRef.current = true;
     setIsSubmitting(true);
+    trackFunnelEvent('SIGNUP_SUBMITTED', { audience: userType, method: 'email' });
     signup(signupData, userType === 'business' ? formData.businessFile : undefined)
       .then(() => {
+        trackFunnelEvent('SIGNUP_COMPLETED', { audience: userType, method: 'email' });
+        if (!mounted.current) return;
         if (userType === 'business') {
           toast.success('사업자 등록 신청이 완료되었습니다. 관리자 승인 후 이용 가능합니다.');
           onComplete('requested');
@@ -382,11 +394,11 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
         }
       })
       .catch((error) => {
-        toast.error(error.message);
+        if (mounted.current) toast.error(error.message);
       })
       .finally(() => {
         submittingRef.current = false;
-        setIsSubmitting(false);
+        if (mounted.current) setIsSubmitting(false);
       });
   };
 
@@ -486,177 +498,36 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
 
         {/* Password */}
         <div>
-          <label className="block text-white mb-2">
-            비밀번호 <span className="text-red-400">*</span>
-          </label>
+          <label className="block text-white mb-2">비밀번호 <span className="text-red-400">*</span></label>
+          <input type="password" autoComplete="new-password" value={formData.password} onChange={e => handleChange('password', e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); passwordConfirmRef.current?.focus(); } }}
+            ref={passwordRef} placeholder="8자 이상, 영문/숫자/특수문자 중 3가지 조합"
+            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400" required />
+          {passwordError && <p className="mt-1 text-sm text-red-400">✗ {passwordError}</p>}
+          {formData.password && !passwordError && <p className="mt-1 text-sm text-green-400">✓ 사용 가능한 비밀번호입니다</p>}
+        </div>
+        <div>
+          <label className="block text-white mb-2">비밀번호 확인 <span className="text-red-400">*</span></label>
+          <input type="password" autoComplete="new-password" value={formData.passwordConfirm} onChange={e => handleChange('passwordConfirm', e.target.value)}
+            ref={passwordConfirmRef} placeholder="비밀번호를 다시 입력하세요"
+            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400" required />
+          {formData.passwordConfirm && <p className={`mt-1 text-sm ${formData.password === formData.passwordConfirm ? 'text-green-400' : 'text-red-400'}`}>
+            {formData.password === formData.passwordConfirm ? '✓ 비밀번호가 일치합니다' : '✗ 비밀번호가 일치하지 않습니다'}
+          </p>}
+        </div>
+        <div>
+          <label className="block text-white mb-2">이메일 <span className="text-red-400">*</span></label>
           <div className="flex gap-2">
-            <input
-              type="password"
-              value={formData.password}
-              onChange={(e) => handleChange('password', e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                  e.preventDefault();
-                  passwordConfirmRef.current?.focus();
-                }
-              }}
-              ref={passwordRef}
-              placeholder="8자 이상, 영문/숫자/특수문자 중 3가지 조합"
-              className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
-              required
-            />
-            <button
-              type="button"
-              onClick={handlePasswordCheck}
-              disabled={formData.password.length === 0}
-              className={`flex items-center justify-center px-4 sm:px-6 py-3 rounded-xl whitespace-nowrap shrink-0 text-sm sm:text-base ${
-                formData.password.length > 0
-                  ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
-                  : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              확인
+            <input type="email" autoComplete="email" inputMode="email" value={formData.email} onChange={e => handleChange('email', e.target.value)} placeholder="name@example.com"
+              className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400" required />
+            <button type="button" onClick={() => void handleEmailCheck()} disabled={!formData.email.trim() || isCheckingEmail}
+              className="shrink-0 rounded-xl bg-amber-400 px-4 py-3 font-semibold text-slate-950 hover:bg-amber-300 disabled:opacity-40">
+              {isCheckingEmail ? '확인 중' : '중복확인'}
             </button>
           </div>
-          {passwordError && (
-            <p className="mt-1 text-sm text-red-400">✗ {passwordError}</p>
-          )}
-          {passwordChecked && !passwordError && (
-            <p className="mt-1 text-sm text-green-400">✓ 사용 가능한 비밀번호입니다</p>
-          )}
-        </div>
-
-        {/* Password Confirm */}
-        <div>
-          <label className="block text-white mb-2">
-            비밀번호 확인 <span className="text-red-400">*</span>
-          </label>
-          {userType === 'business' ? (
-            <div className="flex gap-2">
-              <input
-                type="password"
-                value={formData.passwordConfirm}
-                onChange={(e) => handleChange('passwordConfirm', e.target.value)}
-                ref={passwordConfirmRef}
-                placeholder="비밀번호를 다시 입력하세요"
-                className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (formData.password === formData.passwordConfirm && formData.passwordConfirm) {
-                    toast.success('✓ 비밀번호가 일치합니다');
-                  } else if (!formData.passwordConfirm) {
-                    toast.error('비밀번호 확인을 입력해주세요');
-                  } else {
-                    toast.error('✗ 비밀번호가 일치하지 않습니다');
-                  }
-                }}
-                disabled={!formData.passwordConfirm}
-                className={`flex items-center justify-center px-4 sm:px-6 py-3 rounded-xl whitespace-nowrap shrink-0 text-sm sm:text-base ${
-                  formData.passwordConfirm
-                    ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
-                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                확인
-              </button>
-            </div>
-          ) : (
-            <input
-              type="password"
-              value={formData.passwordConfirm}
-              onChange={(e) => handleChange('passwordConfirm', e.target.value)}
-              ref={passwordConfirmRef}
-              placeholder="비밀번호를 다시 입력하세요"
-              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
-              required
-            />
-          )}
-          {formData.passwordConfirm && (
-            <p className={`mt-1 text-sm ${formData.password === formData.passwordConfirm ? 'text-green-400' : 'text-red-400'}`}>
-              {formData.password === formData.passwordConfirm ? '✓ 비밀번호가 일치합니다' : '✗ 비밀번호가 일치하지 않습니다'}
-            </p>
-          )}
-        </div>
-
-        {/* Email */}
-        <div>
-          <label className="block text-white mb-2">
-            이메일 <span className="text-red-400">*</span>
-          </label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="flex-1 min-w-0 flex gap-2">
-              <input
-                type="text"
-                value={formData.emailId}
-                onChange={(e) => handleChange('emailId', e.target.value)}
-                placeholder="이메일 주소"
-                className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
-                required
-              />
-              <span className="text-white self-center text-lg">@</span>
-              {formData.emailDomain === '직접입력' ? (
-                <div className="flex-1 min-w-0 flex gap-2">
-                  <input
-                    type="text"
-                    value={formData.customDomain}
-                    onChange={(e) => handleChange('customDomain', e.target.value)}
-                    placeholder="도메인 입력"
-                    className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleChange('emailDomain', 'naver.com')}
-                    className="p-3 bg-white/10 rounded-xl text-white hover:bg-white/20"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              ) : (
-                <select
-                  value={formData.emailDomain}
-                  onChange={(e) => handleChange('emailDomain', e.target.value)}
-                  className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-slate-800 border border-white/30 text-white focus:outline-none focus:border-yellow-400 appearance-none"
-                >
-                  {emailDomains.map((domain) => (
-                    <option key={domain} value={domain}>
-                      {domain}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-            
-            <button
-              type="button"
-              onClick={handleEmailCheck}
-              disabled={!formData.emailId}
-              className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap shrink-0 font-bold ${
-                formData.emailId
-                  ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
-                  : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              중복확인
-            </button>
-          </div>
-          {emailChecked && (
-            <p className={`mt-1 text-sm ${emailAvailable ? 'text-green-400' : 'text-red-400'}`}>
-              {emailAvailable ? '✓ 사용 가능한 이메일입니다' : '✗ 이미 사용중인 이메일입니다'}
-            </p>
-          )}
-          {formData.emailDomain === '직접입력' && (
-            <input
-              type="text"
-              value={formData.customDomain}
-              onChange={(e) => handleChange('customDomain', e.target.value)}
-              placeholder="도메인 입력 (예: example.com)"
-              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-yellow-400 mt-2"
-              required
-            />
-          )}
+          {emailChecked && <p className={`mt-1 text-sm ${emailAvailable ? 'text-green-400' : 'text-red-400'}`}>
+            {emailAvailable ? '✓ 사용 가능한 이메일입니다' : '✗ 이미 사용중인 이메일입니다'}
+          </p>}
         </div>
 
         {/* Phone with Verification */}
@@ -681,14 +552,14 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
               <button
                 type="button"
                 onClick={handleSendVerification}
-                disabled={formData.phone.length < 10 || isSendingVerification || isVerifyingPhone}
+                disabled={formData.phone.length < 10 || isSendingVerification || isVerifyingPhone || resendSeconds > 0}
                 className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap shrink-0 ${
                   formData.phone.length >= 10
                     ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                {isSendingVerification ? '발송 중' : '인증'}
+                {isSendingVerification ? '발송 중' : resendSeconds > 0 ? `${resendSeconds}초 후 재전송` : phoneVerificationSent ? '재전송' : '인증'}
               </button>
             )}
           </div>
@@ -697,6 +568,9 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
             <div className="flex gap-2 mt-2">
               <input
                 type="text"
+                autoComplete="one-time-code"
+                inputMode="numeric"
+                aria-label="문자 인증번호"
                 value={formData.verificationCode}
                 onChange={(e) => {
                   const value = e.target.value.replace(/[^0-9]/g, '');
@@ -711,7 +585,7 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
               <button
                 type="button"
                 onClick={handleVerifyPhone}
-                disabled={formData.verificationCode.length !== 6 || isVerifyingPhone || isSendingVerification}
+                disabled={formData.verificationCode.length !== 6 || isVerifyingPhone || isSendingVerification || codeSeconds === 0}
                 className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap shrink-0 ${
                   formData.verificationCode.length === 6
                     ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
@@ -723,8 +597,12 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
             </div>
           )}
 
+          {phoneVerificationSent && !formData.phoneVerified && <p role="status" className="mt-2 text-sm text-amber-200">
+            {codeSeconds > 0 ? `인증번호 입력 ${clockLabel(codeSeconds)} 남음 · 재전송은 60초 후 가능해요.` : '인증번호가 만료되었습니다. 다시 전송해 주세요.'}
+          </p>}
+
           {formData.phoneVerified && (
-            <p className="mt-1 text-sm text-green-400">✓ 휴대폰 인증이 완료되었습니다. 10분 안에 가입해 주세요</p>
+            <p role="status" className="mt-1 text-sm text-green-400">✓ 휴대폰 인증 완료 · 가입 가능 시간 {clockLabel(proofSeconds)} 남음</p>
           )}
         </div>
 
@@ -967,4 +845,5 @@ export default function Signup({ userType, onBack, onComplete }: SignupProps) {
       />
     </div>
   );
-}
+};
+export default Signup;

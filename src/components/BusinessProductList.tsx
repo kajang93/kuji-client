@@ -124,7 +124,7 @@ export default function BusinessProductList({ onBack, collections, onEdit, onDel
                         <h3 className="text-xl text-white">{collection.name}</h3>
                         {/* Operation Status Badge */}
                         <div className={`px-2 py-1 rounded-lg border text-xs ${operationStatus.bgColor} ${operationStatus.textColor} ${operationStatus.borderColor}`}>
-                          {operationStatus.label}
+                          {collection.previewOnly ? '미리보기 · 판매 불가' : operationStatus.label}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 mb-2">

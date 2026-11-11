@@ -37,6 +37,7 @@ export function mapBoardToCollection(board: KujiBoard): AnimeCollection {
     hasLastPrize: board.hasLastPrize ?? false,
     lastPrizeAvailable: board.lastPrizeAvailable ?? false,
     boardId: board.id,
+    previewOnly: board.previewOnly ?? false,
     isWished: board.isWished,
     operationStatus:
       board.status === "ACTIVE"

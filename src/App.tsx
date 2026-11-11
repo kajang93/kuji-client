@@ -48,6 +48,8 @@ import { confirmPointCharge } from "./api/points";
 import { fetchCompletedKujiResult, fetchPaymentStatus, type CompletedKujiResult, type PaymentStatus } from "./api/payments";
 import { clearPaymentRecovery, clearUnopenedKujiOrder, readPaymentRecovery, readUnopenedKujiOrder, resolvePaymentRecovery, savePaymentReturn, saveUnopenedKujiOrder, type PaymentKind, type PendingPaymentRecovery } from "./utils/paymentRecovery";
 import { mapBoardToCollection, mapKujiItemToPrize, getRegularPrizeStock, isLastPrize } from "./utils/kujiMappers";
+import { clearAuthReturn, parseBoardId, readAuthReturn, saveAuthReturn, type AuthReturnContext } from "./utils/authReturn";
+import { trackFunnelEvent } from "./utils/funnelAnalytics";
 
 import {
   Prize,
@@ -75,6 +77,9 @@ export default function App() {
   const [kujiStatus, setKujiStatus] = useState<boolean[]>([]);
   const [revealedPrizes, setRevealedPrizes] = useState<Prize[]>([]);
   const [purchaseCount, setPurchaseCount] = useState(1);
+  const [boardLoading, setBoardLoading] = useState(false);
+  const boardRequestVersion = useRef(0);
+  const boardNavigationPending = useRef(false);
   const [pointsToUse, setPointsToUse] = useState(0);
   const [user, setUser] = useState<{
     memberId?: number;
@@ -137,6 +142,7 @@ export default function App() {
   useGlobalGestures(screen, setScreen, returnToScreen);
 useRefreshOnPageShow(handleRefresh);
   const [animeCollections, setAnimeCollections] = useState<AnimeCollection[]>([]);
+  const [boardListState, setBoardListState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [sellerCollections, setSellerCollections] = useState<AnimeCollection[]>([]);
 
   useEffect(() => {
@@ -144,6 +150,7 @@ useRefreshOnPageShow(handleRefresh);
     return () => {
       mounted.current = false;
       paymentRequestVersion.current += 1;
+      boardRequestVersion.current += 1;
       paymentRequests.current.clear();
     };
   }, []);
@@ -179,12 +186,14 @@ useRefreshOnPageShow(handleRefresh);
   }, [screen]);
   
   const handleFetchBoards = async () => {
+    setBoardListState('loading');
     try {
       const boards = await fetchKujiBoards();
 
       const mappedCollections: AnimeCollection[] = boards.map(mapBoardToCollection);
 
       setAnimeCollections(mappedCollections);
+      setBoardListState('ready');
       
       // 게시판 목록을 가져올 때 사용자의 찜 상태가 포함되어 있다면 wishlist ID 목록도 업데이트
       const wishedIds = boards
@@ -194,7 +203,7 @@ useRefreshOnPageShow(handleRefresh);
         setWishlist(wishedIds);
       }
     } catch (error) {
-      console.error("Failed to fetch boards:", error);
+      setBoardListState('error');
     }
   };
 
@@ -253,6 +262,7 @@ async function handleRefresh() {
     const orderId = urlParams.get("orderId");
     const amount = urlParams.get("amount");
     const sharedPostId = Number(urlParams.get("postId"));
+    const sharedBoardId = parseBoardId(urlParams.get("boardId"));
 
     if (payment !== null) {
       handlePaymentReturn("kuji", orderId, payment === "success" && paymentKey && amount ? { paymentKey, amount } : undefined);
@@ -264,6 +274,9 @@ async function handleRefresh() {
       if (token && token !== "undefined" && token !== "null") {
         handleFetchUserInfo();
       }
+    } else if (screen === "detail" && sharedBoardId) {
+      void restoreProductContext({ boardId: sharedBoardId, count: 1 }, false);
+      if (token) void handleFetchUserInfo(true);
     } else if (urlParams.get("action") === "signup") {
       setScreen("login");
     } else if (urlParams.has("code")) {
@@ -293,7 +306,7 @@ async function handleRefresh() {
     if (payment !== null || pointCharge !== null || activePayment.current || screen === "paymentReturn") return;
 
     // 새로고침으로 화면에 필요한 선택 상태가 사라지면 목록으로 돌아갑니다.
-    if ((screen === "detail" || screen === "selection") && payment !== "success") {
+    if (((screen === "detail" && !sharedBoardId) || screen === "selection") && payment !== "success") {
       setScreen("list");
     } else if (screen === "reveal" && payment !== "success") {
       setScreen("winning");
@@ -373,6 +386,7 @@ async function handleRefresh() {
   const recoverPayment = async (payment: PendingPaymentRecovery) => {
     if (paymentRequests.current.has(payment.orderId)) return;
     if (revealedOrder.current === payment.orderId && currentScreen.current === "reveal") return;
+    clearAuthReturn();
     activePayment.current = payment;
     setViewingRecoveryHistory(false);
     setPendingPayment(payment);
@@ -496,7 +510,7 @@ async function handleRefresh() {
       }
       handleFetchWinningHistory(formattedUser.type);
 
-      if (preserveScreen || activePayment.current || revealedOrder.current || ["reveal", "privacy", "terms", "catalogPreview", "support"].includes(currentScreen.current)) return;
+      if (preserveScreen || boardNavigationPending.current || activePayment.current || revealedOrder.current || ["reveal", "privacy", "terms", "catalogPreview", "support"].includes(currentScreen.current)) return;
       if (formattedUser.type === "business" && formattedUser.isActive === false) {
         setScreen("businessPending");
       } else if (formattedUser.type === 'business' && screen === 'businessPending') {
@@ -515,7 +529,7 @@ async function handleRefresh() {
           "businessDashboard", "businessProfile", "businessProducts", "businessRegister",
           "businessShipping", "businessInquiries", "businessPending", "businessProductEdit",
           "adminDashboard", "adminNoticeManagement", "adminEventManagement", "adminInquiryManagement",
-          "adminMainBannerManagement", "adminUserManagement", "adminPromotionManagement", "adminStatistics", "adminRefunds",
+          "adminMainBannerManagement", "adminUserManagement", "adminPromotionManagement", "adminStatistics", "adminRefunds", "adminSettlements", "adminSignupFunnel",
         ] as ScreenType[]).includes(prev) ? "main" : prev
       );
     }
@@ -629,10 +643,57 @@ async function handleRefresh() {
 
   // Remove static animeCollections array
 
+  const restoreProductContext = async (context: { boardId: number; count: number; expiresAt?: number }, consumeSaved: boolean) => {
+    const version = ++boardRequestVersion.current;
+    const sessionVersion = authVersion.current;
+    const sourceScreen = currentScreen.current;
+    const isCurrent = () => mounted.current && version === boardRequestVersion.current && sessionVersion === authVersion.current
+      && currentScreen.current === sourceScreen && !activePayment.current && !revealedOrder.current;
+    boardNavigationPending.current = true;
+    setBoardLoading(true);
+    try {
+      const [boards, items] = await Promise.all([fetchKujiBoards(), fetchKujiBoardDetail(context.boardId)]);
+      if (!isCurrent()) return;
+      const board = boards.find(candidate => candidate.id === context.boardId);
+      const prizes = items.map(mapKujiItemToPrize);
+      const stock = getRegularPrizeStock(prizes);
+      if (consumeSaved) clearAuthReturn(context.expiresAt ? context as AuthReturnContext : undefined);
+      if (!board || board.status !== "ACTIVE" || stock.remainingKuji < 1) {
+        setSelectedAnime(null);
+        setScreen("list");
+        toast.info("선택한 상품의 판매가 종료되었거나 재고가 없습니다. 다른 상품을 확인해 주세요.");
+        return;
+      }
+      const collection = { ...mapBoardToCollection(board), prizes, ...stock };
+      setSelectedAnime(collection);
+      setPurchaseCount(Math.min(context.count, stock.remainingKuji));
+      setPointsToUse(0);
+      setReturnToScreen(null);
+      const opened = prizes.filter(prize => !isLastPrize(prize.rank)).flatMap(prize => prize.opened || []);
+      setKujiStatus(opened.length ? opened : Array(stock.totalKuji).fill(false));
+      navigate(`/detail?boardId=${context.boardId}`, { replace: true });
+      if (consumeSaved) trackFunnelEvent('AUTH_RETURNED_ITEM', { audience: 'customer', method: 'none' });
+    } catch {
+      if (!isCurrent()) return;
+      if (consumeSaved) clearAuthReturn(context.expiresAt ? context as AuthReturnContext : undefined);
+      setScreen("list");
+      toast.error("상품 정보를 다시 확인하지 못했습니다. 목록에서 상품을 다시 선택해 주세요.");
+    } finally {
+      if (mounted.current && version === boardRequestVersion.current) {
+        boardNavigationPending.current = false;
+        setBoardLoading(false);
+      }
+    }
+  };
+
   const handleAnimeSelect = async (anime: AnimeCollection) => {
+    const version = ++boardRequestVersion.current;
+    boardNavigationPending.current = false;
+    setBoardLoading(false);
     try {
       // 1. Fetch real detail data from server (Backend returns List<KujiItem>)
       const items = await fetchKujiBoardDetail(Number(anime.id));
+      if (!mounted.current || version !== boardRequestVersion.current) return;
 
       // 2. Map backend items to frontend prizes structure
       const updatedPrizes = items.map(mapKujiItemToPrize);
@@ -644,7 +705,8 @@ async function handleRefresh() {
       };
 
       setSelectedAnime(updatedAnime);
-      setScreen("detail");
+      setPurchaseCount(1);
+      navigate(`/detail?boardId=${anime.id}`);
 
       // Initialize kuji status from backend data
       const status: boolean[] = [];
@@ -669,10 +731,15 @@ async function handleRefresh() {
   };
 
   const handlePurchase = (count: number, pointsUsed = 0) => {
+    if (!selectedAnime || !Number.isSafeInteger(count) || count < 1 || count > selectedAnime.remainingKuji) return;
     if (!user) {
-      // Not logged in - go to login screen
+      try {
+        saveAuthReturn(Number(selectedAnime.id), count);
+      } catch {
+        toast.info("상품 복귀 정보를 저장하지 못했습니다. 로그인 후 상품을 다시 확인해 주세요.");
+      }
       setPurchaseCount(count);
-      setPointsToUse(pointsUsed);
+      setPointsToUse(0);
       setReturnToScreen("detail");
       setScreen("login");
     } else {
@@ -697,6 +764,7 @@ async function handleRefresh() {
     paymentRequestVersion.current += 1;
     paymentRequests.current.clear();
     setUser(userData);
+    if (userData.type !== 'admin') trackFunnelEvent('LOGIN_COMPLETED', { audience: userData.type === 'business' ? 'business' : 'customer', method: 'email' });
     setIsSidebarOpen(false);
 
     handleFetchWinningHistory(userData.type);
@@ -718,9 +786,9 @@ async function handleRefresh() {
       }
     } else if (userData.type === "admin") {
       setScreen("adminDashboard");
-    } else if (returnToScreen === "detail") {
-      setScreen("selection");
-      setReturnToScreen(null);
+    } else if (readAuthReturn() || (returnToScreen === "detail" && selectedAnime)) {
+      const context = readAuthReturn() || { boardId: Number(selectedAnime!.id), count: purchaseCount };
+      void restoreProductContext(context, true);
     } else {
       setScreen("main");
     }
@@ -733,6 +801,7 @@ async function handleRefresh() {
       paymentRequests.current.clear();
       try {
         await logout();
+        clearAuthReturn();
         setUser(null);
         setScreen("main");
         setIsSidebarOpen(false);
@@ -745,7 +814,7 @@ async function handleRefresh() {
   };
 
   // 소셜 로그인(카카오/네이버/구글) 콜백 공통 처리
-  const handleSocialLoginSuccess = (successMessage: string) =>
+  const handleSocialLoginSuccess = (successMessage: string, method: 'kakao' | 'naver' | 'google') =>
     (token: string, userData: any) => {
       authVersion.current += 1;
       paymentRequestVersion.current += 1;
@@ -756,14 +825,15 @@ async function handleRefresh() {
         memberId: userData.memberId,
         name: userData.nickname || userData.email,
         email: userData.email,
-        type: (userData.role === "BIZ" ? "business" : userData.role === 'ADMIN' ? 'admin' : "social") as "business" | "admin" | "social",
+        type: (userData.role === "BIZ" || userData.role === 'ROLE_BUSINESS' ? "business" : userData.role === 'ADMIN' || userData.role === 'ROLE_ADMIN' ? 'admin' : "social") as "business" | "admin" | "social",
         points: userData.points || 0,
-        isActive: userData.role === 'BIZ' ? userData.businessStatus === 'APPROVED' : true,
+        isActive: userData.role === 'BIZ' || userData.role === 'ROLE_BUSINESS' ? userData.businessStatus === 'APPROVED' : true,
         businessStatus: userData.businessStatus,
         businessRejectReason: userData.businessRejectReason,
         profileImageUrl: userData.profileImageUrl || "",
       };
       setUser(formattedUser);
+      if (formattedUser.type !== 'admin') trackFunnelEvent('LOGIN_COMPLETED', { audience: formattedUser.type === 'business' ? 'business' : 'customer', method });
 
       // Remove OAuth params from URL without refreshing
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -778,6 +848,8 @@ async function handleRefresh() {
         setScreen(formattedUser.businessStatus === 'APPROVED' ? 'businessDashboard' : 'businessPending');
       } else if (formattedUser.type === 'admin') {
         setScreen('adminDashboard');
+      } else if (readAuthReturn()) {
+        void restoreProductContext(readAuthReturn()!, true);
       } else {
         setScreen("main");
         handleFetchWishlist();
@@ -959,7 +1031,9 @@ async function handleRefresh() {
       | "adminMainBannerManagement"
       | "adminUserManagement"
       | "adminStatistics"
-      | "adminRefunds",
+      | "adminRefunds"
+      | "adminSettlements"
+      | "adminSignupFunnel",
   ) => {
     setScreen(navScreen);
   };
@@ -1217,6 +1291,8 @@ async function handleRefresh() {
               void handleFetchWinningHistory();
             }}
           />
+        ) : boardLoading && !isPublicReadOnly && screen !== "support" ? (
+          <div role="status" className="flex min-h-full items-center justify-center bg-slate-950 p-6 text-cyan-100">선택한 상품과 남은 수량을 다시 확인하고 있어요.</div>
         ) : <>
         {screen === "main" && (
           <MainScreen
@@ -1229,6 +1305,8 @@ async function handleRefresh() {
         {screen === "list" && (
           <AnimeList
             collections={animeCollections}
+            loadState={boardListState}
+            onRetry={() => void handleFetchBoards()}
             onSelect={handleAnimeSelect}
             onBack={() => setScreen("main")}
             onToggleWishlist={(anime) => handleToggleWishlist(anime.id)}
@@ -1237,6 +1315,7 @@ async function handleRefresh() {
         {screen === "detail" && selectedAnime && (
           <PrizeDetail
             anime={selectedAnime}
+            initialPurchaseCount={purchaseCount}
             onBack={() => setScreen("list")}
             onPurchase={handlePurchase}
             user={user ? { ...user, points: user.points || 0 } : null}
@@ -1246,7 +1325,12 @@ async function handleRefresh() {
           <Login
             onLogin={handleLogin}
             onBack={() => {
-              setScreen(returnToScreen || "main");
+              clearAuthReturn();
+              boardRequestVersion.current += 1;
+              boardNavigationPending.current = false;
+              setBoardLoading(false);
+              if (returnToScreen === "detail" && selectedAnime) navigate(`/detail?boardId=${selectedAnime.id}`);
+              else setScreen(returnToScreen || "main");
               setReturnToScreen(null);
             }}
           />
@@ -1482,19 +1566,19 @@ async function handleRefresh() {
 
         {screen === "kakaoCallback" && (
           <KakaoCallback
-            onLoginSuccess={handleSocialLoginSuccess("로그인에 성공했습니다!")}
+            onLoginSuccess={handleSocialLoginSuccess("로그인에 성공했습니다!", 'kakao')}
             onLoginFailure={handleSocialLoginFailure}
           />
         )}
         {screen === "naverCallback" && (
           <NaverCallback
-            onLoginSuccess={handleSocialLoginSuccess("네이버 로그인에 성공했습니다!")}
+            onLoginSuccess={handleSocialLoginSuccess("네이버 로그인에 성공했습니다!", 'naver')}
             onLoginFailure={handleSocialLoginFailure}
           />
         )}
         {screen === "googleCallback" && (
           <GoogleCallback
-            onLoginSuccess={handleSocialLoginSuccess("구글 로그인에 성공했습니다!")}
+            onLoginSuccess={handleSocialLoginSuccess("구글 로그인에 성공했습니다!", 'google')}
             onLoginFailure={handleSocialLoginFailure}
           />
         )}

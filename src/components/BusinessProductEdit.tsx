@@ -349,6 +349,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
             {/* Operation Status */}
             <div>
               <label className="text-white/70 text-sm block mb-2">운영 상태</label>
+              {collection.previewOnly && <p className="mb-3 rounded-xl bg-amber-200/10 p-3 text-sm text-amber-100">화면 확인용 미리보기입니다. 판매할 수 없으며, 실제 재고를 확보한 상품은 별도로 등록해 주세요.</p>}
               <div className="flex gap-3">
                 <button
                   onClick={() => setOperationStatus('scheduled')}
@@ -373,7 +374,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
                     }
                     setOperationStatus('active');
                   }}
-                  disabled={isSaving || saveNeedsReload}
+                  disabled={isSaving || saveNeedsReload || collection.previewOnly}
                   className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                     operationStatus === 'active'
                       ? 'bg-green-500/30 border-green-400/50 text-green-200'

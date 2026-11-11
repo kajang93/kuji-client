@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from './motion';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Ticket, ChevronRight } from './icons';
 import { OperatorDisclosure } from './PolicyContent';
+import { trackFunnelEvent } from '../utils/funnelAnalytics';
 
 type Banner = {
   id: string;
@@ -26,6 +27,7 @@ type MainScreenProps = {
 export default function MainScreen({ onStart, onPreview, banners }: MainScreenProps) {
   const activeBanners = banners.filter(b => b.isActive).sort((a, b) => a.order - b.order);
   const [currentIndex, setCurrentIndex] = useState(0);
+  useEffect(() => { trackFunnelEvent('LANDING_VIEW'); }, []);
 
   useEffect(() => {
     if (activeBanners.length <= 1) return;
@@ -45,7 +47,8 @@ export default function MainScreen({ onStart, onPreview, banners }: MainScreenPr
   };
 
   return (
-    <div className="min-h-full w-full overflow-hidden relative aurora-bg text-white font-sans">
+    <div className="h-full w-full relative aurora-bg text-white font-sans">
+      <section aria-label="오시쿠지 시작" className="relative flex min-h-full flex-col overflow-hidden">
       {/* Background Slider */}
       <AnimatePresence mode="wait">
         <motion.div
@@ -66,7 +69,7 @@ export default function MainScreen({ onStart, onPreview, banners }: MainScreenPr
       </AnimatePresence>
 
       {/* Content Layer */}
-      <div className="relative z-20 min-h-[75dvh] flex flex-col items-center justify-center px-4 py-16 text-center">
+      <div className="relative z-20 flex flex-1 flex-col items-center justify-center px-4 py-16 text-center">
         {/* Animated Title */}
         <motion.div
           key={`text-${currentIndex}`}
@@ -133,6 +136,7 @@ export default function MainScreen({ onStart, onPreview, banners }: MainScreenPr
           </div>
         )}
       </div>
+      </section>
       <footer className="relative z-20 border-t border-white/10 bg-black/40 px-5 py-6 text-center">
         <div className="mx-auto max-w-3xl"><OperatorDisclosure /></div>
         <nav aria-label="서비스 정책" className="mt-4 flex justify-center gap-5 text-xs text-slate-300">

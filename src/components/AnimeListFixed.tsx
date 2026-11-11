@@ -4,18 +4,22 @@ import { useEffect } from 'react';
 import { motion } from './motion';
 import type { AnimeCollection } from '@/shared-types';
 import { Tilt } from 'react-tilt';
+import { trackFunnelEvent } from '../utils/funnelAnalytics';
 
 type AnimeListProps = {
   collections: AnimeCollection[];
   onSelect: (anime: AnimeCollection) => void;
   onBack: () => void;
   onToggleWishlist: (anime: AnimeCollection) => void;
+  loadState?: 'loading' | 'ready' | 'error';
+  onRetry?: () => void;
 };
 
-export default function AnimeList({ collections, onSelect, onBack, onToggleWishlist }: AnimeListProps) {
+export default function AnimeList({ collections, onSelect, onBack, onToggleWishlist, loadState = 'ready', onRetry }: AnimeListProps) {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+  useEffect(() => { if (loadState === 'ready') trackFunnelEvent('VIEW_ITEM_LIST'); }, [loadState]);
 
   return (
     <div className="min-h-screen">
@@ -36,6 +40,9 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
 
       {/* Collection List */}
       <div className="p-6 space-y-4">
+        {loadState === 'loading' && <p role="status" className="rounded-2xl bg-slate-900 p-5 text-cyan-100">상품과 남은 수량을 불러오고 있어요.</p>}
+        {loadState === 'error' && <div role="alert" className="rounded-2xl border border-rose-300/20 bg-slate-900 p-5 text-rose-100"><p>상품 정보를 불러오지 못했어요.</p><button onClick={onRetry} className="mt-3 rounded-lg bg-rose-200/10 px-4 py-2">다시 불러오기</button></div>}
+        {loadState === 'ready' && !collections.length && <p className="rounded-2xl bg-slate-900 p-5 text-slate-300">새로운 시리즈를 준비하고 있어요.</p>}
         {collections.map((anime, index) => {
           const isWishlisted = anime.isWished;
           

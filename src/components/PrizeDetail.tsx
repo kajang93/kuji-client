@@ -4,11 +4,13 @@ import { ChevronLeft, X, Plus, Minus, ChevronRight } from './icons';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import type { AnimeCollection, Prize } from '@/shared-types';
 import { getRegularPrizeStock, isLastPrize } from '../utils/kujiMappers';
+import { trackFunnelEvent } from '../utils/funnelAnalytics';
 
 type PrizeDetailProps = {
   anime: AnimeCollection;
   onBack: () => void;
   onPurchase: (count: number, pointsUsed?: number) => void;
+  initialPurchaseCount?: number;
   user?: { name: string; email: string; points: number; type: 'social' | 'customer' | 'business' | 'admin' } | null;
 };
 
@@ -17,13 +19,16 @@ const normalizeRank = (rank: string) => {
   if (isLastPrize(trimmedRank)) return 'LAST';
   return trimmedRank.replace(/상/g, '');
 };
+const clampCount = (count: number, remaining: number) => Math.max(1, Math.min(Number.isSafeInteger(count) ? count : 1, remaining || 1));
 
-export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDetailProps) {
+export default function PrizeDetail({ anime, onBack, onPurchase, user, initialPurchaseCount = 1 }: PrizeDetailProps) {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  const [purchaseCount, setPurchaseCount] = useState(1);
+  const [purchaseCount, setPurchaseCount] = useState(() => clampCount(initialPurchaseCount, anime.remainingKuji));
+  const [remainingOnly, setRemainingOnly] = useState(false);
   const [pointsToUse, setPointsToUse] = useState(0);
   const [imagePopup, setImagePopup] = useState<{ images: string[]; currentIndex: number; prizeName: string } | null>(null);
   const { hasLastPrize, lastPrizeAvailable } = getRegularPrizeStock(anime.prizes);
+  const needsStockReview = hasLastPrize && !lastPrizeAvailable && anime.remainingKuji > 0;
   const pricePerKuji = anime.pricePerDraw || 15000; // 1장당 가격 (백엔드 기본값 매핑)
   const groupedPrizes = anime.prizes.reduce((acc, prize) => {
     const rank = normalizeRank(prize.rank);
@@ -41,6 +46,13 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
     window.scrollTo(0, 0);
   }, []);
 
+  useEffect(() => {
+    setPurchaseCount(clampCount(initialPurchaseCount, anime.remainingKuji));
+    setPointsToUse(0);
+  }, [anime.id, anime.remainingKuji, initialPurchaseCount]);
+
+  useEffect(() => { trackFunnelEvent('VIEW_ITEM'); }, [anime.id]);
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (showPurchaseModal || imagePopup) {
@@ -55,10 +67,12 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
   }, [showPurchaseModal, imagePopup]);
 
   const handlePurchaseClick = () => {
+    if (needsStockReview || anime.remainingKuji < 1) return;
     setShowPurchaseModal(true);
   };
 
   const handleConfirmPurchase = () => {
+    if (needsStockReview || anime.remainingKuji < 1) return;
     setShowPurchaseModal(false);
     onPurchase(purchaseCount, pointsToUse);
   };
@@ -128,13 +142,13 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
 
       {hasLastPrize && (
         <div role="note" aria-label="라스트상 안내" className="mx-4 mt-4 rounded-2xl border border-amber-300/30 bg-gradient-to-r from-amber-400/15 to-rose-400/10 p-4">
-          <p className="font-semibold text-amber-200">{lastPrizeAvailable ? '마지막 한 장에는, 라스트상까지' : '라스트상 지급 완료'}</p>
+          <p className="font-semibold text-amber-200">마지막 한 장에는, 라스트상까지</p>
           <p className="mt-1 text-sm leading-relaxed text-amber-100/80">
-            {lastPrizeAvailable
-              ? '일반 쿠지를 모두 뽑으면 마지막 구매자에게 라스트상 1개를 추가로 드려요. 별도 결제는 없어요.'
-              : '이 시리즈의 라스트상은 이미 지급되었습니다. 남은 일반 쿠지만 구매할 수 있어요.'}
+            일반 쿠지를 모두 뽑으면 마지막 구매자에게 라스트상 1개를 추가로 드려요. 별도 결제는 없어요.
           </p>
           <p className="mt-2 text-xs text-white/50">표시된 티켓 수량과 구매 수량에는 라스트상이 포함되지 않아요.</p>
+          {lastPrizeAvailable && <p className="mt-2 text-sm font-semibold text-amber-200">라스트상까지 일반 티켓 {anime.remainingKuji.toLocaleString()}장 남았어요.</p>}
+          {needsStockReview && <p role="status" className="mt-3 text-sm text-rose-200">상품 구성을 확인하고 있어요. 확인이 끝나면 구매할 수 있어요.</p>}
         </div>
       )}
 
@@ -147,12 +161,13 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
             </h3>
 
           </div>
-          
+          <label className="mb-4 flex items-center gap-2 text-sm text-cyan-100"><input type="checkbox" checked={remainingOnly} onChange={event => setRemainingOnly(event.target.checked)} />남은 상품만 보기</label>
+          {remainingOnly && !anime.prizes.some(prize => !isLastPrize(prize.rank) && prize.remainingCount > 0) && <p className="mb-4 text-sm text-slate-400">일반 상품이 모두 소진되었어요.</p>}
           <div className="space-y-3">
-            {sortedRanks.map((rank) => {
-              const rankPrizes = groupedPrizes[rank];
-              const totalCount = rankPrizes.reduce((sum, prize) => sum + prize.totalCount, 0);
-              const remainingCount = rankPrizes.reduce((sum, prize) => sum + prize.remainingCount, 0);
+            {sortedRanks.filter(rank => !remainingOnly || rank === 'LAST' || groupedPrizes[rank].some(prize => prize.remainingCount > 0)).map((rank) => {
+              const rankPrizes = groupedPrizes[rank].filter(prize => !remainingOnly || rank === 'LAST' || prize.remainingCount > 0);
+              const totalCount = groupedPrizes[rank].reduce((sum, prize) => sum + prize.totalCount, 0);
+              const remainingCount = groupedPrizes[rank].reduce((sum, prize) => sum + prize.remainingCount, 0);
 
               return (
                 <div key={rank} className="py-3 border-b border-white/5 last:border-0">
@@ -183,8 +198,8 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <div className="text-cyan-200 text-sm font-bold">{remainingCount}/{totalCount}</div>
-                          <div className="text-white/40 text-[10px]">{rank === 'LAST' ? '추가 지급 수량' : '남은 수량'}</div>
+                          <div className="text-cyan-200 text-sm font-bold">{rank === 'LAST' ? '마지막 구매자 혜택' : `${remainingCount}/${totalCount}`}</div>
+                          <div className="text-white/40 text-[10px]">{rank === 'LAST' ? '일반 티켓과 별도' : '남은 수량'}</div>
                         </div>
                       </div>
 
@@ -219,7 +234,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                             </div>
 
                             <div className="absolute bottom-0 left-0 right-0 bg-black/65 px-1 py-0.5 text-[10px] text-white font-semibold leading-none">
-                              {rank === 'LAST' && !isRemaining ? '라스트상 지급 완료' : `${prize.remainingCount}/${prize.totalCount}`}
+                              {rank === 'LAST' ? '마지막 한 장의 보너스' : `${prize.remainingCount}/${prize.totalCount}`}
                             </div>
 
                             {/* Sold Out Overlay */}
@@ -294,9 +309,10 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handlePurchaseClick}
-              className="flex-1 py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-2xl text-lg font-semibold shadow-xl hover:shadow-yellow-400/50 transition-shadow"
+              disabled={anime.remainingKuji < 1 || needsStockReview}
+              className="flex-1 py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 rounded-2xl text-lg font-semibold shadow-xl hover:shadow-yellow-400/50 transition-shadow disabled:opacity-40"
             >
-              구매하기
+              {needsStockReview ? '상품 구성 확인 중' : anime.remainingKuji < 1 ? '품절' : '구매하기'}
             </motion.button>
           </div>
         </div>
@@ -364,7 +380,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user }: PrizeDe
                   <div>
                     <div className="text-red-300 text-xs mb-0.5">유의사항</div>
                     <p className="text-red-200/90 text-xs leading-snug">
-                      추첨 후 <strong>환불 및 취소 불가</strong>
+                      추첨 결과 확정 후 단순 변심 취소는 제한될 수 있어요. 결제 오류·미배송·하자 등은 고객센터에 문의해 주세요.
                     </p>
                   </div>
                 </div>

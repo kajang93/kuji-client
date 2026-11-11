@@ -28,6 +28,7 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
   const reducedMotion = useReducedMotion();
 
   const finalPrice = Math.max(0, purchaseCount * pricePerKuji - pointsToUse);
+  const needsStockReview = hasLastPrize && !lastPrizeAvailable && kujiStatus.some(opened => !opened);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -70,7 +71,7 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
   };
 
   const handleConfirm = async () => {
-    if (selectedKuji.length !== purchaseCount || processingRef.current) return;
+    if (selectedKuji.length !== purchaseCount || processingRef.current || needsStockReview) return;
     if (readPaymentRecovery()) {
       alert("이전 결제 결과를 먼저 확인해 주세요.");
       return;
@@ -188,12 +189,11 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
       {hasLastPrize && (
         <div role="note" aria-label="라스트상 지급 안내" className="mx-auto mt-5 max-w-xl px-4 sm:px-6">
           <div className="rounded-2xl border border-amber-300/25 bg-amber-300/[0.07] p-4">
-            <p className="text-sm font-semibold text-amber-200">{lastPrizeAvailable ? '마지막 일반 쿠지를 뽑으면 라스트상 추가 지급' : '이 시리즈의 라스트상은 지급 완료됐어요'}</p>
+            <p className="text-sm font-semibold text-amber-200">마지막 일반 쿠지를 뽑으면 라스트상 추가 지급</p>
             <p className="mt-1 text-xs leading-relaxed text-amber-100/70">
-              {lastPrizeAvailable
-                ? '일반 쿠지가 모두 소진되는 순간, 마지막 구매자에게 라스트상 1개를 함께 드려요. 선택할 티켓과 결제 금액에는 포함되지 않아요.'
-                : '남은 일반 쿠지만 선택할 수 있으며 라스트상은 다시 지급되지 않아요.'}
+              일반 쿠지가 모두 소진되는 순간, 마지막 구매자에게 라스트상 1개를 함께 드려요. 선택할 티켓과 결제 금액에는 포함되지 않아요.
             </p>
+            {needsStockReview && <p role="status" className="mt-2 text-sm text-rose-200">상품 구성을 확인하고 있어요. 확인이 끝나면 구매할 수 있어요.</p>}
           </div>
         </div>
       )}
@@ -407,17 +407,17 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
       <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-8 sm:px-6">
         <div className="pointer-events-auto mx-auto max-w-xl">
           <motion.button
-            whileHover={{ scale: selectedKuji.length === purchaseCount && !isProcessing && !reducedMotion ? 1.02 : 1 }}
-            whileTap={{ scale: selectedKuji.length === purchaseCount && !isProcessing && !reducedMotion ? 0.98 : 1 }}
+            whileHover={{ scale: selectedKuji.length === purchaseCount && !isProcessing && !needsStockReview && !reducedMotion ? 1.02 : 1 }}
+            whileTap={{ scale: selectedKuji.length === purchaseCount && !isProcessing && !needsStockReview && !reducedMotion ? 0.98 : 1 }}
             onClick={handleConfirm}
-            disabled={selectedKuji.length !== purchaseCount || isProcessing}
-            className={`w-full rounded-2xl py-4 text-base shadow-2xl transition-all ${selectedKuji.length === purchaseCount && !isProcessing
+            disabled={selectedKuji.length !== purchaseCount || isProcessing || needsStockReview}
+            className={`w-full rounded-2xl py-4 text-base shadow-2xl transition-all ${selectedKuji.length === purchaseCount && !isProcessing && !needsStockReview
               ? 'bg-gradient-to-r from-amber-200 to-amber-400 text-slate-950 hover:shadow-amber-400/20'
               : 'cursor-not-allowed bg-slate-800 text-slate-500'
               }`}
           >
             <div className="text-center font-bold">
-              {isProcessing ? "처리 중..." :
+              {isProcessing ? "처리 중..." : needsStockReview ? '상품 구성 확인 중' :
                 selectedKuji.length === purchaseCount
                   ? (finalPrice > 0 ? `₩${finalPrice.toLocaleString()} 결제하고 뽑기` : `포인트로 뽑기 (${purchaseCount}장)`)
                   : `${purchaseCount - selectedKuji.length}개 더 선택하세요`}
