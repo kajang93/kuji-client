@@ -4,10 +4,19 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
+concurrency:
+  group: kuji-frontend-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     
     steps:
       - name: Checkout Source Code
@@ -64,23 +73,44 @@ jobs:
       - name: Build Project
         run: npm run build
         
-      - name: Copy build to AWS temp directory
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.AWS_HOST }}
-          username: ${{ secrets.AWS_USERNAME }}
-          key: ${{ secrets.AWS_PRIVATE_KEY }}
-          source: "build/*"
-          target: "~/build-temp"
-          strip_components: 1
+      - name: Record static artifact checksums
+        run: |
+          python3 - <<'PYTHON'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          root = Path('build')
+          files = {path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+                   for path in root.rglob('*') if path.is_file() and path.name != 'kuji-release.json'}
+          (root / 'kuji-release.json').write_text(json.dumps({'revision': os.environ['GITHUB_SHA'], 'files': files}) + '\n')
+          PYTHON
 
-      - name: Move to Nginx directory
+      - name: Prepare private incoming directory
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USERNAME }}
           key: ${{ secrets.AWS_PRIVATE_KEY }}
+          script: install -d -m 700 "$HOME/kuji-frontend-incoming"
+
+      - name: Copy verified build and deployment helper
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USERNAME }}
+          key: ${{ secrets.AWS_PRIVATE_KEY }}
+          source: "build,scripts/deploy_frontend.py"
+          target: "~/kuji-frontend-incoming/${{ github.run_id }}-${{ github.run_attempt }}"
+
+      - name: Atomically switch release and verify HTTP
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USERNAME }}
+          key: ${{ secrets.AWS_PRIVATE_KEY }}
+          command_timeout: 5m
           script: |
-            sudo rm -rf /var/www/html/*
-            sudo cp -r ~/build-temp/* /var/www/html/
-            rm -rf ~/build-temp
+            set -eu
+            incoming="$HOME/kuji-frontend-incoming/${{ github.run_id }}-${{ github.run_attempt }}"
+            sudo python3 "$incoming/scripts/deploy_frontend.py" --source "$incoming/build" --revision "${{ github.sha }}"
