@@ -9,7 +9,7 @@ import { fetchAllInquiries, answerInquiry } from '../api/admin';
 import { Inquiry } from '../shared-types';
 
 type AdminDashboardProps = {
-  onNavigate: (screen: 'noticeManagement' | 'eventManagement' | 'inquiryManagement' | 'users' | 'statistics' | 'mainBanner' | 'userManagement') => void;
+  onNavigate: (screen: 'noticeManagement' | 'eventManagement' | 'inquiryManagement' | 'users' | 'statistics' | 'mainBanner' | 'userManagement' | 'settlements' | 'signupFunnel') => void;
 };
 
 export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
@@ -101,6 +101,8 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   ];
 
   const menuItems = [
+    { id: 'settlements' as const, label: '판매자 지급 기록', icon: DollarSign, description: '지급액 확인·송금 증빙·미지급 대사', color: 'from-cyan-500 to-blue-600' },
+    { id: 'signupFunnel' as const, label: '가입 흐름 집계', icon: Users, description: '가입 단계·인증·신규 가입 확인', color: 'from-amber-500 to-orange-600' },
     { 
       id: 'noticeManagement' as const, 
       label: '공지사항 관리', 

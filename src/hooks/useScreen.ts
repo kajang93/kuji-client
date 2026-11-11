@@ -43,6 +43,8 @@ const SCREEN_PATHS: Record<ScreenType, string> = {
   adminPromotionManagement: '/admin/promotions',
   adminStatistics: '/admin/statistics',
   adminRefunds: '/admin/refunds',
+  adminSettlements: '/admin/settlements',
+  adminSignupFunnel: '/admin/signup-funnel',
   pointCharge: '/point-charge',
   kakaoCallback: '/oauth/kakao',
   naverCallback: '/oauth/naver',

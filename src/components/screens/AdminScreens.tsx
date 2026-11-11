@@ -8,6 +8,8 @@ import AdminUserManagement from "../AdminUserManagement";
 import AdminPromotionManagement from "../AdminPromotionManagement";
 import AdminStatistics from "../AdminStatistics";
 import RefundCenter from "../RefundCenter";
+import AdminSettlements from "../AdminSettlements";
+import AdminSignupFunnel from "../AdminSignupFunnel";
 import { Banner, ScreenType } from "../../shared-types";
 
 type AdminScreensProps = {
@@ -28,6 +30,8 @@ export default function AdminScreens({
 }: AdminScreensProps) {
   return (
     <>
+      {screen === "adminSettlements" && <AdminSettlements onBack={() => setScreen("adminDashboard")} />}
+      {screen === "adminSignupFunnel" && <AdminSignupFunnel onBack={() => setScreen("adminDashboard")} />}
       {screen === "adminRefunds" && <RefundCenter admin onBack={() => setScreen("adminDashboard")} />}
       {screen === "adminDashboard" && (
         <AdminDashboard
@@ -44,6 +48,10 @@ export default function AdminScreens({
               setScreen("adminUserManagement");
             else if (target === "statistics")
               setScreen("adminStatistics");
+            else if (target === "settlements")
+              setScreen("adminSettlements");
+            else if (target === "signupFunnel")
+              setScreen("adminSignupFunnel");
           }}
         />
       )}

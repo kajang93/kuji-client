@@ -23,6 +23,7 @@ export interface KujiBoard {
   title: string;
   pricePerDraw: number;
   status: BoardStatus;
+  previewOnly?: boolean;
   rewardRate: number;
   createdAt: string;
   images: KujiBoardImage[];
@@ -74,6 +75,7 @@ export type AnimeCollection = {
   gradeCount?: number; // 추가
   prizes: Prize[];
   operationStatus?: "scheduled" | "active" | "ended";
+  previewOnly?: boolean;
   boardId?: number; // Backend alignment
   isWished?: boolean; // 추가
   rewardRate?: number; // 적립 포인트 설정용
@@ -194,6 +196,8 @@ export type ScreenType =
   | "adminPromotionManagement"
   | "adminStatistics"
   | "adminRefunds"
+  | "adminSettlements"
+  | "adminSignupFunnel"
   | "kakaoCallback"
   | "naverCallback"
   | "googleCallback"

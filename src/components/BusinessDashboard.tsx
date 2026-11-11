@@ -4,6 +4,7 @@ import { ApexOptions } from 'apexcharts';
 import { motion } from './motion';
 import { Package, TrendingUp, ShoppingCart, Truck, DollarSign, Users, Menu, Heart } from './icons';
 import { fetchSellerSummary, fetchSellerDailySales, SellerSummary, DailySales } from '../api/statistics';
+import SellerPayoutHistory from './SellerPayoutHistory';
 
 type BusinessDashboardProps = {
   onNavigate: (screen: 'productList' | 'productRegister' | 'shipping') => void;
@@ -218,7 +219,7 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
                 ['대기 판매 수수료', sellerSummary.pendingFeeAmount],
                 ['배송 완료 정산대상액', sellerSummary.confirmedSettlementAmount],
                 ['대기 정산대상액', sellerSummary.pendingSettlementAmount],
-                ['지급 완료액', sellerSummary.paidSettlementAmount],
+                ['지급 확인 기록액', sellerSummary.paidSettlementAmount],
                 ['확정 후 미지급액', sellerSummary.unpaidSettlementAmount],
               ] as const).map(([label, amount]) => <div key={label}><dt className="text-xs text-slate-400">{label}</dt><dd className="mt-1 font-semibold text-white">{amount == null ? '확인 중' : `${amount.toLocaleString()}원`}</dd></div>)}
             </dl>
@@ -228,6 +229,8 @@ export default function BusinessDashboard({ onNavigate, onOpenSidebar, onLogout 
             {sellerSummary.unknownSalesAmount > 0 && <p className="mt-3 text-xs text-amber-200">결제 환경을 확인할 수 없는 구매 {sellerSummary.unknownSalesAmount.toLocaleString()}원은 정산을 보류합니다.</p>}
           </section>
         )}
+
+        {sellerSummary && !statsError && <SellerPayoutHistory />}
 
         {/* Quick Actions - Always Visible */}
         <div className="mb-4">
