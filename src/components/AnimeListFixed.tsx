@@ -13,9 +13,10 @@ type AnimeListProps = {
   onToggleWishlist: (anime: AnimeCollection) => void;
   loadState?: 'loading' | 'ready' | 'error';
   onRetry?: () => void;
+  onExperience?: () => void;
 };
 
-export default function AnimeList({ collections, onSelect, onBack, onToggleWishlist, loadState = 'ready', onRetry }: AnimeListProps) {
+export default function AnimeList({ collections, onSelect, onBack, onToggleWishlist, loadState = 'ready', onRetry, onExperience }: AnimeListProps) {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -42,7 +43,7 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
       <div className="p-6 space-y-4">
         {loadState === 'loading' && <p role="status" className="rounded-2xl bg-slate-900 p-5 text-cyan-100">상품과 남은 수량을 불러오고 있어요.</p>}
         {loadState === 'error' && <div role="alert" className="rounded-2xl border border-rose-300/20 bg-slate-900 p-5 text-rose-100"><p>상품 정보를 불러오지 못했어요.</p><button onClick={onRetry} className="mt-3 rounded-lg bg-rose-200/10 px-4 py-2">다시 불러오기</button></div>}
-        {loadState === 'ready' && !collections.length && <p className="rounded-2xl bg-slate-900 p-5 text-slate-300">새로운 시리즈를 준비하고 있어요.</p>}
+        {loadState === 'ready' && !collections.length && <div className="rounded-2xl bg-slate-900 p-5 text-slate-300"><p>판매 상품을 준비하고 있어요.</p><p className="mt-2 text-sm text-slate-400">기다리는 동안 무료 가상 구매로 쿠지를 직접 뜯어보세요.</p>{onExperience && <button onClick={onExperience} className="mt-4 rounded-xl bg-amber-200 px-5 py-3 font-semibold text-slate-950">무료로 쿠지 체험하기</button>}</div>}
         {collections.map((anime, index) => {
           const isWishlisted = anime.isWished;
           
@@ -90,6 +91,7 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
                     onClick={() => onSelect(anime)}
                     className="relative h-full flex flex-col justify-end p-6 cursor-pointer"
                   >
+                    {(anime.previewOnly || anime.operationStatus !== 'active') && <span className="mb-2 w-fit rounded-full border border-amber-200/30 bg-slate-950/80 px-3 py-1 text-xs font-semibold text-amber-100">판매 준비 중 · 상품 둘러보기</span>}
                     <h2 className="text-white text-2xl mb-3 font-black tracking-tight drop-shadow-xl line-clamp-1 group-hover:text-cyan-300 transition-colors">
                       {anime.name}
                     </h2>
@@ -134,13 +136,13 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
       </div>
 
       {/* Info Banner */}
-      <div className="p-6 pb-20">
+      {collections.length > 0 && <div className="p-6 pb-20">
         <div className="bg-yellow-400/20 border border-yellow-400/50 rounded-xl p-4">
           <p className="text-yellow-200 text-center text-sm">
-            원하는 시리즈를 선택하여 복권을 구매하세요
+            원하는 시리즈의 상품 구성과 판매 상태를 확인해 보세요
           </p>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

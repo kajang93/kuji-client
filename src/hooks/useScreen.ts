@@ -19,7 +19,7 @@ const SCREEN_PATHS: Record<ScreenType, string> = {
   support: '/support',
   terms: '/terms',
   privacy: '/privacy',
-  catalogPreview: '/preview',
+  experience: '/experience',
   prizeSelection: '/prize-selection',
   businessDashboard: '/biz',
   businessProfile: '/biz/profile',
@@ -54,6 +54,7 @@ const SCREEN_PATHS: Record<ScreenType, string> = {
 const PATH_TO_SCREEN = Object.fromEntries(
   Object.entries(SCREEN_PATHS).map(([k, v]) => [v, k as ScreenType])
 );
+PATH_TO_SCREEN['/preview'] = 'experience';
 PATH_TO_SCREEN['/auth/kakao/callback'] = 'kakaoCallback';
 PATH_TO_SCREEN['/auth/naver/callback'] = 'naverCallback';
 PATH_TO_SCREEN['/auth/google/callback'] = 'googleCallback';

@@ -19,7 +19,7 @@ import Wishlist from "./components/Wishlist";
 import Settings from "./components/Settings";
 import CustomerSupport from "./components/CustomerSupport";
 import PolicyContent from "./components/PolicyContent";
-import CatalogPreview from "./components/CatalogPreview";
+import KujiExperience from "./components/KujiExperience";
 import { POLICY_TITLES } from "./constants/policies";
 import PrizeSelection from "./components/PrizeSelection";
 import { useGlobalGestures } from "./hooks/useGlobalGestures";
@@ -113,7 +113,7 @@ export default function App() {
   const hasPaymentReturn = callbackParams.has("payment") || callbackParams.has("pointCharge");
   const isAuthCallback = screen === "kakaoCallback" || screen === "naverCallback" || screen === "googleCallback";
   const isPublicPolicy = screen === "privacy" || screen === "terms";
-  const isPublicReadOnly = isPublicPolicy || screen === "catalogPreview";
+  const isPublicReadOnly = isPublicPolicy || screen === "experience";
   const showingPaymentReturn = screen === "paymentReturn" || (!isAuthCallback && !isPublicReadOnly && screen !== "support" && screen !== "login"
     && !(viewingRecoveryHistory && screen === "winning") && (Boolean(pendingPayment) || hasPaymentReturn));
   const pointDrawPending = useRef(false);
@@ -400,7 +400,7 @@ async function handleRefresh() {
     const requestAuthVersion = authVersion.current;
     const isCurrent = () => mounted.current && requestVersion === paymentRequestVersion.current
       && requestAuthVersion === authVersion.current && activePayment.current?.orderId === payment.orderId
-      && !["privacy", "terms", "catalogPreview", "support"].includes(currentScreen.current);
+      && !["privacy", "terms", "experience", "support"].includes(currentScreen.current);
     paymentRequests.current.set(payment.orderId, requestVersion);
     setPaymentRecoveryBusy(true);
     setPaymentRecoveryMessage("이전에 진행한 결제의 결과를 확인하고 있습니다.");
@@ -472,7 +472,7 @@ async function handleRefresh() {
 
   useEffect(() => {
     if (screen === "kakaoCallback" || screen === "naverCallback" || screen === "googleCallback") return;
-    if (screen === "privacy" || screen === "terms" || screen === "catalogPreview" || screen === "support") return;
+    if (screen === "privacy" || screen === "terms" || screen === "experience" || screen === "support") return;
     if (viewingRecoveryHistory && screen === "winning") return;
     const unopenedOrder = readUnopenedKujiOrder();
     const recovery = activePayment.current || readPaymentRecovery() || (unopenedOrder ? { kind: "kuji" as const, orderId: unopenedOrder } : null);
@@ -510,7 +510,7 @@ async function handleRefresh() {
       }
       handleFetchWinningHistory(formattedUser.type);
 
-      if (preserveScreen || boardNavigationPending.current || activePayment.current || revealedOrder.current || ["reveal", "privacy", "terms", "catalogPreview", "support"].includes(currentScreen.current)) return;
+      if (preserveScreen || boardNavigationPending.current || activePayment.current || revealedOrder.current || ["reveal", "privacy", "terms", "experience", "support"].includes(currentScreen.current)) return;
       if (formattedUser.type === "business" && formattedUser.isActive === false) {
         setScreen("businessPending");
       } else if (formattedUser.type === 'business' && screen === 'businessPending') {
@@ -658,7 +658,7 @@ async function handleRefresh() {
       const prizes = items.map(mapKujiItemToPrize);
       const stock = getRegularPrizeStock(prizes);
       if (consumeSaved) clearAuthReturn(context.expiresAt ? context as AuthReturnContext : undefined);
-      if (!board || board.status !== "ACTIVE" || stock.remainingKuji < 1) {
+      if (!board || (consumeSaved && (board.previewOnly || board.status !== "ACTIVE" || stock.remainingKuji < 1))) {
         setSelectedAnime(null);
         setScreen("list");
         toast.info("선택한 상품의 판매가 종료되었거나 재고가 없습니다. 다른 상품을 확인해 주세요.");
@@ -732,6 +732,10 @@ async function handleRefresh() {
 
   const handlePurchase = (count: number, pointsUsed = 0) => {
     if (!selectedAnime || !Number.isSafeInteger(count) || count < 1 || count > selectedAnime.remainingKuji) return;
+    if (selectedAnime.previewOnly || selectedAnime.operationStatus !== "active") {
+      toast.info("현재 구매할 수 없는 상품입니다. 무료 개봉 체험을 이용해 주세요.");
+      return;
+    }
     if (!user) {
       try {
         saveAuthReturn(Number(selectedAnime.id), count);
@@ -1264,6 +1268,7 @@ async function handleRefresh() {
       {/* Hamburger Menu Button - Fixed position */}
       {!showingPaymentReturn && !isPublicReadOnly && screen !== "reveal" && screen !== "login" && screen !== "communityWrite" && screen !== "communityDetail" && (
         <button
+          aria-label="메뉴 열기"
           onClick={() => setIsSidebarOpen(true)}
           className="fixed top-12 right-4 z-30 p-3 bg-rose-500 rounded-full shadow-lg hover:bg-rose-600 transition-colors"
         >
@@ -1297,15 +1302,16 @@ async function handleRefresh() {
         {screen === "main" && (
           <MainScreen
             onStart={() => setScreen("list")}
-            onPreview={() => setScreen("catalogPreview")}
+            onExperience={() => setScreen("experience")}
             banners={banners}
           />
         )}
-        {screen === "catalogPreview" && <CatalogPreview onBack={() => setScreen("main")} />}
+        {screen === "experience" && <KujiExperience onBack={() => setScreen("main")} />}
         {screen === "list" && (
           <AnimeList
             collections={animeCollections}
             loadState={boardListState}
+            onExperience={() => setScreen("experience")}
             onRetry={() => void handleFetchBoards()}
             onSelect={handleAnimeSelect}
             onBack={() => setScreen("main")}
@@ -1318,6 +1324,7 @@ async function handleRefresh() {
             initialPurchaseCount={purchaseCount}
             onBack={() => setScreen("list")}
             onPurchase={handlePurchase}
+            onExperience={() => setScreen("experience")}
             user={user ? { ...user, points: user.points || 0 } : null}
           />
         )}

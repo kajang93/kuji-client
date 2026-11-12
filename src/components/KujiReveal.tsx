@@ -12,6 +12,7 @@ import { playDrawHaptic, stopDrawHaptics } from '../utils/drawHaptics';
 type KujiRevealProps = {
   prizes: Prize[];
   onComplete: (destination?: "winning" | "detail") => void;
+  experience?: boolean;
 };
 
 type RevealStage = 'ready' | 'tearing' | 'revealed';
@@ -27,7 +28,7 @@ const RANK_TONES: Record<string, { color: string; soft: string; particles: numbe
   E: { color: '#f1abc9', soft: '#ae5c80', particles: 12 },
 };
 
-const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
+const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = false }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [stage, setStage] = useState<RevealStage>('ready');
   const [openingBeat, setOpeningBeat] = useState<OpeningBeat>('sealed');
@@ -241,7 +242,7 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
     stageRef.current = 'revealed';
     setStage('revealed');
     playDrawHaptic('reveal');
-    toast.success(prizes[index].rank + '상 · ' + prizes[index].name, { id: 'kuji-reveal', duration: 1800 });
+    toast.success((experience ? '체험 결과 · ' : '') + (isLastPrize(prizes[index].rank) ? '라스트상' : prizes[index].rank + '상') + ' · ' + prizes[index].name, { id: 'kuji-reveal', duration: 1800 });
     return true;
   };
 
@@ -331,13 +332,14 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
   };
 
   return (
-    <section aria-label="쿠지 개봉" className="relative isolate min-h-full w-full overflow-x-clip bg-[#080d19] text-white">
+    <section aria-label={experience ? '무료 쿠지 개봉 체험' : '쿠지 개봉'} className="relative isolate min-h-full w-full overflow-x-clip bg-[#080d19] text-white">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_28%,#252348_0%,transparent_62%)]" />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-[0.035]" style={{ backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 2px,#fff 3px,transparent 4px)', backgroundSize: '100% 4px' }} />
       <motion.div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10 bg-[#02040b]" initial={false} animate={{ opacity: stage === 'tearing' && !reducedMotion ? 0.78 : 0 }} transition={{ duration: 0.18 }} />
       <canvas ref={canvasRef} aria-hidden="true" className="pointer-events-none absolute inset-0 z-30 h-full w-full" />
 
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 sm:px-8">
+        {experience && <p className="mb-4 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-center text-xs text-cyan-100">무료 가상 구매 체험 · 실제 상품·결제 없음</p>}
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-amber-200/15 bg-amber-200/[0.06]">
@@ -475,7 +477,7 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
                   <div className="relative px-2 pb-3 pt-5 text-center">
                     <p className="mb-1 text-[10px] font-medium tracking-[0.18em]" style={{ color: tone.color }}>{isLastBonus ? '라스트상 추가 지급' : `${currentPrize.rank}상 당첨`}</p>
                     <h2 ref={headingRef} tabIndex={-1} className="break-keep text-xl font-semibold leading-relaxed tracking-tight text-white outline-none sm:text-2xl">{currentPrize.name}</h2>
-                    <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-slate-400"><Package aria-hidden="true" className="h-3 w-3" />보관함에 안전하게 담았어요.</div>
+                    <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-slate-400"><Package aria-hidden="true" className="h-3 w-3" />{experience ? '무료 체험 결과예요. 실제 상품·배송은 없어요.' : '보관함에 안전하게 담았어요.'}</div>
                   </div>
                 </div>
               </motion.div>
@@ -502,8 +504,8 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete }) => {
               <button type="button" onClick={handleNext} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-amber-100 px-5 font-semibold text-slate-950 shadow-[0_4px_25px_-8px_#f5d18b50] transition-colors hover:bg-amber-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200">다음 쿠지 뜯기<ArrowRight aria-hidden="true" className="h-[18px] w-[18px]" /></button>
             ) : (
               <div className="space-y-2.5">
-                <button type="button" onClick={() => finish('winning')} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-amber-100 px-5 font-semibold text-slate-950 shadow-[0_4px_25px_-8px_#f5d18b50] transition-colors hover:bg-amber-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200"><Package aria-hidden="true" className="h-[18px] w-[18px]" />보관함으로 바로 이동</button>
-                <button type="button" onClick={() => finish('detail')} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm text-slate-400 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200"><RotateCcw aria-hidden="true" className="h-3.5 w-3.5" />다시 뽑기</button>
+                <button type="button" onClick={() => finish('winning')} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-amber-100 px-5 font-semibold text-slate-950 shadow-[0_4px_25px_-8px_#f5d18b50] transition-colors hover:bg-amber-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200"><Package aria-hidden="true" className="h-[18px] w-[18px]" />{experience ? '체험 결과 보기' : '보관함으로 바로 이동'}</button>
+                <button type="button" onClick={() => finish('detail')} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm text-slate-400 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200"><RotateCcw aria-hidden="true" className="h-3.5 w-3.5" />{experience ? '남은 티켓 보기' : '다시 뽑기'}</button>
               </div>
             )
           ) : <div role="status" className="flex min-h-12 items-center justify-center text-sm text-slate-400">봉인된 행운을 열고 있어요.</div>}

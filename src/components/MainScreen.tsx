@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Ticket, ChevronRight } from './icons';
-import { OperatorDisclosure } from './PolicyContent';
 import { trackFunnelEvent } from '../utils/funnelAnalytics';
 
 type Banner = {
@@ -20,11 +19,11 @@ type Banner = {
 
 type MainScreenProps = {
   onStart: () => void;
-  onPreview?: () => void;
+  onExperience: () => void;
   banners: Banner[];
 };
 
-export default function MainScreen({ onStart, onPreview, banners }: MainScreenProps) {
+export default function MainScreen({ onStart, onExperience, banners }: MainScreenProps) {
   const activeBanners = banners.filter(b => b.isActive).sort((a, b) => a.order - b.order);
   const [currentIndex, setCurrentIndex] = useState(0);
   useEffect(() => { trackFunnelEvent('LANDING_VIEW'); }, []);
@@ -69,14 +68,14 @@ export default function MainScreen({ onStart, onPreview, banners }: MainScreenPr
       </AnimatePresence>
 
       {/* Content Layer */}
-      <div className="relative z-20 flex flex-1 flex-col items-center justify-center px-4 py-16 text-center">
+      <div className="relative z-20 flex flex-1 flex-col items-center justify-center px-4 py-12 text-center">
         {/* Animated Title */}
         <motion.div
           key={`text-${currentIndex}`}
           initial={{ y: 40, opacity: 0, scale: 0.95 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
           transition={{ delay: 0.3, duration: 0.8, type: "spring", bounce: 0.4 }}
-          className="mb-12 glass-panel p-8 rounded-3xl shadow-2xl relative overflow-hidden"
+          className="mb-8 glass-panel p-8 rounded-3xl shadow-2xl relative overflow-hidden"
         >
           {/* Subtle inner glow */}
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent opacity-50 pointer-events-none" />
@@ -101,12 +100,12 @@ export default function MainScreen({ onStart, onPreview, banners }: MainScreenPr
           <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400 via-indigo-500 to-purple-600 rounded-full blur-xl opacity-50 group-hover:opacity-100 transition duration-500 animate-pulse"></div>
           
           <button
-            onClick={onStart}
+            onClick={onExperience}
             className="relative px-12 py-5 bg-black/80 backdrop-blur-md rounded-full leading-none flex items-center gap-4 overflow-hidden border border-white/20 hover:border-cyan-400/50 transition-colors duration-300"
           >
             <span className="flex items-center gap-3 text-white text-xl md:text-2xl font-bold tracking-wider uppercase group-hover:text-cyan-300 transition-colors duration-300">
               <Ticket className="w-6 h-6 md:w-8 md:h-8 text-cyan-400 group-hover:rotate-12 transition-transform duration-300" />
-              쿠지 구경하기
+              무료 쿠지 체험
             </span>
             <ChevronRight className="w-6 h-6 text-white/50 group-hover:translate-x-2 group-hover:text-cyan-300 transition-all duration-300" />
             
@@ -115,8 +114,9 @@ export default function MainScreen({ onStart, onPreview, banners }: MainScreenPr
           </button>
         </motion.div>
 
-        <p className="mt-5 text-sm text-slate-300">회원가입 없이 상품과 남은 수량을 볼 수 있어요.</p>
-        {onPreview && <button onClick={onPreview} className="mt-4 rounded-full border border-cyan-200/25 bg-cyan-200/10 px-5 py-2 text-sm text-cyan-100 hover:bg-cyan-200/20">오리지널 상품 미리보기</button>}
+        <p className="mt-5 text-sm text-slate-300">회원가입 없이, 마음껏 뜯어보세요.</p>
+        <p className="mt-2 text-xs text-slate-400">가상 구매부터 개봉까지 · 결제·포인트 차감 없음</p>
+        <button onClick={onStart} className="mt-5 rounded-full border border-white/15 bg-white/5 px-6 py-2 text-sm text-slate-200 hover:bg-white/10">기존 상품 둘러보기</button>
         <a href="/brochure.html" className="mt-4 text-xs text-slate-400 underline underline-offset-4 transition-colors hover:text-cyan-300">
           판매자 입점 안내
         </a>
@@ -137,13 +137,6 @@ export default function MainScreen({ onStart, onPreview, banners }: MainScreenPr
         )}
       </div>
       </section>
-      <footer className="relative z-20 border-t border-white/10 bg-black/40 px-5 py-6 text-center">
-        <div className="mx-auto max-w-3xl"><OperatorDisclosure /></div>
-        <nav aria-label="서비스 정책" className="mt-4 flex justify-center gap-5 text-xs text-slate-300">
-          <a href="/terms" className="underline underline-offset-4 hover:text-white">이용약관</a>
-          <a href="/privacy" className="font-semibold underline underline-offset-4 hover:text-white">개인정보 처리방침</a>
-        </nav>
-      </footer>
     </div>
   );
 }

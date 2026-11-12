@@ -173,7 +173,7 @@ export type ScreenType =
   | "support"
   | "terms"
   | "privacy"
-  | "catalogPreview"
+  | "experience"
   | "prizeSelection"
   | "businessDashboard"
   | "businessProfile"

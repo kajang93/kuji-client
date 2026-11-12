@@ -10,6 +10,7 @@ type PrizeDetailProps = {
   anime: AnimeCollection;
   onBack: () => void;
   onPurchase: (count: number, pointsUsed?: number) => void;
+  onExperience?: () => void;
   initialPurchaseCount?: number;
   user?: { name: string; email: string; points: number; type: 'social' | 'customer' | 'business' | 'admin' } | null;
 };
@@ -21,7 +22,7 @@ const normalizeRank = (rank: string) => {
 };
 const clampCount = (count: number, remaining: number) => Math.max(1, Math.min(Number.isSafeInteger(count) ? count : 1, remaining || 1));
 
-export default function PrizeDetail({ anime, onBack, onPurchase, user, initialPurchaseCount = 1 }: PrizeDetailProps) {
+export default function PrizeDetail({ anime, onBack, onPurchase, onExperience, user, initialPurchaseCount = 1 }: PrizeDetailProps) {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [purchaseCount, setPurchaseCount] = useState(() => clampCount(initialPurchaseCount, anime.remainingKuji));
   const [remainingOnly, setRemainingOnly] = useState(false);
@@ -29,6 +30,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user, initialPu
   const [imagePopup, setImagePopup] = useState<{ images: string[]; currentIndex: number; prizeName: string } | null>(null);
   const { hasLastPrize, lastPrizeAvailable } = getRegularPrizeStock(anime.prizes);
   const needsStockReview = hasLastPrize && !lastPrizeAvailable && anime.remainingKuji > 0;
+  const viewOnly = anime.previewOnly || anime.operationStatus !== 'active';
   const pricePerKuji = anime.pricePerDraw || 15000; // 1장당 가격 (백엔드 기본값 매핑)
   const groupedPrizes = anime.prizes.reduce((acc, prize) => {
     const rank = normalizeRank(prize.rank);
@@ -67,12 +69,12 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user, initialPu
   }, [showPurchaseModal, imagePopup]);
 
   const handlePurchaseClick = () => {
-    if (needsStockReview || anime.remainingKuji < 1) return;
+    if (viewOnly || needsStockReview || anime.remainingKuji < 1) return;
     setShowPurchaseModal(true);
   };
 
   const handleConfirmPurchase = () => {
-    if (needsStockReview || anime.remainingKuji < 1) return;
+    if (viewOnly || needsStockReview || anime.remainingKuji < 1) return;
     setShowPurchaseModal(false);
     onPurchase(purchaseCount, pointsToUse);
   };
@@ -139,6 +141,8 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user, initialPu
         
 
       </div>
+
+      {viewOnly && <div role="status" className="mx-4 mt-4 rounded-2xl border border-cyan-200/20 bg-cyan-200/5 p-4 text-sm leading-6 text-cyan-100">현재 구매할 수 없는 상품이에요. 기존 상품 구성은 둘러볼 수 있으며, 개봉은 별도의 무료 체험에서 즐길 수 있어요.</div>}
 
       {hasLastPrize && (
         <div role="note" aria-label="라스트상 안내" className="mx-4 mt-4 rounded-2xl border border-amber-300/30 bg-gradient-to-r from-amber-400/15 to-rose-400/10 p-4">
@@ -261,14 +265,17 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user, initialPu
       <div className="px-6 py-3">
         <div className="bg-gradient-to-r from-purple-800 to-blue-800 rounded-xl p-4 text-center border border-cyan-400/30">
           <p className="text-cyan-200 text-sm">
-            구매 전 남은 경품 수량을 꼭 확인해 주세요.
+            {viewOnly ? '상품 정보는 보존되며 무료 체험 결과는 실제 재고에 반영되지 않아요.' : '구매 전 남은 경품 수량을 꼭 확인해 주세요.'}
           </p>
         </div>
       </div>
 
       {/* Fixed Purchase Section */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-purple-900 via-purple-900/98 to-purple-900/90 border-t border-white/10 shadow-2xl">
-        <div className="p-4 space-y-3">
+        {viewOnly ? <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-center">
+          <p className="mb-3 text-sm text-slate-300">판매 준비 중 · 실제 결제 불가</p>
+          {onExperience && <button onClick={onExperience} className="w-full rounded-2xl bg-gradient-to-r from-amber-100 to-amber-300 px-5 py-4 font-semibold text-slate-950">무료 개봉 체험하기</button>}
+        </div> : <div className="p-4 space-y-3">
           {/* Quantity Selector */}
           <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-3 border border-white/20">
             <span className="text-white/70">구매 수량</span>
@@ -315,12 +322,12 @@ export default function PrizeDetail({ anime, onBack, onPurchase, user, initialPu
               {needsStockReview ? '상품 구성 확인 중' : anime.remainingKuji < 1 ? '품절' : '구매하기'}
             </motion.button>
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Purchase Confirmation Modal */}
       <AnimatePresence>
-        {showPurchaseModal && (
+        {showPurchaseModal && !viewOnly && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
