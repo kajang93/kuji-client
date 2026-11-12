@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from './motion';
 import { X, Package, PlusCircle, Truck, User, Settings as SettingsIcon, LogOut, MessageSquare } from './icons';
+import { APP_DISPLAY_VERSION } from '../constants/appInfo';
+import { SidebarServiceInfo } from './PolicyContent';
 
 type BusinessSidebarProps = {
   isOpen: boolean;
@@ -124,6 +126,10 @@ export default function BusinessSidebar({ isOpen, onClose, user, onLogout, onNav
                 </motion.button>
               </div>
             )}
+            <div className="p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-center text-sm text-slate-400">
+              <p>오시쿠지 App {APP_DISPLAY_VERSION}</p>
+              <SidebarServiceInfo />
+            </div>
           </motion.div>
         </>
       )}

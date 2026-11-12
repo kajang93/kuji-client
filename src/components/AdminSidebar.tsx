@@ -1,6 +1,7 @@
 import { motion } from './motion';
 import { X, Home, Bell, Calendar, MessageSquare, Users, LogOut, Shield, ImageIcon, TrendingUp } from './icons';
 import { APP_DISPLAY_VERSION } from '../constants/appInfo';
+import { SidebarServiceInfo } from './PolicyContent';
 
 type AdminSidebarProps = {
   isOpen: boolean;
@@ -129,6 +130,7 @@ export default function AdminSidebar({ isOpen, onClose, onNavigate, onLogout, us
         {/* Footer */}
         <div className="p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-center text-white/50 text-xs">
           Oshikuji Kuji Admin {APP_DISPLAY_VERSION}
+          <SidebarServiceInfo />
         </div>
       </motion.div>
     </>

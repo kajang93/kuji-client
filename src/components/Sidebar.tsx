@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from './motion';
 import { X, User, ShoppingBag, Heart, Settings, LogOut, History, MessageCircle, Users, Gift, ChevronDown, ChevronUp, Bell, MessageSquare } from './icons';
 import { useState } from 'react';
 import { APP_COPYRIGHT_YEAR, APP_DISPLAY_VERSION } from '../constants/appInfo';
+import { SidebarServiceInfo } from './PolicyContent';
 
 type SidebarProps = {
   isOpen: boolean;
@@ -211,6 +212,7 @@ export default function Sidebar({ isOpen, onClose, user, onLogout, onLogin, onNa
             {/* Footer */}
             <div className="p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-center text-purple-300 text-sm">
               <p>오시쿠지 App {APP_DISPLAY_VERSION}</p>
+              <SidebarServiceInfo />
               <p className="mt-2 text-xs opacity-70">© {APP_COPYRIGHT_YEAR} All rights reserved</p>
             </div>
           </motion.div>

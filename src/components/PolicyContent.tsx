@@ -8,15 +8,25 @@ import {
 
 export type PolicyContentProps = { kind: PolicyKind; audience?: PolicyAudience };
 
-export const OperatorDisclosure: FC = () => (
+export const OperatorDisclosure: FC<{ compact?: boolean }> = ({ compact = false }) => (
   <div className="space-y-1 text-xs leading-6 text-slate-300">
     <p>서비스 {POLICY_OPERATOR.serviceName} · 운영사업자 {POLICY_OPERATOR.businessName}</p>
     <p>사업자등록번호 {POLICY_OPERATOR.businessNumber}</p>
-    {POLICY_OPERATOR.representativeName && <p>대표자 {POLICY_OPERATOR.representativeName}</p>}
-    <p>{POLICY_OPERATOR.businessAddress ? `사업장 주소 ${POLICY_OPERATOR.businessAddress}` : '사업장 주소는 판매 개시 전 확인 예정'}</p>
-    <p>{POLICY_OPERATOR.salesRegistrationNumber ? `통신판매업 신고번호 ${POLICY_OPERATOR.salesRegistrationNumber}` : POLICY_OPERATOR.salesRegistrationStatus}</p>
+    {!compact && POLICY_OPERATOR.representativeName && <p>대표자 {POLICY_OPERATOR.representativeName}</p>}
+    {!compact && <p>{POLICY_OPERATOR.businessAddress ? `사업장 주소 ${POLICY_OPERATOR.businessAddress}` : '사업장 주소는 판매 개시 전 확인 예정'}</p>}
+    {!compact && <p>{POLICY_OPERATOR.salesRegistrationNumber ? `통신판매업 신고번호 ${POLICY_OPERATOR.salesRegistrationNumber}` : POLICY_OPERATOR.salesRegistrationStatus}</p>}
     {POLICY_OPERATOR.privacyOfficer && <p>개인정보 보호책임자 {POLICY_OPERATOR.privacyOfficer}</p>}
     <p>운영·개인정보 문의 <a className="break-all text-cyan-300 underline underline-offset-4" href={`mailto:${POLICY_OPERATOR.email}`}>{POLICY_OPERATOR.email}</a></p>
+  </div>
+);
+
+export const SidebarServiceInfo: FC = () => (
+  <div className="mt-4 space-y-3 border-t border-white/10 pt-4 text-left">
+    <OperatorDisclosure compact />
+    <nav aria-label="서비스 정책" className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-300">
+      <a href="/terms" className="underline underline-offset-4 hover:text-white">이용약관</a>
+      <a href="/privacy" className="font-semibold underline underline-offset-4 hover:text-white">개인정보 처리방침</a>
+    </nav>
   </div>
 );
 
