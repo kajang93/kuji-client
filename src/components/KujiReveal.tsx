@@ -1,7 +1,7 @@
 // 실물 티켓을 당겨 개봉하는 연출과 당첨 상품 확인을 제공한다.
 import { useState, useEffect, useRef, useId, type FC } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation, useReducedMotion, type PanInfo } from 'framer-motion';
-import { ArrowRight, ArrowUpRight, Hand, LoaderCircle, Package, RotateCcw, Sparkles, Ticket } from 'lucide-react';
+import { motion, animate, AnimatePresence, useMotionValue, useTransform, useReducedMotion, type PanInfo } from 'framer-motion';
+import { ArrowLeft, ArrowRight, ArrowUpRight, Hand, LoaderCircle, Package, RotateCcw, Sparkles, Ticket, Volume2, VolumeX } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { toast } from 'sonner';
 import type { Prize } from '@/shared-types';
@@ -15,7 +15,7 @@ type KujiRevealProps = {
   experience?: boolean;
 };
 
-type RevealStage = 'ready' | 'tearing' | 'revealed';
+type RevealStage = 'ready' | 'tearing' | 'unsealed' | 'revealed';
 type OpeningBeat = 'sealed' | 'dimming' | 'tension' | 'split' | 'burst';
 const DRAG_THRESHOLD = 132;
 const RANK_TONES: Record<string, { color: string; soft: string; particles: number }> = {
@@ -34,11 +34,14 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
   const [openingBeat, setOpeningBeat] = useState<OpeningBeat>('sealed');
   const [isAutoMode, setIsAutoMode] = useState(false);
   const [pullProgress, setPullProgress] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const reducedMotion = useReducedMotion() ?? false;
   const x = useMotionValue(0);
-  const controls = useAnimation();
-  const rotateY = useTransform(x, [0, DRAG_THRESHOLD, 460], [0, -12, -38]);
-  const rotate = useTransform(x, [0, DRAG_THRESHOLD], [0, -3]);
+  const rotateY = useTransform(x, [0, DRAG_THRESHOLD, 250], [0, -64, -168]);
+  const paperLift = useTransform(x, [0, DRAG_THRESHOLD, 250], [0, -8, -2]);
+  const curl = useTransform(x, [0, 30, DRAG_THRESHOLD, 250], [0, -24, -38, -4]);
+  const foldShade = useTransform(x, [0, 65, DRAG_THRESHOLD, 250], [0, 0.15, 0.32, 0.05]);
+  const creaseWidth = useTransform(x, [0, DRAG_THRESHOLD, 250], ['2%', '12%', '2%']);
   const progressScale = useTransform(x, [0, DRAG_THRESHOLD], [0, 1]);
   const paperId = useId().replace(/:/g, '');
   const currentPrize = prizes[currentIndex];
@@ -60,6 +63,9 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourcesRef = useRef(new Set<AudioBufferSourceNode>());
   const lastTearSoundRef = useRef(0);
+  const soundEnabledRef = useRef(true);
+  const panStartRef = useRef(0);
+  const horizontalPanRef = useRef(false);
 
   const isActive = (run: number) => mountedRef.current && !completedRef.current && runRef.current === run;
 
@@ -82,7 +88,7 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
       resolve(false);
     });
     timersRef.current.clear();
-    controls.stop();
+    x.stop();
     stopDrawHaptics();
     celebrationRef.current?.reset();
     audioSourcesRef.current.forEach(source => {
@@ -101,7 +107,7 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
       audioContextRef.current = null;
       if (context && context.state !== 'closed') void context.close().catch(() => undefined);
     };
-  }, [controls]);
+  }, [x]);
 
   useEffect(() => {
     const handleVisibility = () => {
@@ -109,11 +115,11 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
       cancelRun();
       autoRef.current = false;
       setIsAutoMode(false);
-      if (stageRef.current !== 'revealed') resetTicket(currentIndexRef.current);
+      if (stageRef.current !== 'revealed' && stageRef.current !== 'unsealed') resetTicket(currentIndexRef.current);
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [controls]);
+  }, [x]);
 
   useEffect(() => {
     if (!reducedMotion) return;
@@ -149,32 +155,56 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
     };
   }, [stage, currentIndex, reducedMotion, tone.color, tone.soft, tone.particles]);
 
-  const playTearSound = () => {
-    if (document.hidden || reducedMotion) return;
-    const now = Date.now();
-    if (now - lastTearSoundRef.current < 90) return;
-    lastTearSoundRef.current = now;
+  const preparePaperAudio = () => {
+    if (!soundEnabledRef.current || document.hidden || reducedMotion) return;
     try {
       if (!audioContextRef.current) {
-        if (!('AudioContext' in window)) return;
-        audioContextRef.current = new AudioContext();
+        const Context = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!Context) return;
+        audioContextRef.current = new Context();
       }
       const context = audioContextRef.current;
       if (context.state === 'suspended') void context.resume().catch(() => undefined);
-      const buffer = context.createBuffer(1, Math.floor(context.sampleRate * 0.035), context.sampleRate);
+      return context;
+    } catch {
+      return;
+    }
+  };
+
+  const toggleSound = () => {
+    soundEnabledRef.current = !soundEnabledRef.current;
+    setSoundEnabled(soundEnabledRef.current);
+    if (soundEnabledRef.current) preparePaperAudio();
+    else {
+      audioSourcesRef.current.forEach(source => { try { source.stop(); } catch { /* 이미 끝난 소리 */ } });
+      audioSourcesRef.current.clear();
+    }
+  };
+
+  const playTearSound = (snap = false) => {
+    if (!soundEnabledRef.current || document.hidden || reducedMotion) return;
+    const now = Date.now();
+    if (!snap && now - lastTearSoundRef.current < 65) return;
+    lastTearSoundRef.current = now;
+    try {
+      const context = preparePaperAudio();
+      if (!context) return;
+      const duration = snap ? 0.14 : 0.055;
+      const buffer = context.createBuffer(1, Math.floor(context.sampleRate * duration), context.sampleRate);
       const noise = buffer.getChannelData(0);
       for (let i = 0; i < noise.length; i++) {
-        noise[i] = (Math.random() * 2 - 1) * Math.exp(-i / (noise.length * 0.18));
+        const grain = 0.35 + 0.65 * Math.pow(Math.sin(i / context.sampleRate * (snap ? 120 : 190) * Math.PI), 2);
+        noise[i] = (Math.random() * 2 - 1) * grain * Math.exp(-i / (noise.length * 0.42));
       }
       const source = context.createBufferSource();
       const filter = context.createBiquadFilter();
       const gain = context.createGain();
       source.buffer = buffer;
       filter.type = 'bandpass';
-      filter.frequency.value = 1500;
-      filter.Q.value = 0.7;
-      gain.gain.setValueAtTime(0.045, context.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.035);
+      filter.frequency.value = snap ? 1900 : 2600;
+      filter.Q.value = 0.6;
+      gain.gain.setValueAtTime(snap ? 0.13 : 0.085, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + duration);
       source.connect(filter);
       filter.connect(gain);
       gain.connect(context.destination);
@@ -186,7 +216,7 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
         gain.disconnect();
       };
       source.start();
-      source.stop(context.currentTime + 0.035);
+      source.stop(context.currentTime + duration);
     } catch {
       // 소리를 재생할 수 없는 환경에서도 개봉 동작은 계속한다.
     }
@@ -201,10 +231,10 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
     setOpeningBeat('sealed');
     setPullProgress(0);
     x.set(0);
-    controls.set({ x: 0, y: 0, opacity: 1, scale: 1 });
+    horizontalPanRef.current = false;
   };
 
-  const openTicket = async (index: number, run: number): Promise<boolean> => {
+  const openTicket = async (run: number): Promise<boolean> => {
     if (!isActive(run) || document.hidden || stageRef.current !== 'ready') return false;
     stageRef.current = 'tearing';
     setStage('tearing');
@@ -217,33 +247,29 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
       playDrawHaptic('pull');
       const pullFrom = Math.max(x.get(), 0);
       const heldPull = Math.max(pullFrom, 44);
-      void controls.start({
-        x: [pullFrom, heldPull, heldPull - 5, heldPull + 3, heldPull],
-        scale: [1, 1.025, 1.025],
-        transition: { duration: 0.32, ease: 'easeInOut' },
-      });
+      void animate(x, [pullFrom, heldPull, heldPull - 5, heldPull + 3, heldPull], { duration: 0.32, ease: 'easeInOut' });
       if (!await pause(320, run)) return false;
     }
     setOpeningBeat('split');
     playDrawHaptic('open');
-    playTearSound();
-    void controls.start({
-      x: reducedMotion ? 0 : Math.max(window.innerWidth, 480),
-      y: reducedMotion ? 0 : -24,
-      opacity: 0,
-      scale: 1,
-      transition: { duration: reducedMotion ? 0.12 : 0.28, ease: [0.22, 0.7, 0.25, 1] },
-    });
+    playTearSound(true);
+    void animate(x, 250, { duration: reducedMotion ? 0.12 : 0.28, ease: [0.22, 0.7, 0.25, 1] });
     if (!await pause(reducedMotion ? 140 : 280, run)) return false;
     if (!reducedMotion) {
       setOpeningBeat('burst');
       if (!await pause(240, run)) return false;
     }
+    stageRef.current = 'unsealed';
+    setStage('unsealed');
+    playDrawHaptic('reveal');
+    return true;
+  };
+
+  const showPrize = (index: number, run: number) => {
+    if (!isActive(run) || stageRef.current !== 'unsealed') return;
     stageRef.current = 'revealed';
     setStage('revealed');
-    playDrawHaptic('reveal');
     toast.success((experience ? '체험 결과 · ' : '') + (isLastPrize(prizes[index].rank) ? '라스트상' : prizes[index].rank + '상') + ' · ' + prizes[index].name, { id: 'kuji-reveal', duration: 1800 });
-    return true;
   };
 
   const finish = (destination: 'winning' | 'detail') => {
@@ -255,16 +281,24 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
 
   const handleDragStart = () => {
     if (stageRef.current !== 'ready' || autoRef.current) return;
-    controls.stop();
+    x.stop();
+    panStartRef.current = x.get();
+    horizontalPanRef.current = false;
     pullSegmentRef.current = 0;
+    preparePaperAudio();
     playDrawHaptic('select');
   };
 
-  const handleDrag = () => {
+  const handleDrag = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (stageRef.current !== 'ready' || autoRef.current) return;
+    if (Math.abs(info.offset.y) > Math.abs(info.offset.x)) return;
+    horizontalPanRef.current = true;
+    const distance = Math.max(-info.offset.x, 0);
+    // 손가락보다 종이가 조금 늦게 따라오도록 접착면의 저항감을 표현한다.
+    x.set(Math.min(panStartRef.current + distance / (1 + distance / 420), DRAG_THRESHOLD + 8));
     const progress = Math.min(Math.max(x.get(), 0) / DRAG_THRESHOLD, 1);
     setPullProgress(Math.round(progress * 100));
-    const segment = Math.floor(progress * 4);
+    const segment = Math.floor(progress * 8);
     if (segment > pullSegmentRef.current) {
       pullSegmentRef.current = segment;
       playDrawHaptic('pull');
@@ -272,22 +306,23 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
     }
   };
 
-  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent) => {
     if (stageRef.current !== 'ready' || autoRef.current) return;
     const distance = Math.max(x.get(), 0);
-    if (distance >= DRAG_THRESHOLD || (distance >= 48 && info.velocity.x > 700)) {
-      void openTicket(currentIndexRef.current, runRef.current);
+    if (event.type !== 'pointercancel' && event.type !== 'touchcancel' && horizontalPanRef.current && distance >= DRAG_THRESHOLD) {
+      void openTicket(runRef.current);
     } else {
       stopDrawHaptics();
       setPullProgress(0);
       pullSegmentRef.current = 0;
-      void controls.start({ x: 0, y: 0, opacity: 1, transition: reducedMotion ? { duration: 0.1 } : { type: 'spring', stiffness: 420, damping: 28 } });
+      void animate(x, 0, reducedMotion ? { duration: 0.1 } : { type: 'spring', stiffness: 300, damping: 24 });
     }
   };
 
   const handleManualOpen = () => {
     if (autoRef.current || stageRef.current !== 'ready') return;
-    void openTicket(currentIndexRef.current, runRef.current);
+    preparePaperAudio();
+    void openTicket(runRef.current);
   };
 
   const handleNext = () => {
@@ -306,11 +341,12 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
     autoRef.current = false;
     setIsAutoMode(false);
     cancelRun();
-    if (stageRef.current !== 'revealed') resetTicket(currentIndexRef.current);
+    if (stageRef.current !== 'revealed' && stageRef.current !== 'unsealed') resetTicket(currentIndexRef.current);
   };
 
   const handleAutoOpen = async () => {
     if (document.hidden || autoRef.current || stageRef.current !== 'ready' || completedRef.current) return;
+    preparePaperAudio();
     autoRef.current = true;
     setIsAutoMode(true);
     playDrawHaptic('select');
@@ -322,7 +358,9 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
         resetTicket(index);
         if (!await pause(reducedMotion ? 160 : 280, run)) return;
       }
-      if (!await openTicket(index, run)) return;
+      if (!await openTicket(run)) return;
+      if (!await pause(650, run)) return;
+      showPrize(index, run);
       if (!await pause(1050, run)) return;
     }
     if (!isActive(run)) return;
@@ -350,8 +388,11 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
               <p className="mt-0.5 text-[11px] text-slate-400">나의 행운을 여는 순간</p>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={toggleSound} aria-label={soundEnabled ? '종이 소리 끄기' : '종이 소리 켜기'} aria-pressed={soundEnabled} className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/10 text-slate-400 hover:text-amber-100">{soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}</button>
           <div className="rounded-full border border-white/10 bg-white/[0.035] px-3.5 py-1.5 text-xs tabular-nums text-slate-400">
             <span className="font-semibold text-white">{currentIndex + 1}</span><span className="mx-1.5 text-slate-600">/</span>{prizes.length}
+          </div>
           </div>
         </header>
 
@@ -367,87 +408,77 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
               <motion.div key={'ticket-' + currentIndex} initial={{ opacity: 0, y: reducedMotion ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reducedMotion ? 0.12 : 0.22 }}>
                 <motion.div className="mb-9 text-center" animate={{ opacity: stage === 'tearing' && !reducedMotion ? 0.25 : 1 }} transition={{ duration: 0.18 }}>
                   <p className="mb-3 text-[10px] font-medium tracking-[0.24em] text-amber-200/65">A LITTLE MOMENT OF LUCK</p>
-                  <h1 className="text-[28px] font-semibold leading-[1.35] tracking-tight sm:text-[34px]">어떤 행운이<br /><span className="text-amber-100">기다리고 있을까요?</span></h1>
-                  <p className="mt-3 text-sm text-slate-400">한 장의 설렘을, 내 손으로.</p>
+                  <h1 className="text-[28px] font-semibold leading-[1.35] tracking-tight sm:text-[34px]">{stage === 'unsealed' ? <>펼친 종이 안에,<br /><span className="text-amber-100">오늘의 행운이 있어요.</span></> : <>종이 끝을 잡고,<br /><span className="text-amber-100">두근두근, 페리페리.</span></>}</h1>
+                  <p className="mt-3 text-sm text-slate-400">{stage === 'unsealed' ? '내 손으로 뜯어 확인한 한 장.' : '손끝을 따라 봉인이 조금씩 열려요.'}</p>
                 </motion.div>
 
-                <div className="relative mx-auto w-full max-w-[390px]" style={{ perspective: '1100px' }}>
-                  <motion.div aria-hidden="true" className="pointer-events-none absolute -inset-6 rounded-full bg-amber-100/15 blur-3xl" animate={{ opacity: openingBeat === 'tension' ? 0.8 : 0.3, scale: openingBeat === 'tension' && !reducedMotion ? 1.15 : 1 }} transition={{ duration: 0.3 }} />
-                  <div className="relative aspect-[1.72] w-full rounded-[18px] shadow-[0_26px_65px_-20px_#000] sm:rounded-[22px]">
-                    <div aria-hidden="true" className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-[18px] border border-amber-100/20 bg-[#191b29] sm:rounded-[22px]">
-                      <div className="absolute inset-0 opacity-15" style={{ backgroundImage: 'repeating-linear-gradient(25deg,#b8a880 0px,transparent 1px,transparent 4px)' }} />
-                      <div className="absolute inset-3 rounded-xl border border-amber-100/10" />
-                      <div className="flex flex-col items-center gap-3 text-amber-100/60">
-                        <Sparkles className="h-8 w-8" />
-                        <span className="text-[10px] font-semibold tracking-[0.3em]">YOUR LUCK AWAITS</span>
+                <div className="relative mx-auto w-full max-w-[390px]">
+                  <motion.div
+                    role="button"
+                    tabIndex={stage === 'ready' && !isAutoMode ? 0 : -1}
+                    aria-label="오른쪽 모서리를 잡고 왼쪽으로 벗겨 쿠지 개봉. 엔터 키로 바로 개봉할 수 있습니다."
+                    aria-disabled={stage !== 'ready' || isAutoMode}
+                    onPointerDown={preparePaperAudio}
+                    onPanStart={handleDragStart}
+                    onPan={handleDrag}
+                    onPanEnd={handleDragEnd}
+                    onContextMenu={event => event.preventDefault()}
+                    onKeyDown={event => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        handleManualOpen();
+                      }
+                    }}
+                    className="relative aspect-[1.72] w-full cursor-grab select-none rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-amber-200 focus-visible:ring-offset-8 focus-visible:ring-offset-slate-950 active:cursor-grabbing"
+                    style={{ perspective: '1200px', touchAction: 'pan-y', WebkitUserSelect: 'none' }}
+                  >
+                    <div aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-sm border border-[#cabb9e] bg-[#eee6d4] shadow-[0_18px_36px_-12px_#000000a0]">
+                      <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'repeating-linear-gradient(8deg,transparent 0px,transparent 3px,#86795715 4px)' }} />
+                      <div className="absolute inset-y-0 left-0 flex w-[17%] items-center justify-center border-r border-dashed border-[#8b7650]/60 bg-[#e5dbc5]">
+                        <div className="text-center text-[#776446]" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}><span className="text-[9px] tracking-[0.2em]">오시쿠지 · 행운의 한 장</span><span className="mt-3 text-[10px] font-mono">{String(currentIndex + 1).padStart(4, '0')}</span></div>
                       </div>
+                      <div className="absolute inset-y-3 left-[21%] right-3 flex flex-col items-center justify-center border border-[#bba989]/65 bg-[#faf5e7] text-[#443c31]">
+                        <span className="absolute top-3 text-[8px] tracking-[0.25em] text-[#968873]">OSHIKUJI / LUCKY TICKET</span>
+                        {(stage === 'unsealed' || openingBeat === 'burst') ? <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }} className="px-3 text-center">
+                          <span className={isLastBonus ? 'font-serif text-3xl font-black' : 'font-serif text-6xl font-black'}>{isLastBonus ? 'LAST' : currentPrize.rank}</span><span className="ml-1 text-xl font-bold">상</span>
+                          <p className="mt-1 line-clamp-2 text-[11px] font-semibold leading-4">{currentPrize.name}</p>
+                        </motion.div> : <div className="flex gap-2 opacity-20">{[0, 1, 2].map(index => <span key={index} className="h-1 w-1 rounded-full bg-[#8c795b]" />)}</div>}
+                        <span className="absolute bottom-3 text-[8px] tracking-widest text-[#968873]">{stage === 'unsealed' || openingBeat === 'burst' ? '당신의 행운을 확인했어요' : '봉인된 나의 행운'}</span>
+                      </div>
+                      {[false, true].map(bottom => <motion.div key={String(bottom)} className={`absolute left-[18%] right-0 h-[5px] ${bottom ? 'bottom-0' : 'top-0'}`} style={{ scaleX: progressScale, transformOrigin: '100% 50%', backgroundImage: 'repeating-linear-gradient(110deg,#b09a7455 0px,#f8f0dc 2px,transparent 3px,transparent 6px)' }} />)}
                     </div>
-                    {!reducedMotion && (openingBeat === 'split' || openingBeat === 'burst') && (
-                      <motion.div key={'seal-' + currentIndex} aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 overflow-visible">
-                        <motion.div className="absolute inset-y-2 left-[19.5%] w-1 bg-amber-50 shadow-[0_0_18px_5px_#ffe9b0]" initial={{ scaleY: 0, opacity: 0 }} animate={{ scaleY: [0, 1, 1], opacity: [0, 1, 0] }} transition={{ duration: 0.32, times: [0, 0.35, 1] }} />
-                        {[-1, 1].map(direction => <motion.div key={direction} className="absolute left-[19.5%] top-1/2 h-[3px] w-14 bg-amber-100/80" initial={{ x: 0, y: 0, rotate: direction * 25, opacity: 1 }} animate={{ x: direction * 68, y: direction * 52, rotate: direction * 75, opacity: 0 }} transition={{ duration: 0.38 }} />)}
-                      </motion.div>
-                    )}
-                    {!reducedMotion && openingBeat === 'burst' && (
-                      <motion.div key={'burst-' + currentIndex} aria-hidden="true" className="pointer-events-none absolute -inset-24 z-30 rounded-full" style={{ background: 'radial-gradient(ellipse,#fff8de 0%,#ffe0a080 22%,#ffd58a20 46%,transparent 68%)' }} initial={{ opacity: 0, scale: 0.35 }} animate={{ opacity: [0, 0.9, 0], scale: [0.35, 1.65, 2] }} transition={{ duration: 0.36, times: [0, 0.5, 1] }} />
-                    )}
 
-                    <motion.div
-                      role="button"
-                      tabIndex={stage === 'ready' && !isAutoMode ? 0 : -1}
-                      aria-label="오른쪽으로 당겨 쿠지 개봉. 엔터 키로 바로 개봉할 수 있습니다."
-                      aria-disabled={stage !== 'ready' || isAutoMode}
-                      drag={stage === 'ready' && !isAutoMode ? 'x' : false}
-                      dragConstraints={{ left: 0, right: 168 }}
-                      dragElastic={{ left: 0.03, right: 0.08 }}
-                      dragMomentum={false}
-                      onDragStart={handleDragStart}
-                      onDrag={handleDrag}
-                      onDragEnd={handleDragEnd}
-                      onKeyDown={event => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          handleManualOpen();
-                        }
-                      }}
-                      initial={{ x: 0, y: 0, opacity: 1 }}
-                      animate={controls}
-                      style={{ x, rotateY: reducedMotion ? 0 : rotateY, rotate: reducedMotion ? 0 : rotate, transformOrigin: '85% 50%', transformStyle: 'preserve-3d', touchAction: 'pan-y' }}
-                      className="absolute inset-0 z-10 select-none rounded-[18px] outline-none focus-visible:ring-2 focus-visible:ring-amber-200 focus-visible:ring-offset-4 focus-visible:ring-offset-slate-950 active:cursor-grabbing sm:rounded-[22px]"
-                    >
-                      <svg aria-hidden="true" width="100%" height="100%" viewBox="0 0 400 232" className="overflow-visible drop-shadow-[0_10px_15px_#00000040]" preserveAspectRatio="none">
-                        <defs>
-                          <linearGradient id={paperId + '-paper'} x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#faf3e3" /><stop offset="55%" stopColor="#ede2cc" /><stop offset="100%" stopColor="#dfcfad" />
-                          </linearGradient>
-                          <linearGradient id={paperId + '-foil'} x1="0%" y1="10%" x2="100%" y2="90%">
-                            <stop offset="0%" stopColor="#8f692e" /><stop offset="30%" stopColor="#d1a45b" /><stop offset="48%" stopColor="#9e7334" /><stop offset="65%" stopColor="#dec28b" /><stop offset="100%" stopColor="#886028" />
-                          </linearGradient>
-                          <pattern id={paperId + '-grain'} width="4" height="4" patternUnits="userSpaceOnUse"><path d="M0 1h1M2 3h1" stroke="#8a744a" strokeOpacity=".12" strokeWidth=".5" /></pattern>
-                          <pattern id={paperId + '-lines'} width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><path d="M0 0v12" stroke="#b79559" strokeOpacity=".11" strokeWidth=".5" /></pattern>
-                        </defs>
-                        <rect width="400" height="232" rx="20" fill={'url(#' + paperId + '-paper)'} />
-                        <rect width="400" height="232" rx="20" fill={'url(#' + paperId + '-grain)'} />
-                        <rect x="10" y="10" width="380" height="212" rx="12" fill="none" stroke="#a98950" strokeOpacity=".42" />
-                        <path d="M78 0v232" stroke="#927b54" strokeOpacity=".48" strokeDasharray="2 5" />
-                        <circle cx="78" cy="0" r="8" fill="#121728" /><circle cx="78" cy="232" r="8" fill="#111625" />
-                        <rect x="90" y="24" width="278" height="184" rx="7" fill={'url(#' + paperId + '-lines)'} />
-                        <path d="M107 57V41h17m227 16V41h-17M107 175v16h17m227-16v16h-17" fill="none" stroke="#b29156" strokeWidth="1.3" />
-                        <text x="39" y="100" textAnchor="middle" fill="#725832" fontSize="12" fontWeight="700" letterSpacing="3" transform="rotate(-90 39 100)">KUJI SHOP</text>
-                        <text x="39" y="181" textAnchor="middle" fill="#9b8255" fontSize="9" letterSpacing="1">NO.</text>
-                        <text x="39" y="199" textAnchor="middle" fill="#725832" fontSize="12" fontWeight="600">{String(currentIndex + 1).padStart(3, '0')}</text>
-                        <text x="225" y="82" textAnchor="middle" fill="#998057" fontSize="9" letterSpacing="4">A GIFT OF CHANCE</text>
-                        <text x="225" y="128" textAnchor="middle" fill={'url(#' + paperId + '-foil)'} fontFamily="Georgia, serif" fontWeight="700" fontSize="43" letterSpacing="8">KUJI</text>
-                        <path d="M167 145h116" stroke="#ad8d53" strokeOpacity=".5" />
-                        <text x="225" y="166" textAnchor="middle" fill="#8b744b" fontSize="11" letterSpacing="2">행운을 여는 한 장</text>
-                        <path d="M377 91l5 6-5 6 5 6-5 6 5 6-5 6 5 6-5 6" fill="none" stroke="#9e814c" strokeOpacity=".45" />
-                      </svg>
-                      <div aria-hidden="true" className="absolute right-2 top-1/2 flex h-12 w-7 -translate-y-1/2 flex-col items-center justify-center gap-0.5 rounded-full border border-[#b59660]/40 bg-[#dbc596]/45 text-[#72542d] shadow-[inset_0_1px_0_#ffffff60]">
-                        <span className="text-[7px] font-semibold tracking-wide">PULL</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
+                    <motion.div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-[17%] right-0 origin-left" style={{ rotateY: reducedMotion ? 0 : rotateY, y: reducedMotion ? 0 : paperLift, transformStyle: 'preserve-3d', opacity: reducedMotion && openingBeat !== 'sealed' ? 0 : 1 }}>
+                      <div className="absolute inset-0 rounded-sm border border-[#b9aa8c] bg-[#e5d8bd] shadow-[0_8px_16px_#00000030]" style={{ transform: 'rotateY(180deg)', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', backgroundImage: 'repeating-linear-gradient(33deg,transparent 0px,transparent 3px,#a896740e 4px)' }}>
+                        <div className="absolute inset-x-1 inset-y-2 border-y border-dashed border-[#ac9771]/40" />
+                        <div className="absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-[#ad976e]/25 to-transparent" />
+                      </div>
+                      <div className="absolute inset-0" style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}>
+                        <svg width="100%" height="100%" viewBox="0 0 330 232" preserveAspectRatio="none" className="overflow-visible drop-shadow-[2px_6px_6px_#00000030]">
+                          <defs>
+                            <linearGradient id={paperId + '-paper'} x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fff8e9" /><stop offset="65%" stopColor="#f1e4c9" /><stop offset="100%" stopColor="#dcccaa" /></linearGradient>
+                            <pattern id={paperId + '-grain'} width="5" height="5" patternUnits="userSpaceOnUse"><path d="M0 1h2M3 4h1" stroke="#8a744a" strokeOpacity=".18" strokeWidth=".5" /></pattern>
+                            <pattern id={paperId + '-lines'} width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><path d="M0 0v9" stroke="#a08458" strokeOpacity=".1" strokeWidth=".6" /></pattern>
+                          </defs>
+                          <path d="M1 1H327L329 6L327 11L329 16L327 21L329 26V207L327 212L329 217L327 222L329 227L327 231H1Z" fill={'url(#' + paperId + '-paper)'} stroke="#c5b38e" />
+                          <path d="M1 1H327V231H1Z" fill={'url(#' + paperId + '-grain)'} />
+                          <rect x="13" y="13" width="300" height="206" fill="none" stroke="#a98a54" strokeOpacity=".5" />
+                          <rect x="23" y="23" width="280" height="186" fill={'url(#' + paperId + '-lines)'} />
+                          <path d="M15 28H312M15 204H312" stroke="#9b7944" strokeOpacity=".48" strokeDasharray="2 4" />
+                          <text x="164" y="63" textAnchor="middle" fill="#9c7f50" fontSize="9" letterSpacing="3">OSHIKUJI ORIGINAL TICKET</text>
+                          <text x="164" y="123" textAnchor="middle" fill="#634829" fontFamily="Georgia, serif" fontWeight="700" fontSize="46" letterSpacing="6">KUJI</text>
+                          <path d="M102 142H225" stroke="#a78a55" strokeOpacity=".55" />
+                          <text x="164" y="166" textAnchor="middle" fill="#8b744b" fontSize="11" letterSpacing="2">한 장에 담긴 작은 두근거림</text>
+                          <text x="164" y="192" textAnchor="middle" fill="#aa926e" fontSize="8" letterSpacing="1.5">뜯는 순간, 나의 행운이 된다</text>
+                        </svg>
+                        <motion.div className="absolute inset-0 bg-gradient-to-l from-[#423015] via-transparent to-white" style={{ opacity: foldShade }} />
+                        <motion.div className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#513e20]/35 via-white/30 to-transparent" style={{ width: creaseWidth }} />
+                        <motion.div className="absolute bottom-0 right-0 top-0 flex w-[13%] items-center justify-center border-l border-dashed border-[#b29a6d]/70 bg-gradient-to-r from-[#f1e5cc] to-[#d6c39f] text-[#7f633b]" style={{ rotateY: reducedMotion ? 0 : curl, transformOrigin: '0% 50%', transformStyle: 'preserve-3d' }}>
+                          <div className="flex flex-col items-center gap-2"><ArrowLeft className="h-4 w-4" /><span className="text-[8px] font-semibold" style={{ writingMode: 'vertical-rl' }}>여기부터 뜯기</span></div>
+                        </motion.div>
                       </div>
                     </motion.div>
-                  </div>
+                  </motion.div>
 
                   <div className="mx-auto mt-7 max-w-[250px]">
                     <div aria-hidden="true" className="h-[3px] overflow-hidden rounded-full bg-white/[0.07]">
@@ -455,10 +486,11 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
                     </div>
                     <div className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-400">
                       <Hand aria-hidden="true" className="h-3.5 w-3.5 text-amber-100/70" />
-                      <span>{stage === 'tearing' ? openingBeat === 'dimming' ? '행운이 열리기 직전, 잠깐의 설렘' : openingBeat === 'tension' ? '봉인을 조금 더 당기고 있어요' : openingBeat === 'split' ? '봉인이 찢어지고 있어요' : '이제, 당신의 행운을 만나요' : pullProgress >= 100 ? '지금 손을 놓으면 열려요' : '오른쪽으로 천천히 당겨보세요'}</span>
-                      {stage === 'ready' && <motion.span aria-hidden="true" animate={reducedMotion ? {} : { x: [0, 4, 0] }} transition={{ duration: 1.5, repeat: Infinity }}><ArrowRight className="h-3.5 w-3.5 text-amber-100/70" /></motion.span>}
+                      <span>{stage === 'unsealed' ? '안쪽에 적힌 상과 상품을 확인해 보세요' : stage === 'tearing' ? openingBeat === 'dimming' ? '행운이 열리기 직전, 잠깐의 설렘' : openingBeat === 'tension' ? '봉인을 조금 더 당기고 있어요' : openingBeat === 'split' ? '봉인이 찢어지고 있어요' : '이제, 당신의 행운을 만나요' : pullProgress >= 100 ? '지금 손을 놓으면 열려요' : pullProgress > 0 ? '절취선을 따라 조금만 더 벗겨보세요' : '오른쪽 끝을 잡고 왼쪽으로 벗겨보세요'}</span>
+                      {stage === 'ready' && <motion.span aria-hidden="true" animate={reducedMotion ? {} : { x: [0, -4, 0] }} transition={{ duration: 1.5, repeat: Infinity }}><ArrowLeft className="h-3.5 w-3.5 text-amber-100/70" /></motion.span>}
                     </div>
                   </div>
+                  {stage === 'unsealed' && <p role="status" className="sr-only">{isLastBonus ? '라스트상' : `${currentPrize.rank}상`} · {currentPrize.name}</p>}
                 </div>
               </motion.div>
             ) : (
@@ -499,6 +531,8 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
               <button type="button" onClick={handleManualOpen} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.045] px-4 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200">바로 뜯기<ArrowUpRight aria-hidden="true" className="h-4 w-4 text-slate-400" /></button>
               {prizes.length > 1 && <button type="button" onClick={() => void handleAutoOpen()} className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl border border-amber-200/20 bg-amber-100/[0.08] px-4 text-sm font-medium text-amber-100 transition-colors hover:bg-amber-100/[0.14] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200">모두 자동 오픈<Sparkles aria-hidden="true" className="h-4 w-4" /></button>}
             </div>
+          ) : stage === 'unsealed' ? (
+            <button type="button" onClick={() => showPrize(currentIndexRef.current, runRef.current)} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-amber-100 px-5 font-semibold text-slate-950 transition-colors hover:bg-amber-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200">당첨 상품 자세히 보기<ArrowRight aria-hidden="true" className="h-[18px] w-[18px]" /></button>
           ) : stage === 'revealed' ? (
             currentIndex < prizes.length - 1 ? (
               <button type="button" onClick={handleNext} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-amber-100 px-5 font-semibold text-slate-950 shadow-[0_4px_25px_-8px_#f5d18b50] transition-colors hover:bg-amber-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200">다음 쿠지 뜯기<ArrowRight aria-hidden="true" className="h-[18px] w-[18px]" /></button>
