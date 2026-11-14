@@ -17,12 +17,12 @@ export default function NaverCallback({
   useEffect(() => {
     if (handled.current) return;
     handled.current = true;
-    // URL 해시(#) 파싱: #access_token=...&state=...&token_type=bearer&expires_in=3600
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get("access_token");
-    const error = hashParams.get("error");
-    const errorDescription = hashParams.get("error_description");
-    const state = hashParams.get("state");
+    // 인가 코드 방식: ?code=...&state=...
+    const queryParams = new URLSearchParams(window.location.search);
+    const code = queryParams.get("code");
+    const error = queryParams.get("error");
+    const errorDescription = queryParams.get("error_description");
+    const state = queryParams.get("state");
     const expectedState = sessionStorage.getItem("oauth_state_naver");
     sessionStorage.removeItem("oauth_state_naver");
     window.history.replaceState({}, document.title, window.location.pathname);
@@ -37,17 +37,17 @@ export default function NaverCallback({
       return;
     }
 
-    if (accessToken) {
-      handleNaverLogin(accessToken);
+    if (code) {
+      handleNaverLogin(code, state);
     } else {
       onLoginFailure("인가 토큰을 찾을 수 없습니다.");
     }
   }, []);
 
-  const handleNaverLogin = async (naverAccessToken: string) => {
+  const handleNaverLogin = async (code: string, state: string) => {
     try {
       // 카카오와 동일하게 무조건 필수 약관 동의를 true로 넘겨서 가입 처리
-      const data = await loginWithNaver(naverAccessToken, true, true, false);
+      const data = await loginWithNaver(code, state, true, true, false);
 
       if ((data as any).isNewUser && !(data as any).token) {
         throw new Error("신규 가입 처리에 실패했습니다. 약관 동의를 다시 확인해주세요.");
