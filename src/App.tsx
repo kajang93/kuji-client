@@ -1643,7 +1643,8 @@ async function handleRefresh() {
         richColors
         visibleToasts={1}
         duration={2500}
-        offset="calc(env(safe-area-inset-top) + 12px)"
+        offset={{ top: "calc(env(safe-area-inset-top) + 12px)" }}
+        mobileOffset={{ top: "calc(env(safe-area-inset-top) + 12px)" }}
       />
     </div>
   );
