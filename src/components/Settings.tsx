@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from './motion';
-import { ChevronLeft, Bell, Vibrate, Volume2, MessageCircle, Truck, AlertCircle, Moon, Gift, BellRing, X, ChevronDown, Ticket } from './icons';
+import { ChevronLeft, Bell, Vibrate, Volume2, Truck, Gift, X, Ticket } from './icons';
 import { toast } from 'sonner';
 import { requestFirebaseToken } from '../api/firebase';
 import { openKakaoChannel } from '../constants/support';
@@ -32,10 +32,30 @@ type SettingsProps = {
   onUpdateSettings: (settings: NotificationSettingsState) => void;
 };
 
+// iOS 스타일 스위치: 켜짐은 파란색, 손잡이가 부드럽게 미끄러진다
+function Switch({ checked, onChange, disabled, label }: { checked: boolean; onChange: () => void; disabled?: boolean; label: string }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onChange}
+      className={'relative h-[30px] w-[50px] flex-shrink-0 rounded-full transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300 disabled:cursor-not-allowed ' + (checked ? 'bg-blue-500' : 'bg-white/25')}
+    >
+      <motion.span
+        initial={false}
+        animate={{ x: checked ? 22 : 2 }}
+        transition={{ type: 'spring', stiffness: 600, damping: 35 }}
+        className="absolute left-0 top-[2px] h-[26px] w-[26px] rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.25)]"
+      />
+    </button>
+  );
+}
+
 export default function Settings({ onBack, user, settings, onUpdateSettings }: SettingsProps) {
   const [showModal, setShowModal] = useState<'privacy' | 'terms' | 'info' | null>(null);
-  const [isTransactionExpanded, setIsTransactionExpanded] = useState(true);
-  const [isMarketingExpanded, setIsMarketingExpanded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [hasDeviceToken, setHasDeviceToken] = useState(() => Boolean(localStorage.getItem('fcm_token')));
   const pushConnected = settings.pushEnabled && hasDeviceToken;
@@ -130,7 +150,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
         <div className="flex items-center justify-between p-4">
           <button
             onClick={onBack}
-            className="p-2 bg-rose-500 rounded-full hover:bg-rose-600 transition-colors"
+            className="p-2 bg-blue-500 rounded-full hover:bg-blue-600 transition-colors"
           >
             <ChevronLeft className="w-6 h-6 text-white" />
           </button>
@@ -140,381 +160,65 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
       </div>
 
       {/* Content */}
-      <div className="p-6 max-w-2xl mx-auto space-y-4">
-        
-        {/* 1. System Push Settings */}
-        <div className="space-y-3">
-          <h2 className="text-white/80 text-sm font-medium px-2">기본 설정</h2>
-          
-          {/* Master Push Toggle */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg overflow-hidden"
-          >
-            <div className="p-5 flex items-center gap-4">
-              <div className="w-12 h-12 bg-indigo-500/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Bell className="w-6 h-6 text-indigo-300" />
+      <div className="p-6 max-w-2xl mx-auto space-y-6">
+
+        {/* 푸시 알림: 배송 출발·배송 완료만 기기 알림으로 보낸다 */}
+        <section className="space-y-3">
+          <h2 className="px-1 text-sm font-semibold text-white/80">푸시 알림</h2>
+          <div className="overflow-hidden rounded-3xl border border-white/15 bg-white/10 shadow-lg backdrop-blur-sm">
+            <div className="flex items-center gap-4 p-5">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-500/25">
+                <Bell className="h-5 w-5 text-blue-200" />
               </div>
-              <div className="flex-1">
-                <div className="text-white mb-1">앱 푸시 알림</div>
-                <div className="text-white/60 text-sm">{pushConnected ? '거래·배송 소식을 기기 알림으로 받습니다' : '이 기기의 알림 권한을 연결해 주세요'}</div>
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-white">이 기기로 알림 받기</div>
+                <div className="text-sm text-white/60">{pushConnected ? '배송 소식을 기기 알림으로 보내드려요' : '알림 권한을 허용하면 배송 소식을 받을 수 있어요'}</div>
               </div>
-              <button
-                onClick={handlePushToggle}
-                className={`relative w-16 h-10 rounded-xl transition-colors ${
-                  pushConnected ? 'bg-indigo-500' : 'bg-white/20'
-                }`}
-              >
-                <motion.div
-                  animate={{ x: pushConnected ? 28 : 4 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  className={`absolute top-1 w-8 h-8 rounded-lg shadow-lg ${
-                    pushConnected ? 'bg-white' : 'bg-white/60'
-                  }`}
-                />
-              </button>
+              <Switch checked={pushConnected} onChange={handlePushToggle} disabled={isSyncing} label="이 기기로 알림 받기" />
             </div>
-
-          </motion.div>
-
-          {/* Sound & Vibrate */}
-          <div className="grid grid-cols-2 gap-3">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10"
-            >
-              <div className="flex flex-col h-full justify-between">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-10 h-10 bg-rose-500/30 rounded-lg flex items-center justify-center">
-                    <Vibrate className="w-5 h-5 text-rose-300" />
-                  </div>
-                  <button
-                    onClick={() => toggleSetting('vibrationEnabled')}
-                    className={`relative w-10 h-6 rounded-full transition-colors ${
-                      settings.vibrationEnabled ? 'bg-rose-500' : 'bg-white/20'
-                    }`}
-                  >
-                    <motion.div
-                      animate={{ x: settings.vibrationEnabled ? 22 : 2 }}
-                      className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
-                    />
-                  </button>
+            <div className={'divide-y divide-white/10 border-t border-white/10 transition-opacity ' + (pushConnected ? '' : 'pointer-events-none opacity-40')}>
+              <div className="flex items-center gap-4 px-5 py-4">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/10">
+                  <Truck className="h-4 w-4 text-blue-200" />
                 </div>
-                <span className="text-white text-sm">진동</span>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10"
-            >
-              <div className="flex flex-col h-full justify-between">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-10 h-10 bg-amber-500/30 rounded-lg flex items-center justify-center">
-                    <Volume2 className="w-5 h-5 text-amber-300" />
-                  </div>
-                  <button
-                    onClick={() => toggleSetting('soundEnabled')}
-                    className={`relative w-10 h-6 rounded-full transition-colors ${
-                      settings.soundEnabled ? 'bg-amber-500' : 'bg-white/20'
-                    }`}
-                  >
-                    <motion.div
-                      animate={{ x: settings.soundEnabled ? 22 : 2 }}
-                      className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
-                    />
-                  </button>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-white">배송 출발 알림</div>
+                  <div className="text-xs text-white/50">판매자가 운송장을 등록하면 알려드려요</div>
                 </div>
-                <span className="text-white text-sm">소리</span>
+                <Switch checked={settings.kakaoDelivery} onChange={() => toggleSetting('kakaoDelivery')} disabled={isSyncing || !pushConnected} label="배송 출발 알림" />
               </div>
-            </motion.div>
+              <div className="flex items-center gap-4 px-5 py-4">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/10">
+                  <Gift className="h-4 w-4 text-blue-200" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-white">배송 완료 알림</div>
+                  <div className="text-xs text-white/50">상품이 도착 처리되면 알려드려요</div>
+                </div>
+                <Switch checked={settings.kakaoWinning} onChange={() => toggleSetting('kakaoWinning')} disabled={isSyncing || !pushConnected} label="배송 완료 알림" />
+              </div>
+            </div>
           </div>
-        </div>
+          <p className="px-1 text-xs leading-5 text-white/45">배송 신청·문의 답변 등 다른 소식은 앱 안의 알림함에서 확인할 수 있어요.</p>
+        </section>
 
-        {/* 거래와 배송 푸시 설정 */}
-        <div className="space-y-3 pt-4">
-          <h2 className="text-white/80 text-sm font-medium px-2">거래·배송 알림</h2>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-gradient-to-br from-cyan-400/20 to-indigo-500/5 backdrop-blur-sm rounded-2xl border border-cyan-400/30 shadow-lg overflow-hidden"
-          >
-            <div className="p-5 flex items-center gap-4">
-              <div className="w-12 h-12 bg-cyan-300 rounded-xl flex items-center justify-center flex-shrink-0">
-                <MessageCircle className="w-6 h-6 text-slate-950" />
-              </div>
-              <div className="flex-1">
-                <div className="text-white mb-1">거래·배송 푸시</div>
-                <div className="text-white/60 text-sm">앱 알림함에 기록하고 푸시로 알려드립니다</div>
-              </div>
-              <button
-                onClick={() => setIsTransactionExpanded(!isTransactionExpanded)}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <motion.div
-                  animate={{ rotate: isTransactionExpanded ? 180 : 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ChevronDown className="w-5 h-5 text-white" />
-                </motion.div>
-              </button>
+        {/* 개봉 효과 */}
+        <section className="space-y-3">
+          <h2 className="px-1 text-sm font-semibold text-white/80">개봉 효과</h2>
+          <div className="divide-y divide-white/10 overflow-hidden rounded-3xl border border-white/15 bg-white/10 backdrop-blur-sm">
+            <div className="flex items-center gap-4 px-5 py-4">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/10"><Vibrate className="h-4 w-4 text-blue-200" /></div>
+              <div className="flex-1 text-sm font-medium text-white">진동</div>
+              <Switch checked={settings.vibrationEnabled} onChange={() => toggleSetting('vibrationEnabled')} disabled={isSyncing} label="진동" />
             </div>
-
-            <AnimatePresence>
-              {isTransactionExpanded && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-5 pb-5 space-y-4 border-t border-white/10 pt-4">
-                    {/* 당첨 결과 푸시 */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                          <Gift className="w-4 h-4 text-cyan-300" />
-                        </div>
-                        <div>
-                          <div className="text-white text-sm">
-                            당첨 내역 알림
-                          </div>
-                          <div className="text-white/40 text-xs">
-                            당첨 결과를 보관함과 푸시로 확인
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => toggleSetting('kakaoWinning')}
-                        className={`relative w-10 h-6 rounded-full transition-colors ${
-                          settings.kakaoWinning ? 'bg-cyan-300' : 'bg-white/20'
-                        }`}
-                      >
-                        <motion.div
-                          animate={{ x: settings.kakaoWinning ? 22 : 2 }}
-                          className={`absolute top-1 w-4 h-4 rounded-full shadow-sm ${
-                            settings.kakaoWinning ? 'bg-slate-950' : 'bg-white/60'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    {/* 배송 현황 푸시 */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                          <Truck className="w-4 h-4 text-cyan-300" />
-                        </div>
-                        <div>
-                          <div className="text-white text-sm">
-                            배송 현황 알림
-                          </div>
-                          <div className="text-white/40 text-xs">
-                            배송 신청·발송·완료 시
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => toggleSetting('kakaoDelivery')}
-                        className={`relative w-10 h-6 rounded-full transition-colors ${
-                          settings.kakaoDelivery ? 'bg-cyan-300' : 'bg-white/20'
-                        }`}
-                      >
-                        <motion.div
-                          animate={{ x: settings.kakaoDelivery ? 22 : 2 }}
-                          className={`absolute top-1 w-4 h-4 rounded-full shadow-sm ${
-                            settings.kakaoDelivery ? 'bg-slate-950' : 'bg-white/60'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    {/* 문의 답변 푸시 */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                          <MessageCircle className="w-4 h-4 text-cyan-300" />
-                        </div>
-                        <div>
-                          <div className="text-white text-sm">
-                            문의 답변 알림
-                          </div>
-                          <div className="text-white/40 text-xs">
-                            내 1:1 문의에 답변이 등록되면 알림
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => toggleSetting('kakaoInquiry')}
-                        className={`relative w-10 h-6 rounded-full transition-colors ${
-                          settings.kakaoInquiry ? 'bg-cyan-300' : 'bg-white/20'
-                        }`}
-                      >
-                        <motion.div
-                          animate={{ x: settings.kakaoInquiry ? 22 : 2 }}
-                          className={`absolute top-1 w-4 h-4 rounded-full shadow-sm ${
-                            settings.kakaoInquiry ? 'bg-slate-950' : 'bg-white/60'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        </div>
-
-        {/* 3. Marketing & Event Settings */}
-        <div className="space-y-3 pt-4">
-          <h2 className="text-white/80 text-sm font-medium px-2">마케팅 및 혜택</h2>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 backdrop-blur-sm rounded-2xl border border-purple-500/30 shadow-lg overflow-hidden"
-          >
-             <div className="p-5 flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-500/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Gift className="w-6 h-6 text-purple-300" />
-              </div>
-              <div className="flex-1">
-                <div className="text-white mb-1">혜택 알림</div>
-                <div className="text-white/60 text-sm">동의한 혜택 소식만 선택해 받습니다</div>
-              </div>
-              <button
-                onClick={() => setIsMarketingExpanded(!isMarketingExpanded)}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <motion.div
-                  animate={{ rotate: isMarketingExpanded ? 180 : 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ChevronDown className="w-5 h-5 text-white" />
-                </motion.div>
-              </button>
+            <div className="flex items-center gap-4 px-5 py-4">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/10"><Volume2 className="h-4 w-4 text-blue-200" /></div>
+              <div className="flex-1 text-sm font-medium text-white">소리</div>
+              <Switch checked={settings.soundEnabled} onChange={() => toggleSetting('soundEnabled')} disabled={isSyncing} label="소리" />
             </div>
+          </div>
+        </section>
 
-             <AnimatePresence>
-              {isMarketingExpanded && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-5 pb-5 space-y-4 border-t border-white/10 pt-4">
-                    {settings.marketingAgreed !== true && (
-                      <p className="text-white/60 text-xs">마케팅 수신에 동의한 계정에서 사용할 수 있습니다. 거래·배송 알림에는 영향을 주지 않습니다.</p>
-                    )}
-                    {/* Open Notification */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                          <BellRing className="w-4 h-4 text-purple-300" />
-                        </div>
-                        <div>
-                          <div className="text-white text-sm">관심 상품 오픈 알림</div>
-                          <div className="text-white/40 text-xs">찜한 상품 판매 시작 시</div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => toggleSetting('marketingOpen')}
-                        className={`relative w-10 h-6 rounded-full transition-colors ${
-                          settings.marketingOpen ? 'bg-purple-500' : 'bg-white/20'
-                        }`}
-                      >
-                        <motion.div
-                          animate={{ x: settings.marketingOpen ? 22 : 2 }}
-                          className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
-                        />
-                      </button>
-                    </div>
-
-                    {/* Restock Notification */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                          <AlertCircle className="w-4 h-4 text-purple-300" />
-                        </div>
-                        <div>
-                          <div className="text-white text-sm">재입고 알림</div>
-                          <div className="text-white/40 text-xs">찜한 상품이 재입고되면 알림</div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => toggleSetting('marketingRestock')}
-                        className={`relative w-10 h-6 rounded-full transition-colors ${
-                          settings.marketingRestock ? 'bg-purple-500' : 'bg-white/20'
-                        }`}
-                      >
-                        <motion.div
-                          animate={{ x: settings.marketingRestock ? 22 : 2 }}
-                          className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                          <AlertCircle className="w-4 h-4 text-purple-300" />
-                        </div>
-                        <div>
-                          <div className="text-white text-sm">마감 임박 알림</div>
-                          <div className="text-white/40 text-xs">찜한 상품의 남은 수량이 적을 때</div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => toggleSetting('marketingEvent')}
-                        className={`relative w-10 h-6 rounded-full transition-colors ${
-                          settings.marketingEvent ? 'bg-purple-500' : 'bg-white/20'
-                        }`}
-                      >
-                        <motion.div
-                          animate={{ x: settings.marketingEvent ? 22 : 2 }}
-                          className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
-                        />
-                      </button>
-                    </div>
-
-                    {/* Night Notification */}
-                    <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                          <Moon className="w-4 h-4 text-purple-300" />
-                        </div>
-                        <div>
-                          <div className="text-white text-sm">야간 혜택 알림 허용</div>
-                          <div className="text-white/40 text-xs">한국 시간 21:00 ~ 08:00 혜택 소식 수신</div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => toggleSetting('nightPush')}
-                        className={`relative w-10 h-6 rounded-full transition-colors ${
-                          settings.nightPush ? 'bg-purple-500' : 'bg-white/20'
-                        }`}
-                      >
-                        <motion.div
-                          animate={{ x: settings.nightPush ? 22 : 2 }}
-                          className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        </div>
 
         {/* Additional Settings Section */}
         <div className="mt-8 space-y-3">
@@ -594,7 +298,7 @@ export default function Settings({ onBack, user, settings, onUpdateSettings }: S
                 </h2>
                 <button
                   onClick={() => setShowModal(null)}
-                  className="p-2 bg-rose-500 rounded-full hover:bg-rose-600 transition-colors"
+                  className="p-2 bg-blue-500 rounded-full hover:bg-blue-600 transition-colors"
                 >
                   <X className="w-5 h-5 text-white" />
                 </button>
