@@ -6,6 +6,16 @@ import { useState } from 'react';
 import DeliveryTracking from './DeliveryTracking';
 import AddressSearchModal from './AddressSearchModal';
 import { isLastPrize } from '../utils/kujiMappers';
+import { fetchMyProfile } from '../api/auth';
+
+// 마지막으로 사용한 배송지는 이 기기에만 저장해 다음 신청 때 다시 채운다
+const LAST_SHIPPING_KEY = 'kuji_last_shipping';
+const formatPhone = (value: string) => {
+  const n = (value || '').replace(/[^0-9]/g, '');
+  if (n.length <= 3) return n;
+  if (n.length <= 7) return `${n.slice(0, 3)}-${n.slice(3)}`;
+  return `${n.slice(0, 3)}-${n.slice(3, n.length - 4)}-${n.slice(-4)}`;
+};
 
 // Type Migration: WinningHistory updated.
 
@@ -104,6 +114,35 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
     }
 
     setShowShippingModal(true);
+    void prefillShippingForm();
+  };
+
+  // 비어 있는 칸만 채운다: ① 지난번 배송지 ② 회원정보(연락처·주소)
+  const prefillShippingForm = async () => {
+    let last: Partial<typeof shippingForm> = {};
+    try { last = JSON.parse(localStorage.getItem(LAST_SHIPPING_KEY) || '{}'); } catch { last = {}; }
+    setShippingForm(prev => ({
+      ...prev,
+      recipientName: prev.recipientName || last.recipientName || '',
+      phone: prev.phone || last.phone || '',
+      zipcode: prev.zipcode || last.zipcode || '',
+      address: prev.address || last.address || '',
+      detailAddress: prev.detailAddress || last.detailAddress || '',
+    }));
+    try {
+      const profile = await fetchMyProfile();
+      setShippingForm(prev => {
+        const useProfileAddress = !prev.address && Boolean(profile.address);
+        return {
+          ...prev,
+          phone: prev.phone || formatPhone(profile.phoneNumber || ''),
+          address: useProfileAddress ? profile.address || '' : prev.address,
+          detailAddress: useProfileAddress ? profile.addressDetail || '' : prev.detailAddress,
+        };
+      });
+    } catch {
+      // 회원정보를 못 불러와도 직접 입력할 수 있다
+    }
   };
 
   const confirmShipping = async () => {
@@ -126,6 +165,10 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
         ...shippingForm
       });
 
+      try {
+        const { deliveryMessage: _message, ...reusable } = shippingForm;
+        localStorage.setItem(LAST_SHIPPING_KEY, JSON.stringify(reusable));
+      } catch { /* 저장 공간을 쓸 수 없는 환경은 무시 */ }
       alert("배송 신청이 완료되었습니다.");
       setShowShippingModal(false);
       setSelectedItems([]);
@@ -297,7 +340,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                             winning.rank === 'A' ? 'from-yellow-400 to-orange-600' :
                             winning.rank === 'B' ? 'from-blue-400 to-indigo-600' :
                             winning.rank === 'C' ? 'from-orange-400 to-red-600' :
-                            winning.rank === 'D' ? 'from-purple-400 to-purple-700' :
+                            winning.rank === 'D' ? 'from-teal-300 to-teal-700' :
                             winning.rank === 'E' ? 'from-green-400 to-emerald-700' :
                             winning.rank === 'F' ? 'from-pink-400 to-rose-700' :
                             'from-gray-400 to-slate-700'
@@ -411,7 +454,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                             winning.rank === 'A' ? 'from-yellow-400 to-orange-600' :
                             winning.rank === 'B' ? 'from-blue-400 to-indigo-600' :
                             winning.rank === 'C' ? 'from-orange-400 to-red-600' :
-                            winning.rank === 'D' ? 'from-purple-400 to-purple-700' :
+                            winning.rank === 'D' ? 'from-teal-300 to-teal-700' :
                             winning.rank === 'E' ? 'from-green-400 to-emerald-700' :
                             winning.rank === 'F' ? 'from-pink-400 to-rose-700' :
                             'from-gray-400 to-slate-700'
@@ -736,7 +779,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                              certificatePopup.rank === 'A' ? 'from-yellow-400 to-orange-600' :
                              certificatePopup.rank === 'B' ? 'from-blue-400 to-indigo-600' :
                              certificatePopup.rank === 'C' ? 'from-orange-400 to-red-600' :
-                             certificatePopup.rank === 'D' ? 'from-purple-400 to-purple-700' :
+                             certificatePopup.rank === 'D' ? 'from-teal-300 to-teal-700' :
                              certificatePopup.rank === 'E' ? 'from-green-400 to-emerald-700' :
                              certificatePopup.rank === 'F' ? 'from-pink-400 to-rose-700' :
                              'from-gray-400 to-slate-700'
