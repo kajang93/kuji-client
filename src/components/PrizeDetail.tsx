@@ -142,7 +142,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, onExperience, u
 
       </div>
 
-      {viewOnly && <div role="status" className="mx-4 mt-4 rounded-2xl border border-cyan-200/20 bg-cyan-200/5 p-4 text-sm leading-6 text-cyan-100">현재 구매할 수 없는 상품이에요. 기존 상품 구성은 둘러볼 수 있으며, 개봉은 별도의 무료 체험에서 즐길 수 있어요.</div>}
+      {viewOnly && <div role="status" className="mx-4 mt-4 rounded-2xl border border-cyan-200/20 bg-cyan-200/5 p-4 text-sm leading-6 text-cyan-100">{anime.previewOnly ? '화면 확인용 미리보기 상품이에요. 구성은 둘러볼 수 있고, 개봉은 무료 체험으로 즐길 수 있어요.' : '지금은 판매가 중지된 상품이에요. 판매가 재개되면 이 화면에서 바로 구매할 수 있어요.'}</div>}
 
       {hasLastPrize && (
         <div role="note" aria-label="라스트상 안내" className="mx-4 mt-4 rounded-2xl border border-amber-300/30 bg-gradient-to-r from-amber-400/15 to-rose-400/10 p-4">
@@ -286,7 +286,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, onExperience, u
       <div className="px-6 py-3">
         <div className="bg-gradient-to-r from-purple-800 to-blue-800 rounded-xl p-4 text-center border border-cyan-400/30">
           <p className="text-cyan-200 text-sm">
-            {viewOnly ? '상품 정보는 보존되며 무료 체험 결과는 실제 재고에 반영되지 않아요.' : '구매 전 남은 경품 수량을 꼭 확인해 주세요.'}
+            {viewOnly ? (anime.previewOnly ? '미리보기 상품은 실제 재고·결제와 연결되지 않아요.' : '판매 재개 전에도 남은 경품 수량은 그대로 확인할 수 있어요.') : '구매 전 남은 경품 수량을 꼭 확인해 주세요.'}
           </p>
         </div>
       </div>
@@ -294,8 +294,9 @@ export default function PrizeDetail({ anime, onBack, onPurchase, onExperience, u
       {/* Fixed Purchase Section */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-purple-900 via-purple-900/98 to-purple-900/90 border-t border-white/10 shadow-2xl">
         {viewOnly ? <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-center">
-          <p className="mb-3 text-sm text-slate-300">판매 준비 중 · 실제 결제 불가</p>
-          {onExperience && <button onClick={onExperience} className="w-full rounded-2xl bg-gradient-to-r from-amber-100 to-amber-300 px-5 py-4 font-semibold text-slate-950">무료 개봉 체험하기</button>}
+          <p className="mb-3 text-sm text-slate-300">{anime.previewOnly ? '화면 확인용 미리보기 · 실제 결제 불가' : '판매가 잠시 중지된 상품이에요 · 판매가 재개되면 바로 구매할 수 있어요'}</p>
+          {/* 무료 체험은 미리보기 샘플에서만 연다. 실제 상품은 판매 재개 후 정상 구매 흐름(티켓 선택→결제→개봉→보관함→배송)을 탄다. */}
+          {anime.previewOnly && onExperience && <button onClick={onExperience} className="w-full rounded-2xl bg-gradient-to-r from-amber-100 to-amber-300 px-5 py-4 font-semibold text-slate-950">무료 개봉 체험하기</button>}
         </div> : <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-3">
           {/* Quantity Selector */}
           <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-3 border border-white/20">
