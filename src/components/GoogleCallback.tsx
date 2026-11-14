@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import SocialConsent, { type SocialAgreements } from "./SocialConsent";
 import { motion } from "./motion";
 import { Ticket } from "./icons";
-import { loginWithGoogle, fetchMyProfile } from "../api/auth";
+import { loginWithGoogle, completeSocialSignup, fetchMyProfile } from "../api/auth";
 
 type GoogleCallbackProps = {
   onLoginSuccess: (token: string, userData: any) => void;
@@ -13,6 +14,29 @@ export default function GoogleCallback({
   onLoginFailure,
 }: GoogleCallbackProps) {
   const handled = useRef(false);
+  // 신규 회원이면 약관 동의 화면을 띄우고, 동의하면 가입 표로 가입을 마친다
+  const [signupTicket, setSignupTicket] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const finishLogin = async (token: string) => {
+    localStorage.setItem("token", token);
+    sessionStorage.removeItem("token");
+    const userData = await fetchMyProfile();
+    onLoginSuccess(token, userData);
+  };
+
+  const handleConsent = async (agreements: SocialAgreements) => {
+    if (!signupTicket) return;
+    setSubmitting(true);
+    try {
+      const data = await completeSocialSignup(signupTicket, agreements);
+      await finishLogin(data.token);
+    } catch (error: any) {
+      onLoginFailure(error.response?.data?.message || error.message || "가입을 완료하지 못했습니다. 다시 시도해 주세요.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (handled.current) return;
@@ -44,37 +68,23 @@ export default function GoogleCallback({
     }
   }, []);
 
-  const handleGoogleLogin = async (googleAccessToken: string, isTermsAgreed?: boolean, isPrivacyAgreed?: boolean, isMarketingAgreed?: boolean) => {
+  const handleGoogleLogin = async (googleAccessToken: string) => {
     try {
-      const data = await loginWithGoogle(googleAccessToken, isTermsAgreed, isPrivacyAgreed, isMarketingAgreed);
-
-      // 신규 회원 → 약관 동의 필요
+      const data = await loginWithGoogle(googleAccessToken);
       if ((data as any).isNewUser && !(data as any).token) {
-        const agreed = confirm(
-          `[구글 로그인 - 약관 동의]\n\n` +
-          `오시쿠지 서비스 이용을 위해 약관에 동의해 주세요.\n\n` +
-          `• [필수] 이용약관 동의\n` +
-          `• [필수] 개인정보 처리방침 동의\n\n` +
-          `확인을 누르시면 동의하고 가입이 완료됩니다.`
-        );
-        if (!agreed) {
-          onLoginFailure("약관 동의가 필요합니다.");
-          return;
-        }
-        // 약관 동의 후 재시도
-        await handleGoogleLogin(googleAccessToken, true, true, false);
-        return;
+        if ((data as any).signupTicket) { setSignupTicket((data as any).signupTicket); return; }
+        throw new Error("가입 정보를 확인하지 못했습니다. 다시 로그인해 주세요.");
       }
-
-      localStorage.setItem("token", data.token);
-      sessionStorage.removeItem("token");
-      const userData = await fetchMyProfile();
-      onLoginSuccess(data.token, userData);
+      await finishLogin(data.token);
     } catch (error: any) {
       console.error("Google Login Error:", error);
       onLoginFailure(error.message || "서버 통신 중 오류가 발생했습니다.");
     }
   };
+
+  if (signupTicket) {
+    return <SocialConsent providerName="구글" submitting={submitting} onSubmit={handleConsent} onCancel={() => onLoginFailure("약관에 동의해야 가입할 수 있어요.")} />;
+  }
 
   return (
     <div className="min-h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-800 p-6">

@@ -215,3 +215,14 @@ export const changePassword = async (currentPassword: string, newPassword: strin
 export const resetPasswordDirect = async (email: string, phoneNumber: string, verificationCode: string, newPassword: string): Promise<void> => {
   await axiosInstance.post(`${API_BASE_URL}/reset-password/direct`, { email, phoneNumber, verificationCode, newPassword });
 };
+
+/**
+ * 간편 로그인 신규 회원 가입 완료 (약관 동의 화면 이후)
+ */
+export const completeSocialSignup = async (
+  signupTicket: string,
+  agreements: { isAgeOver14: boolean; isTermsAgreed: boolean; isPrivacyAgreed: boolean; isMarketingAgreed: boolean },
+): Promise<{ token: string; isNewUser?: boolean }> => {
+  const response = await axiosInstance.post(`${API_BASE_URL}/signup/social`, { signupTicket, ...agreements });
+  return response.data;
+};

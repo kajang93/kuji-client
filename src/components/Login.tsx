@@ -561,11 +561,9 @@ export default function Login({ onLogin, onBack }: LoginProps) {
                 </motion.button>
               </div>
 
-              {/* 간편 로그인 첫 이용 시 가입되므로 동의 내용을 미리 알린다 */}
+              {/* 간편 로그인 첫 이용 시에는 약관 동의 화면을 거쳐 가입한다 */}
               <p className="mt-3 text-center text-[11px] leading-5 text-white/60">
-                간편 로그인으로 처음 이용하면 회원으로 가입되며,{' '}
-                <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-white">이용약관</a>과{' '}
-                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-white">개인정보 처리방침</a>에 동의하게 됩니다.
+                간편 로그인으로 처음 이용하면 약관 동의 후 가입돼요.
               </p>
 
               {/* Signup Button */}

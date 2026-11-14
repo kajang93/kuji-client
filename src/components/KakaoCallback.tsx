@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import SocialConsent, { type SocialAgreements } from "./SocialConsent";
 import { motion } from "./motion";
 import { Ticket } from "./icons";
-import { loginWithKakao, fetchMyProfile } from "../api/auth";
+import { loginWithKakao, completeSocialSignup, fetchMyProfile } from "../api/auth";
 
 type KakaoCallbackProps = {
   onLoginSuccess: (token: string, userData: any) => void;
@@ -13,6 +14,29 @@ export default function KakaoCallback({
   onLoginFailure,
 }: KakaoCallbackProps) {
   const handled = useRef(false);
+  // 신규 회원이면 약관 동의 화면을 띄우고, 동의하면 가입 표로 가입을 마친다
+  const [signupTicket, setSignupTicket] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const finishLogin = async (token: string) => {
+    localStorage.setItem("token", token);
+    sessionStorage.removeItem("token");
+    const userData = await fetchMyProfile();
+    onLoginSuccess(token, userData);
+  };
+
+  const handleConsent = async (agreements: SocialAgreements) => {
+    if (!signupTicket) return;
+    setSubmitting(true);
+    try {
+      const data = await completeSocialSignup(signupTicket, agreements);
+      await finishLogin(data.token);
+    } catch (error: any) {
+      onLoginFailure(error.response?.data?.message || error.message || "가입을 완료하지 못했습니다. 다시 시도해 주세요.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (handled.current) return;
@@ -39,23 +63,21 @@ export default function KakaoCallback({
     try {
       const REDIRECT_URI = `${window.location.origin}/auth/kakao/callback`;
       // 인가 코드 교환은 비밀 키를 보관하는 서버에서 처리합니다.
-      const data = await loginWithKakao(code, REDIRECT_URI, true, true, false);
-      
+      const data = await loginWithKakao(code, REDIRECT_URI);
       if (data.isNewUser && !data.token) {
-        throw new Error("신규 가입 처리에 실패했습니다. 약관 동의를 다시 확인해주세요.");
+        if ((data as any).signupTicket) { setSignupTicket((data as any).signupTicket); return; }
+        throw new Error("가입 정보를 확인하지 못했습니다. 다시 로그인해 주세요.");
       }
-
-      // 토큰으로 실제 사용자 상세 정보 가져오기
-      localStorage.setItem("token", data.token);
-      sessionStorage.removeItem("token");
-      const userData = await fetchMyProfile();
-      
-      onLoginSuccess(data.token, userData);
+      await finishLogin(data.token);
     } catch (error: any) {
       console.error("Kakao Login Error:", error);
       onLoginFailure(error.message || "서버 통신 중 오류가 발생했습니다.");
     }
   };
+
+  if (signupTicket) {
+    return <SocialConsent providerName="카카오" submitting={submitting} onSubmit={handleConsent} onCancel={() => onLoginFailure("약관에 동의해야 가입할 수 있어요.")} />;
+  }
 
   return (
     <div className="min-h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-800 p-6">
