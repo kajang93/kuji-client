@@ -4,12 +4,16 @@ import { ArrowLeft, Check, Gift, RotateCcw, Sparkles, Ticket } from 'lucide-reac
 import { motion } from './motion';
 import KujiReveal from './KujiReveal';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { createExperienceRound, EXPERIENCE_IMAGE, purchaseExperienceTickets } from '../utils/kujiExperience';
+import { createExperienceRound, createProductExperienceRound, EXPERIENCE_IMAGE, purchaseExperienceTickets } from '../utils/kujiExperience';
 import { playDrawHaptic } from '../utils/drawHaptics';
-import type { Prize } from '../shared-types';
+import type { AnimeCollection, Prize } from '../shared-types';
+import { isLastPrize } from '../utils/kujiMappers';
 
-const KujiExperience: FC<{ onBack: () => void }> = ({ onBack }) => {
-  const [round, setRound] = useState(createExperienceRound);
+// collection 이 있으면 그 상품의 이미지·구성으로, 없으면 달빛 서점 기본 체험판으로 진행한다.
+const KujiExperience: FC<{ onBack: () => void; collection?: AnimeCollection | null }> = ({ onBack, collection }) => {
+  const newRound = () => (collection && createProductExperienceRound(collection)) || createExperienceRound();
+  const productMode = Boolean(collection?.prizes.some(prize => !isLastPrize(prize.rank) && prize.totalCount > 0));
+  const [round, setRound] = useState(newRound);
   const [selected, setSelected] = useState<number[]>([]);
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [history, setHistory] = useState<Prize[]>([]);
@@ -17,6 +21,8 @@ const KujiExperience: FC<{ onBack: () => void }> = ({ onBack }) => {
   const [error, setError] = useState('');
   const opening = useRef(false);
   const remaining = round.tickets.filter(ticket => !ticket.opened);
+  const counts = round.tickets.reduce<Record<string, number>>((acc, ticket) => { acc[ticket.prize.rank] = (acc[ticket.prize.rank] || 0) + 1; return acc; }, {});
+  const composition = Object.keys(counts).sort().map(rank => `${rank}상 ${counts[rank]}개`).join(', ') + (isLastPrize(round.lastPrize.rank) ? ' + 라스트상 1개' : '');
 
   useEffect(() => {
     document.getElementById('main-scroll-container')?.scrollTo(0, 0);
@@ -24,7 +30,7 @@ const KujiExperience: FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const reset = () => {
     opening.current = false;
-    setRound(createExperienceRound());
+    setRound(newRound());
     setSelected([]); setPrizes([]); setHistory([]); setError(''); setPhase('select');
   };
 
@@ -57,10 +63,10 @@ const KujiExperience: FC<{ onBack: () => void }> = ({ onBack }) => {
   return (
     <section className="min-h-full bg-slate-950 px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 text-white sm:px-8">
       <div className="mx-auto max-w-lg">
-        <button onClick={onBack} className="mb-6 inline-flex min-h-10 items-center gap-2 text-sm text-slate-300 hover:text-white"><ArrowLeft className="h-4 w-4" />홈으로 돌아가기</button>
+        <button onClick={onBack} className="mb-6 inline-flex min-h-10 items-center gap-2 text-sm text-slate-300 hover:text-white"><ArrowLeft className="h-4 w-4" />{productMode ? '상품으로 돌아가기' : '홈으로 돌아가기'}</button>
         <div className="flex items-center justify-between gap-3">
           <span className="inline-flex items-center gap-2 rounded-full border border-cyan-200/20 bg-cyan-200/10 px-3 py-1.5 text-xs font-semibold text-cyan-100"><Sparkles className="h-3.5 w-3.5" />무료 쿠지 체험</span>
-          <span className="text-xs text-slate-400">일반 {remaining.length} / 6장</span>
+          <span className="text-xs text-slate-400">일반 {remaining.length} / {round.tickets.length}장</span>
         </div>
         <h1 className="mt-5 text-2xl font-bold tracking-tight sm:text-3xl">{phase === 'results' ? '오늘 체험한 작은 행운들' : '마음이 가는 한 장, 뜯어볼까요?'}</h1>
         <p className="mt-3 text-sm leading-6 text-slate-300">0원으로 가상 구매하고 실제 쿠지처럼 개봉해 보세요. 실제 결제·포인트 차감·상품 배송은 없습니다.</p>
@@ -76,14 +82,14 @@ const KujiExperience: FC<{ onBack: () => void }> = ({ onBack }) => {
           <button onClick={reset} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 px-5 py-4 text-sm text-slate-200"><RotateCcw className="h-4 w-4" />새 회차로 다시 체험</button>
         </> : <>
           <div className="relative mt-6 overflow-hidden rounded-3xl border border-white/10 bg-slate-900">
-            <ImageWithFallback src={EXPERIENCE_IMAGE} alt="심야 만화·하비 숍 달빛 서점 그림" fetchPriority="high" className="h-40 w-full object-cover object-center sm:h-48" />
+            <ImageWithFallback src={productMode && collection ? collection.image : EXPERIENCE_IMAGE} alt={productMode && collection ? collection.name : "심야 만화·하비 숍 달빛 서점 그림"} fetchPriority="high" className="h-40 w-full object-cover object-center sm:h-48" />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
-            <p className="absolute bottom-4 left-4 text-sm font-semibold text-white">달빛 서점 · 심야 만화·하비 코너 체험판</p>
+            <p className="absolute bottom-4 left-4 text-sm font-semibold text-white">{productMode && collection ? collection.name + ' · 무료 체험' : '달빛 서점 · 심야 만화·하비 코너 체험판'}</p>
           </div>
           <aside aria-label="라스트상 체험 규칙" className="mt-4 rounded-2xl border border-amber-200/20 bg-amber-200/[0.06] p-4">
             <p className="flex items-center gap-2 text-sm font-semibold text-amber-100"><Gift className="h-4 w-4" />마지막 한 장에는 라스트상까지</p>
             <p className="mt-2 text-xs leading-5 text-amber-100/75">일반 티켓이 모두 소진되는 구매에 라스트상 1개가 추가돼요. 라스트상은 일반 티켓에 섞이지 않아요.</p>
-            <p className="mt-2 text-xs text-slate-400">체험 구성 · A상 1개, B상 2개, C상 3개 + 라스트상 1개</p>
+            <p className="mt-2 text-xs text-slate-400">체험 구성 · {composition}</p>
           </aside>
           <div className="mb-3 mt-7 flex items-center justify-between gap-3">
             <h2 className="font-semibold text-slate-200">티켓 선택</h2>

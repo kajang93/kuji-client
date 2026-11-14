@@ -72,6 +72,8 @@ export default function App() {
   const navigate = useNavigate();
 
   const [banners, setBanners] = useState<Banner[]>([]);
+  // 상품 상세에서 연 무료 체험이면 그 상품, 메인·목록에서 열었으면 null(달빛 서점 기본 체험)
+  const [experienceSource, setExperienceSource] = useState<AnimeCollection | null>(null);
   const [selectedAnime, setSelectedAnime] =
     useState<AnimeCollection | null>(null);
   const [kujiStatus, setKujiStatus] = useState<boolean[]>([]);
@@ -1259,7 +1261,7 @@ async function handleRefresh() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-800 overflow-hidden w-full relative">
+    <div className="h-full flex flex-col bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 overflow-hidden w-full relative">
       {/* 티켓 선택과 결제 복귀와 개봉 중에는 당첨 알림을 숨긴다. */}
       {!showingPaymentReturn && !pendingPayment && !isAuthCallback && !isPublicReadOnly && screen !== "login" && screen !== "selection" &&
         screen !== "reveal" &&
@@ -1302,16 +1304,16 @@ async function handleRefresh() {
         {screen === "main" && (
           <MainScreen
             onStart={() => setScreen("list")}
-            onExperience={() => setScreen("experience")}
+            onExperience={() => { setExperienceSource(null); setScreen("experience"); }}
             banners={banners}
           />
         )}
-        {screen === "experience" && <KujiExperience onBack={() => setScreen("main")} />}
+        {screen === "experience" && <KujiExperience collection={experienceSource} onBack={() => setScreen(experienceSource ? "detail" : "main")} />}
         {screen === "list" && (
           <AnimeList
             collections={animeCollections}
             loadState={boardListState}
-            onExperience={() => setScreen("experience")}
+            onExperience={() => { setExperienceSource(null); setScreen("experience"); }}
             onRetry={() => void handleFetchBoards()}
             onSelect={handleAnimeSelect}
             onBack={() => setScreen("main")}
@@ -1324,7 +1326,7 @@ async function handleRefresh() {
             initialPurchaseCount={purchaseCount}
             onBack={() => setScreen("list")}
             onPurchase={handlePurchase}
-            onExperience={() => setScreen("experience")}
+            onExperience={() => { setExperienceSource(selectedAnime); setScreen("experience"); }}
             user={user ? { ...user, points: user.points || 0 } : null}
           />
         )}
