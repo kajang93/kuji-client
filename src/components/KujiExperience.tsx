@@ -98,7 +98,7 @@ const KujiExperience: FC<{ onBack: () => void }> = ({ onBack }) => {
           {error && <p role="alert" className="mt-3 text-sm text-rose-200">{error}</p>}
           <button onClick={purchase} disabled={!selected.length} className="mt-6 w-full rounded-2xl bg-gradient-to-r from-amber-100 to-amber-300 px-5 py-4 font-semibold text-slate-950 shadow-lg disabled:bg-none disabled:bg-slate-800 disabled:text-slate-500">{selected.length ? `0원으로 가상 구매 · ${selected.length}장 개봉` : '체험할 티켓을 골라주세요'}</button>
           {history.length > 0 && <button onClick={() => setPhase('results')} className="mt-3 min-h-11 w-full text-sm text-slate-300">지금까지 체험 결과 보기</button>}
-          <p className="mt-4 text-center text-xs leading-5 text-slate-500">아이폰의 홈 화면 웹앱에서는 진동이 지원되지 않아요.<br />티켓을 당기는 동작과 개봉 효과로 즐겨주세요.</p>
+          <p className="mt-4 text-center text-xs leading-5 text-slate-500">아이폰 웹에서는 짧은 진동만 느낄 수 있어요(iOS 18 이상).<br />앱에서는 절취선을 뜯을수록 강해지는 진동을 느낄 수 있어요.</p>
         </>}
         <p className="mt-7 text-center text-[11px] text-slate-500">체험 기록은 새로고침하거나 화면을 나가면 초기화됩니다.</p>
       </div>

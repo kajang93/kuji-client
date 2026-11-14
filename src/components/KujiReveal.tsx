@@ -1,5 +1,5 @@
 // 실물 티켓을 당겨 개봉하는 연출과 당첨 상품 확인을 제공한다.
-import { useState, useEffect, useRef, useId, type FC } from 'react';
+import { useState, useEffect, useRef, type FC } from 'react';
 import { motion, animate, AnimatePresence, useMotionValue, useTransform, useReducedMotion, type PanInfo } from 'framer-motion';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Hand, LoaderCircle, Package, RotateCcw, Sparkles, Ticket, Volume2, VolumeX } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import type { Prize } from '@/shared-types';
 import { isLastPrize } from '../utils/kujiMappers';
 import confetti from 'canvas-confetti';
-import { playDrawHaptic, stopDrawHaptics } from '../utils/drawHaptics';
+import { playDrawHaptic, playRevealHaptic, playTearTick, stopDrawHaptics } from '../utils/drawHaptics';
 
 type KujiRevealProps = {
   prizes: Prize[];
@@ -39,11 +39,12 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
   const x = useMotionValue(0);
   const rotateY = useTransform(x, [0, DRAG_THRESHOLD, 250], [0, -64, -168]);
   const paperLift = useTransform(x, [0, DRAG_THRESHOLD, 250], [0, -8, -2]);
-  const curl = useTransform(x, [0, 30, DRAG_THRESHOLD, 250], [0, -24, -38, -4]);
+  const stripPeel = useTransform(x, [0, DRAG_THRESHOLD], ['0%', '100%']);
+  const stripOpacity = useTransform(x, [0, 8, DRAG_THRESHOLD, 170], [0, 1, 1, 0]);
+  const tabRight = useTransform(x, [0, DRAG_THRESHOLD, 170], ['-14px', 'calc(100% - 40px)', 'calc(100% - 40px)']);
   const foldShade = useTransform(x, [0, 65, DRAG_THRESHOLD, 250], [0, 0.15, 0.32, 0.05]);
   const creaseWidth = useTransform(x, [0, DRAG_THRESHOLD, 250], ['2%', '12%', '2%']);
   const progressScale = useTransform(x, [0, DRAG_THRESHOLD], [0, 1]);
-  const paperId = useId().replace(/:/g, '');
   const currentPrize = prizes[currentIndex];
   const isLastBonus = isLastPrize(currentPrize.rank);
   const hasLastBonus = prizes.some(prize => isLastPrize(prize.rank));
@@ -261,7 +262,8 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
     }
     stageRef.current = 'unsealed';
     setStage('unsealed');
-    playDrawHaptic('reveal');
+    const opened = prizes[currentIndexRef.current];
+    playRevealHaptic(opened && isLastPrize(opened.rank) ? 'LAST' : opened?.rank ?? '');
     return true;
   };
 
@@ -298,10 +300,11 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
     x.set(Math.min(panStartRef.current + distance / (1 + distance / 420), DRAG_THRESHOLD + 8));
     const progress = Math.min(Math.max(x.get(), 0) / DRAG_THRESHOLD, 1);
     setPullProgress(Math.round(progress * 100));
-    const segment = Math.floor(progress * 8);
+    // 절취선 구멍 16개를 하나씩 뜯는 느낌: 처음엔 약하게, 끝으로 갈수록 강하게
+    const segment = Math.floor(progress * 16);
     if (segment > pullSegmentRef.current) {
       pullSegmentRef.current = segment;
-      playDrawHaptic('pull');
+      playTearTick(progress < 0.4 ? 1 : progress < 0.8 ? 2 : 3);
       playTearSound();
     }
   };
@@ -370,8 +373,8 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
   };
 
   return (
-    <section aria-label={experience ? '무료 쿠지 개봉 체험' : '쿠지 개봉'} className="relative isolate min-h-full w-full overflow-x-clip bg-[#080d19] text-white">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_28%,#252348_0%,transparent_62%)]" />
+    <section aria-label={experience ? '무료 쿠지 개봉 체험' : '쿠지 개봉'} className="relative isolate min-h-full w-full overflow-x-clip bg-[#173a86] text-white">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_35%,#3b6fe0_0%,transparent_65%)]" />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-[0.035]" style={{ backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 2px,#fff 3px,transparent 4px)', backgroundSize: '100% 4px' }} />
       <motion.div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10 bg-[#02040b]" initial={false} animate={{ opacity: stage === 'tearing' && !reducedMotion ? 0.78 : 0 }} transition={{ duration: 0.18 }} />
       <canvas ref={canvasRef} aria-hidden="true" className="pointer-events-none absolute inset-0 z-30 h-full w-full" />
@@ -408,11 +411,11 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
               <motion.div key={'ticket-' + currentIndex} initial={{ opacity: 0, y: reducedMotion ? 0 : 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reducedMotion ? 0.12 : 0.22 }}>
                 <motion.div className="mb-9 text-center" animate={{ opacity: stage === 'tearing' && !reducedMotion ? 0.25 : 1 }} transition={{ duration: 0.18 }}>
                   <p className="mb-3 text-[10px] font-medium tracking-[0.24em] text-amber-200/65">A LITTLE MOMENT OF LUCK</p>
-                  <h1 className="text-[28px] font-semibold leading-[1.35] tracking-tight sm:text-[34px]">{stage === 'unsealed' ? <>펼친 종이 안에,<br /><span className="text-amber-100">오늘의 행운이 있어요.</span></> : <>종이 끝을 잡고,<br /><span className="text-amber-100">두근두근, 페리페리.</span></>}</h1>
+                  <h1 className="text-[28px] font-semibold leading-[1.35] tracking-tight sm:text-[34px]">{stage === 'unsealed' ? <>펼친 종이 안에,<br /><span className="text-amber-100">오늘의 행운이 있어요.</span></> : <>노란 손잡이를 잡고,<br /><span className="text-amber-100">절취선을 쭉— 뜯어요.</span></>}</h1>
                   <p className="mt-3 text-sm text-slate-400">{stage === 'unsealed' ? '내 손으로 뜯어 확인한 한 장.' : '손끝을 따라 봉인이 조금씩 열려요.'}</p>
                 </motion.div>
 
-                <div className="relative mx-auto w-full max-w-[390px]">
+                <div className="relative mx-auto w-full max-w-[340px]">
                   <motion.div
                     role="button"
                     tabIndex={stage === 'ready' && !isAutoMode ? 0 : -1}
@@ -429,54 +432,55 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
                         handleManualOpen();
                       }
                     }}
-                    className="relative aspect-[1.72] w-full cursor-grab select-none rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-amber-200 focus-visible:ring-offset-8 focus-visible:ring-offset-slate-950 active:cursor-grabbing"
+                    className="relative aspect-[1.3] w-full cursor-grab select-none rounded-[6px] outline-none focus-visible:ring-2 focus-visible:ring-amber-200 focus-visible:ring-offset-8 focus-visible:ring-offset-slate-950 active:cursor-grabbing"
                     style={{ perspective: '1200px', touchAction: 'pan-y', WebkitUserSelect: 'none' }}
                   >
-                    <div aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-sm border border-[#cabb9e] bg-[#eee6d4] shadow-[0_18px_36px_-12px_#000000a0]">
-                      <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'repeating-linear-gradient(8deg,transparent 0px,transparent 3px,#86795715 4px)' }} />
-                      <div className="absolute inset-y-0 left-0 flex w-[17%] items-center justify-center border-r border-dashed border-[#8b7650]/60 bg-[#e5dbc5]">
-                        <div className="text-center text-[#776446]" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}><span className="text-[9px] tracking-[0.2em]">오시쿠지 · 행운의 한 장</span><span className="mt-3 text-[10px] font-mono">{String(currentIndex + 1).padStart(4, '0')}</span></div>
+                    {/* 안쪽 면: 뜯고 펼치면 보이는 등급 도장 */}
+                    <div aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-[6px] border-[3px] border-white bg-[#fdfbf4] shadow-[0_22px_40px_-10px_#0b1a44c0]">
+                      <div className="absolute inset-0 opacity-50" style={{ backgroundImage: 'radial-gradient(#1d4ed812 1px, transparent 1.2px)', backgroundSize: '9px 9px' }} />
+                      <div className="absolute inset-y-0 left-0 flex w-[14%] items-center justify-center border-r-2 border-dotted border-[#1d4ed8]/35 bg-[#1d4ed8]">
+                        <div className="text-center text-yellow-300" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}><span className="text-[10px] font-black tracking-[0.25em]">推しクジ</span><span className="mt-2 font-mono text-[10px] text-white/80">No.{String(currentIndex + 1).padStart(4, '0')}</span></div>
                       </div>
-                      <div className="absolute inset-y-3 left-[21%] right-3 flex flex-col items-center justify-center border border-[#bba989]/65 bg-[#faf5e7] text-[#443c31]">
-                        <span className="absolute top-3 text-[8px] tracking-[0.25em] text-[#968873]">OSHIKUJI / LUCKY TICKET</span>
-                        {(stage === 'unsealed' || openingBeat === 'burst') ? <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }} className="px-3 text-center">
-                          <span className={isLastBonus ? 'font-serif text-3xl font-black' : 'font-serif text-6xl font-black'}>{isLastBonus ? 'LAST' : currentPrize.rank}</span><span className="ml-1 text-xl font-bold">상</span>
-                          <p className="mt-1 line-clamp-2 text-[11px] font-semibold leading-4">{currentPrize.name}</p>
-                        </motion.div> : <div className="flex gap-2 opacity-20">{[0, 1, 2].map(index => <span key={index} className="h-1 w-1 rounded-full bg-[#8c795b]" />)}</div>}
-                        <span className="absolute bottom-3 text-[8px] tracking-widest text-[#968873]">{stage === 'unsealed' || openingBeat === 'burst' ? '당신의 행운을 확인했어요' : '봉인된 나의 행운'}</span>
+                      <div className="absolute inset-y-3 left-[17%] right-3 flex flex-col items-center justify-center rounded-[4px] border-2 border-dashed border-[#1d4ed8]/25">
+                        {(stage === 'unsealed' || openingBeat === 'burst') ? <motion.div initial={{ opacity: 0, scale: reducedMotion ? 1 : 1.6, rotate: reducedMotion ? 0 : -14 }} animate={{ opacity: 1, scale: 1, rotate: -6 }} transition={{ type: 'spring', stiffness: 420, damping: 16 }} className="flex flex-col items-center px-3 text-center">
+                          <div className="flex h-[92px] w-[92px] items-center justify-center rounded-full border-[5px] shadow-[inset_0_0_0_3px_#fff]" style={{ borderColor: tone.soft, backgroundColor: tone.color }}>
+                            <span className={(isLastBonus ? 'text-[26px]' : 'text-[54px]') + ' font-black leading-none text-[#1b1b1b]'}>{isLastBonus ? 'LAST' : currentPrize.rank}</span>
+                          </div>
+                          <span className="mt-1.5 text-lg font-black text-[#1b1b1b]">{isLastBonus ? '라스트원상' : currentPrize.rank + '상'}</span>
+                          <p className="mt-0.5 line-clamp-2 max-w-[200px] text-[11px] font-semibold leading-4 text-[#4a4a4a]">{currentPrize.name}</p>
+                        </motion.div> : <span className="text-5xl font-black text-[#1d4ed8]/10">?</span>}
                       </div>
-                      {[false, true].map(bottom => <motion.div key={String(bottom)} className={`absolute left-[18%] right-0 h-[5px] ${bottom ? 'bottom-0' : 'top-0'}`} style={{ scaleX: progressScale, transformOrigin: '100% 50%', backgroundImage: 'repeating-linear-gradient(110deg,#b09a7455 0px,#f8f0dc 2px,transparent 3px,transparent 6px)' }} />)}
                     </div>
 
-                    <motion.div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-[17%] right-0 origin-left" style={{ rotateY: reducedMotion ? 0 : rotateY, y: reducedMotion ? 0 : paperLift, transformStyle: 'preserve-3d', opacity: reducedMotion && openingBeat !== 'sealed' ? 0 : 1 }}>
-                      <div className="absolute inset-0 rounded-sm border border-[#b9aa8c] bg-[#e5d8bd] shadow-[0_8px_16px_#00000030]" style={{ transform: 'rotateY(180deg)', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', backgroundImage: 'repeating-linear-gradient(33deg,transparent 0px,transparent 3px,#a896740e 4px)' }}>
-                        <div className="absolute inset-x-1 inset-y-2 border-y border-dashed border-[#ac9771]/40" />
-                        <div className="absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-[#ad976e]/25 to-transparent" />
+                    {/* 겉면: 인쇄된 쿠지 표지. 절취선이 다 뜯기면 왼쪽 접힘선을 축으로 펼쳐진다 */}
+                    <motion.div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-[14%] right-0 origin-left" style={{ rotateY: reducedMotion ? 0 : rotateY, y: reducedMotion ? 0 : paperLift, transformStyle: 'preserve-3d', opacity: reducedMotion && openingBeat !== 'sealed' ? 0 : 1 }}>
+                      <div className="absolute inset-0 rounded-r-[6px] border border-[#d9d3c3] bg-[#f6f3ea]" style={{ transform: 'rotateY(180deg)', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', backgroundImage: 'radial-gradient(#1d4ed80f 1px, transparent 1.2px)', backgroundSize: '8px 8px' }} />
+                      <div className="absolute inset-0 overflow-hidden rounded-r-[6px] border-[3px] border-l-0 border-white shadow-[2px_6px_12px_#00000040]" style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', background: 'linear-gradient(150deg,#2563eb 0%,#1d4ed8 55%,#1e3a8a 100%)' }}>
+                        <div className="absolute -left-6 top-[38%] h-[30%] w-[140%] -rotate-[8deg] bg-yellow-300" style={{ backgroundImage: 'repeating-linear-gradient(-45deg,#facc15 0 10px,#fde047 10px 20px)' }} />
+                        <div className="absolute inset-0 opacity-25" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%,#fff 1.5px,transparent 2px),radial-gradient(circle at 75% 80%,#fff 1px,transparent 1.5px)', backgroundSize: '26px 26px,18px 18px' }} />
+                        <div className="relative flex h-full flex-col items-center justify-center px-5 text-center">
+                          <span className="text-[11px] font-black tracking-[0.4em] text-yellow-300">推しクジ</span>
+                          <span className="mt-0.5 text-[34px] font-black leading-none tracking-tight text-white [text-shadow:0_3px_0_#1e3a8a]">오시쿠지</span>
+                          <span className="mt-[18%] rounded-full bg-[#1e3a8a] px-3 py-1 text-[10px] font-black tracking-[0.2em] text-yellow-300 ring-2 ring-white">LUCKY TICKET</span>
+                          <span className="absolute bottom-3 right-4 font-mono text-[10px] text-white/70">No.{String(currentIndex + 1).padStart(4, '0')}</span>
+                          <span className="absolute left-3 top-3 rounded-sm bg-white px-1.5 py-0.5 text-[9px] font-black text-[#1d4ed8]">1回</span>
+                        </div>
+                        <motion.div className="absolute inset-0 bg-gradient-to-l from-[#0b1a44] via-transparent to-white" style={{ opacity: foldShade }} />
+                        <motion.div className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#0b1a44]/40 via-white/30 to-transparent" style={{ width: creaseWidth }} />
                       </div>
-                      <div className="absolute inset-0" style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}>
-                        <svg width="100%" height="100%" viewBox="0 0 330 232" preserveAspectRatio="none" className="overflow-visible drop-shadow-[2px_6px_6px_#00000030]">
-                          <defs>
-                            <linearGradient id={paperId + '-paper'} x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fff8e9" /><stop offset="65%" stopColor="#f1e4c9" /><stop offset="100%" stopColor="#dcccaa" /></linearGradient>
-                            <pattern id={paperId + '-grain'} width="5" height="5" patternUnits="userSpaceOnUse"><path d="M0 1h2M3 4h1" stroke="#8a744a" strokeOpacity=".18" strokeWidth=".5" /></pattern>
-                            <pattern id={paperId + '-lines'} width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><path d="M0 0v9" stroke="#a08458" strokeOpacity=".1" strokeWidth=".6" /></pattern>
-                          </defs>
-                          <path d="M1 1H327L329 6L327 11L329 16L327 21L329 26V207L327 212L329 217L327 222L329 227L327 231H1Z" fill={'url(#' + paperId + '-paper)'} stroke="#c5b38e" />
-                          <path d="M1 1H327V231H1Z" fill={'url(#' + paperId + '-grain)'} />
-                          <rect x="13" y="13" width="300" height="206" fill="none" stroke="#a98a54" strokeOpacity=".5" />
-                          <rect x="23" y="23" width="280" height="186" fill={'url(#' + paperId + '-lines)'} />
-                          <path d="M15 28H312M15 204H312" stroke="#9b7944" strokeOpacity=".48" strokeDasharray="2 4" />
-                          <text x="164" y="63" textAnchor="middle" fill="#9c7f50" fontSize="9" letterSpacing="3">OSHIKUJI ORIGINAL TICKET</text>
-                          <text x="164" y="123" textAnchor="middle" fill="#634829" fontFamily="Georgia, serif" fontWeight="700" fontSize="46" letterSpacing="6">KUJI</text>
-                          <path d="M102 142H225" stroke="#a78a55" strokeOpacity=".55" />
-                          <text x="164" y="166" textAnchor="middle" fill="#8b744b" fontSize="11" letterSpacing="2">한 장에 담긴 작은 두근거림</text>
-                          <text x="164" y="192" textAnchor="middle" fill="#aa926e" fontSize="8" letterSpacing="1.5">뜯는 순간, 나의 행운이 된다</text>
-                        </svg>
-                        <motion.div className="absolute inset-0 bg-gradient-to-l from-[#423015] via-transparent to-white" style={{ opacity: foldShade }} />
-                        <motion.div className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#513e20]/35 via-white/30 to-transparent" style={{ width: creaseWidth }} />
-                        <motion.div className="absolute bottom-0 right-0 top-0 flex w-[13%] items-center justify-center border-l border-dashed border-[#b29a6d]/70 bg-gradient-to-r from-[#f1e5cc] to-[#d6c39f] text-[#7f633b]" style={{ rotateY: reducedMotion ? 0 : curl, transformOrigin: '0% 50%', transformStyle: 'preserve-3d' }}>
-                          <div className="flex flex-col items-center gap-2"><ArrowLeft className="h-4 w-4" /><span className="text-[8px] font-semibold" style={{ writingMode: 'vertical-rl' }}>여기부터 뜯기</span></div>
-                        </motion.div>
-                      </div>
+
+                      {/* 위·아래 절취선: 오른쪽부터 당긴 만큼 띠가 뜯겨 나간다 */}
+                      {[false, true].map(bottom => (
+                        <div key={String(bottom)} className={'absolute inset-x-0 h-[9px] ' + (bottom ? 'bottom-0' : 'top-0')} style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}>
+                          <motion.div className="absolute inset-y-0 left-0 bg-white" style={{ right: stripPeel, backgroundImage: 'radial-gradient(circle,#1d4ed8 1.4px,transparent 1.8px)', backgroundSize: '7px 9px', backgroundPosition: 'center' }} />
+                          <motion.div className="absolute inset-y-0 right-0 origin-left bg-white shadow-md" style={{ width: stripPeel, y: bottom ? 10 : -10, rotate: bottom ? 5 : -5, opacity: stripOpacity, backgroundImage: 'radial-gradient(circle,#1d4ed8 1.4px,transparent 1.8px)', backgroundSize: '7px 9px', backgroundPosition: 'center' }} />
+                        </div>
+                      ))}
+
+                      {/* 당김 손잡이 */}
+                      <motion.div className="absolute top-1/2 z-10 flex -translate-y-1/2 items-center gap-1 rounded-l-full bg-yellow-300 py-2 pl-2.5 pr-3 text-[10px] font-black text-[#1e3a8a] shadow-lg ring-2 ring-white" style={{ right: tabRight, backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}>
+                        <ArrowLeft className="h-3.5 w-3.5" />뜯기
+                      </motion.div>
                     </motion.div>
                   </motion.div>
 
@@ -486,7 +490,7 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
                     </div>
                     <div className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-400">
                       <Hand aria-hidden="true" className="h-3.5 w-3.5 text-amber-100/70" />
-                      <span>{stage === 'unsealed' ? '안쪽에 적힌 상과 상품을 확인해 보세요' : stage === 'tearing' ? openingBeat === 'dimming' ? '행운이 열리기 직전, 잠깐의 설렘' : openingBeat === 'tension' ? '봉인을 조금 더 당기고 있어요' : openingBeat === 'split' ? '봉인이 찢어지고 있어요' : '이제, 당신의 행운을 만나요' : pullProgress >= 100 ? '지금 손을 놓으면 열려요' : pullProgress > 0 ? '절취선을 따라 조금만 더 벗겨보세요' : '오른쪽 끝을 잡고 왼쪽으로 벗겨보세요'}</span>
+                      <span>{stage === 'unsealed' ? '안쪽에 적힌 상과 상품을 확인해 보세요' : stage === 'tearing' ? openingBeat === 'dimming' ? '행운이 열리기 직전, 잠깐의 설렘' : openingBeat === 'tension' ? '봉인을 조금 더 당기고 있어요' : openingBeat === 'split' ? '봉인이 찢어지고 있어요' : '이제, 당신의 행운을 만나요' : pullProgress >= 100 ? '지금 손을 놓으면 열려요' : pullProgress > 0 ? '절취선을 따라 조금만 더 벗겨보세요' : '노란 손잡이를 잡고 왼쪽으로 당겨보세요'}</span>
                       {stage === 'ready' && <motion.span aria-hidden="true" animate={reducedMotion ? {} : { x: [0, -4, 0] }} transition={{ duration: 1.5, repeat: Infinity }}><ArrowLeft className="h-3.5 w-3.5 text-amber-100/70" /></motion.span>}
                     </div>
                   </div>
