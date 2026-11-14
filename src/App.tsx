@@ -1269,7 +1269,7 @@ async function handleRefresh() {
         screen !== "detail" && <LiveTicker />}
 
       {/* Hamburger Menu Button - Fixed position */}
-      {!showingPaymentReturn && !isPublicReadOnly && !isAuthCallback && screen !== "reveal" && screen !== "login" && screen !== "communityWrite" && screen !== "communityDetail" && (
+      {!showingPaymentReturn && !isPublicReadOnly && !isAuthCallback && screen !== "reveal" && screen !== "login" && screen !== "communityWrite" && screen !== "communityDetail" && screen !== "businessRegister" && screen !== "businessProductEdit" && (
         <button
           aria-label="메뉴 열기"
           onClick={() => setIsSidebarOpen(true)}
