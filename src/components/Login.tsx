@@ -110,7 +110,7 @@ export default function Login({ onLogin, onBack }: LoginProps) {
         : "https://kujishop.shop/auth/naver/callback";
       const state = crypto.randomUUID();
       sessionStorage.setItem('oauth_state_naver', state);
-      const NAVER_AUTH_URL = `https://nid.naver.com/oauth2.0/authorize?${new URLSearchParams({ response_type: 'token', client_id: CLIENT_ID, redirect_uri: REDIRECT_URI, state })}`;
+      const NAVER_AUTH_URL = `https://nid.naver.com/oauth2.0/authorize?${new URLSearchParams({ response_type: 'code', client_id: CLIENT_ID, redirect_uri: REDIRECT_URI, state })}`;
 
       if (Capacitor.isNativePlatform()) {
         toast.info("모바일 앱 환경에서는 딥링크(App Link) 설정 전까지 소셜 로그인이 제한됩니다.");

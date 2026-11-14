@@ -38,13 +38,16 @@ export const loginWithKakao = async (
  * 네이버 로그인 요청
  */
 export const loginWithNaver = async (
-  naverAccessToken: string,
+  authorizationCode: string,
+  state: string,
   isTermsAgreed?: boolean,
   isPrivacyAgreed?: boolean,
   isMarketingAgreed?: boolean
 ): Promise<{token: string; isNewUser?: boolean}> => {
+  // 인가 코드는 서버가 우리 앱 시크릿으로만 토큰으로 바꿀 수 있어 다른 앱의 토큰이 섞일 수 없다
   const response = await axiosInstance.post(`${API_BASE_URL}/login/naver`, {
-    naverAccessToken,
+    authorizationCode,
+    state,
     isTermsAgreed,
     isPrivacyAgreed,
     isMarketingAgreed,
