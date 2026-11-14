@@ -274,11 +274,11 @@ export default function AdminUserManagement({ onBack }: Props) {
                         <div className="text-white/80 text-sm">
                           {user.userType === 'customer' && (
                             <>
-                              <div>구매: {user.purchases}회</div>
-                              <div>당첨: {user.winnings}회</div>
+                              {user.purchases != null && <div>구매: {user.purchases}회</div>}
+                              {user.winnings != null && <div>당첨: {user.winnings}회</div>}
                             </>
                           )}
-                          {user.userType === 'business' && (
+                          {user.userType === 'business' && user.products != null && (
                             <div>상품: {user.products}개</div>
                           )}
                           {user.userType === 'admin' && (
