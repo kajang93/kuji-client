@@ -114,9 +114,9 @@ export default function PrizeDetail({ anime, onBack, onPurchase, onExperience, u
   };
 
   return (
-    <div className="min-h-full pb-44 pt-[140px]">
+    <div className="min-h-full pb-44 pt-[160px]">
       {/* Header - Fixed Position */}
-      <div className="fixed top-0 left-0 right-0 z-30 bg-gradient-to-r from-purple-900 to-blue-900 border-b-2 border-cyan-400/50 shadow-lg pt-safe-top pb-0">
+      <div className="fixed top-0 left-0 right-0 z-30 bg-gradient-to-r from-purple-900 to-blue-900 border-b-2 border-cyan-400/50 shadow-lg pt-[env(safe-area-inset-top)] pb-0">
         <div className="flex items-center justify-between p-4 max-w-md mx-auto w-full">
           <button
             onClick={onBack}
@@ -296,7 +296,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, onExperience, u
         {viewOnly ? <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-center">
           <p className="mb-3 text-sm text-slate-300">판매 준비 중 · 실제 결제 불가</p>
           {onExperience && <button onClick={onExperience} className="w-full rounded-2xl bg-gradient-to-r from-amber-100 to-amber-300 px-5 py-4 font-semibold text-slate-950">무료 개봉 체험하기</button>}
-        </div> : <div className="p-4 space-y-3">
+        </div> : <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-3">
           {/* Quantity Selector */}
           <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-3 border border-white/20">
             <span className="text-white/70">구매 수량</span>

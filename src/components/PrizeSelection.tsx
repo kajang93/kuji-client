@@ -139,7 +139,7 @@ export default function PrizeSelection({ prizeName, availableOptions, onConfirm,
       </div>
 
       {/* Sticky Bottom Button */}
-      <div className="sticky bottom-0 left-0 right-0 z-10 p-4 bg-gradient-to-t from-purple-900 via-purple-900 to-transparent">
+      <div className="sticky bottom-0 left-0 right-0 z-10 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-purple-900 via-purple-900 to-transparent">
         {selectedOption ? (
           <motion.button
             initial={{ y: 20, opacity: 0 }}

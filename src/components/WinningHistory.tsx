@@ -513,7 +513,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
             initial={{ y: 100 }}
             animate={{ y: 0 }}
             exit={{ y: 100 }}
-            className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/90 backdrop-blur-md border-t border-white/10 z-30"
+            className="fixed bottom-0 left-0 right-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-slate-900/90 backdrop-blur-md border-t border-white/10 z-30"
           >
             <div className="max-w-2xl mx-auto flex items-center gap-4">
               <div className="flex-1">

@@ -65,7 +65,7 @@
     
     /* iOS Safe Area 대응 (아이폰 노치/하단 홈바 여백 확보) */
     padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
+    /* 하단 홈 바 영역은 각 하단 고정 바가 직접 여백을 잡으므로 화면 끝까지 채운다 */
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
     
