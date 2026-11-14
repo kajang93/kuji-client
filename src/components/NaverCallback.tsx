@@ -65,7 +65,7 @@ export default function NaverCallback({
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-800 p-6">
+    <div className="min-h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-800 p-6">
       <motion.div
         animate={{
           rotate: [0, 10, -10, 0],

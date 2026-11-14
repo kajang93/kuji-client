@@ -23,7 +23,7 @@ export default function AnimeList({ collections, onSelect, onBack, onToggleWishl
   useEffect(() => { if (loadState === 'ready') trackFunnelEvent('VIEW_ITEM_LIST'); }, [loadState]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-full">
       {/* Header */}
       <div className="sticky top-0 z-20 glass-panel border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
         <div className="flex items-center p-4">

@@ -94,7 +94,7 @@ export default function Events({ onBack }: EventsProps) {
   );
 
   return (
-    <div className="min-h-screen pb-6">
+    <div className="min-h-full pb-6">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-gradient-to-r from-orange-900 to-red-900 border-b-2 border-yellow-400/50 shadow-lg">
         <div className="flex items-center justify-between p-4">

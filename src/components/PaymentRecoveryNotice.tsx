@@ -15,7 +15,7 @@ interface PaymentRecoveryNoticeProps {
 
 const PaymentRecoveryNotice: FC<PaymentRecoveryNoticeProps> = ({ message, busy, needsLogin, onCheck, onLogin, fullScreen = false, title, onViewHistory }) => (
   <section role="status" aria-live="polite" className={fullScreen
-    ? "flex min-h-[100dvh] items-center justify-center bg-slate-950 px-6 text-white"
+    ? "flex min-h-full items-center justify-center bg-slate-950 px-6 text-white"
     : "fixed bottom-4 left-4 right-4 z-[90] mx-auto max-w-md rounded-2xl border border-amber-400/40 bg-slate-900 p-4 text-white shadow-xl"}>
     <div className={fullScreen ? "w-full max-w-md rounded-3xl border border-amber-200/20 bg-gradient-to-b from-slate-900 to-indigo-950 p-7 shadow-2xl" : ""}>
     <div className="flex items-start gap-3">

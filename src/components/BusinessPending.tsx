@@ -46,7 +46,7 @@ export default function BusinessPending({ onBack, onRefreshAccount, user }: Prop
     finally { pending.current = false; setBusy(false); }
   };
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-900 to-indigo-950 p-6 text-white">
+    <main className="min-h-full bg-gradient-to-b from-slate-900 to-indigo-950 p-6 text-white">
       <button onClick={onBack} className="mb-10 flex items-center gap-2 rounded-xl bg-white/5 px-4 py-3"><ChevronLeft className="h-5 w-5" />로그아웃</button>
       <section className="mx-auto max-w-lg rounded-3xl border border-white/10 bg-white/5 p-6">
         <Clock className="mb-5 h-10 w-10 text-amber-300" />

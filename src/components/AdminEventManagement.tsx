@@ -104,7 +104,7 @@ export default function AdminEventManagement({ onBack }: AdminEventManagementPro
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pb-6">
+    <div className="min-h-full bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pb-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 px-6 pt-6 pb-4">

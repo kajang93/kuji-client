@@ -54,7 +54,7 @@ export default function Notice({ onBack }: NoticeProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 pb-6">
+    <div className="min-h-full bg-slate-900 pb-6">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-gradient-to-r from-blue-900 to-cyan-900 border-b-2 border-cyan-400/50 shadow-lg">
         <div className="flex items-center justify-between p-4">

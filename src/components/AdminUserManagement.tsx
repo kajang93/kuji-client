@@ -140,7 +140,7 @@ export default function AdminUserManagement({ onBack }: Props) {
   };
 
   return (
-    <div aria-busy={isLoading} className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pb-6">
+    <div aria-busy={isLoading} className="min-h-full bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pb-6">
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">

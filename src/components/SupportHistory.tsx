@@ -31,7 +31,7 @@ export default function SupportHistory({ onBack }: SupportHistoryProps) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-full flex flex-col">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-gradient-to-r from-purple-900 to-blue-900 border-b-2 border-cyan-400/50 shadow-lg">
         <div className="flex items-center justify-between p-4">

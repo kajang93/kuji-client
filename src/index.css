@@ -4,19 +4,50 @@
 @import './styles/globals.css';
 @source './**/*.{js,ts,jsx,tsx}';
 
+/* ===== 밝은 코발트 테마 =====
+   기존 컴포넌트의 어두운 색 클래스(slate/gray/indigo/black)를 한 곳에서 밝은 코발트 계열로 다시 매핑합니다.
+   톤을 다시 조정하려면 이 블록의 값만 바꾸면 앱 전체에 반영됩니다. */
+@theme {
+  --color-black: #0d2357;
+  --color-slate-950: #16357a;
+  --color-slate-900: #1d4391;
+  --color-slate-800: #2853a8;
+  --color-slate-700: #3563bd;
+  --color-slate-500: #a6bbe4;
+  --color-slate-400: #c2d1ef;
+  --color-slate-300: #dbe5f8;
+  --color-gray-900: #1d4391;
+  --color-gray-800: #2853a8;
+  --color-gray-400: #c2d1ef;
+  --color-zinc-950: #16357a;
+  --color-zinc-900: #1d4391;
+  --color-indigo-950: #1a3d8a;
+  --color-indigo-900: #2349a0;
+  --color-purple-950: #2a3f97;
+  --color-purple-900: #34489f;
+}
+
 @layer base {
+  html, body {
+    height: 100%;
+    /* 문서 자체는 스크롤되지 않게 고정하고, 화면 내부 컨테이너만 스크롤합니다. */
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
   html {
-    background-color: #0f172a;
+    background-color: #16357a;
     /* 앱 전체의 iOS 고무줄(rubber-band) 오버스크롤 바운스 제거 */
     overscroll-behavior: none;
   }
 
   body {
-    background-color: #000000; /* Deep black for premium look */
+    background-color: #16357a;
     display: flex;
     justify-content: center;
     margin: 0;
-    min-height: 100vh;
+    position: fixed;
+    inset: 0;
     /* ✅ iOS Safari 텍스트 크기 자동 조정 방지 */
     -webkit-text-size-adjust: 100%;
   }
@@ -24,12 +55,13 @@
   #root {
     width: 100%;
     max-width: 480px; /* 스마트폰 최대 너비 제한 */
-    min-height: 100vh;
     height: 100%;
+    box-sizing: border-box; /* safe-area padding 을 높이에 포함해 화면 밖으로 넘치지 않게 함 */
+    overflow: hidden;
     margin: 0 auto;
     position: relative;
-    background-color: #09090b; /* Very dark zinc */
-    box-shadow: 0 0 100px rgba(0, 0, 0, 0.9);
+    background-color: #1d4391;
+    box-shadow: 0 0 80px rgba(8, 24, 64, 0.5);
     
     /* iOS Safe Area 대응 (아이폰 노치/하단 홈바 여백 확보) */
     padding-top: env(safe-area-inset-top);
@@ -94,15 +126,15 @@
       transparent 12%,
       #0000 16%
     ),
-    radial-gradient(ellipse at 100% 0%, #1e1b4b 0%, transparent 50%),
-    radial-gradient(ellipse at 0% 100%, #312e81 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, #000000 0%, #000000 100%);
+    radial-gradient(ellipse at 100% 0%, #3b82f6 0%, transparent 55%),
+    radial-gradient(ellipse at 0% 100%, #0ea5e9 0%, transparent 55%),
+    linear-gradient(160deg, #2152b8 0%, #1a3f92 100%);
     background-size: 200% 200%;
     animation: aurora 15s ease infinite;
   }
 
   .glass-panel {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.10);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.1);

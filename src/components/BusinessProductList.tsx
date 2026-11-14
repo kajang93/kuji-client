@@ -57,7 +57,7 @@ export default function BusinessProductList({ onBack, collections, onEdit, onDel
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-blue-900 to-purple-800 pb-20">
+    <div className="min-h-full bg-gradient-to-b from-purple-900 via-blue-900 to-purple-800 pb-20">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-purple-900/80 backdrop-blur-md border-b border-white/10">
         <div className="p-4">

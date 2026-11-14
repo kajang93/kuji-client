@@ -59,7 +59,7 @@ export default function AdminInquiryManagement({ onBack }: AdminInquiryManagemen
   const pendingCount = inquiries.filter(i => i.status === 'WAITING').length;
 
   return (
-    <div className="min-h-screen bg-slate-900 pb-4">
+    <div className="min-h-full bg-slate-900 pb-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-slate-900/80 backdrop-blur-md px-6 pt-6 pb-4 border-b border-white/5">

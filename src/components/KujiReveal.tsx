@@ -376,7 +376,7 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
       <motion.div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10 bg-[#02040b]" initial={false} animate={{ opacity: stage === 'tearing' && !reducedMotion ? 0.78 : 0 }} transition={{ duration: 0.18 }} />
       <canvas ref={canvasRef} aria-hidden="true" className="pointer-events-none absolute inset-0 z-30 h-full w-full" />
 
-      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 sm:px-8">
+      <div className="relative mx-auto flex min-h-full w-full max-w-lg flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 sm:px-8">
         {experience && <p className="mb-4 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-center text-xs text-cyan-100">무료 가상 구매 체험 · 실제 상품·결제 없음</p>}
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">

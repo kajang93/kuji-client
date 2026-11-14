@@ -70,7 +70,7 @@ export default function SellerInquiries({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pb-4">
+    <div className="min-h-full bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pb-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 px-4 pt-4 pb-3">

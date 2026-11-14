@@ -37,7 +37,7 @@ export default function PrizeSelection({ prizeName, availableOptions, onConfirm,
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-purple-900 via-blue-900 to-purple-800">
+    <div className="min-h-full flex flex-col bg-gradient-to-b from-purple-900 via-blue-900 to-purple-800">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-gradient-to-r from-purple-900 to-blue-900 border-b-2 border-cyan-400/50 shadow-lg">
         <div className="flex items-center justify-between p-4">

@@ -159,7 +159,7 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 pb-40">
+    <div className="min-h-full bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 pb-40">
       {/* Header */}
       <div className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-xl items-center justify-between p-4">

@@ -109,7 +109,7 @@ export default function BusinessShippingManagement({
     const seriesWinnings = groupedWinnings[selectedSeries] || [];
     
     return (
-      <div className="min-h-screen bg-gradient-to-b from-purple-900 via-blue-900 to-purple-800 pb-20">
+      <div className="min-h-full bg-gradient-to-b from-purple-900 via-blue-900 to-purple-800 pb-20">
         {/* Header */}
         <div className="sticky top-0 z-20 bg-gradient-to-r from-purple-900 to-blue-900 border-b-2 border-cyan-400/50 shadow-lg">
           <div className="flex items-center gap-4 p-4">
@@ -250,7 +250,7 @@ export default function BusinessShippingManagement({
 
   // Series List View
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-blue-900 to-purple-800 pb-20">
+    <div className="min-h-full bg-gradient-to-b from-purple-900 via-blue-900 to-purple-800 pb-20">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-gradient-to-r from-purple-900 to-blue-900 border-b-2 border-cyan-400/50 shadow-lg">
         <div className="flex items-center gap-4 p-4">

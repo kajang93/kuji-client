@@ -1259,7 +1259,7 @@ async function handleRefresh() {
   };
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-800 overflow-hidden w-full relative">
+    <div className="h-full flex flex-col bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-800 overflow-hidden w-full relative">
       {/* 티켓 선택과 결제 복귀와 개봉 중에는 당첨 알림을 숨긴다. */}
       {!showingPaymentReturn && !pendingPayment && !isAuthCallback && !isPublicReadOnly && screen !== "login" && screen !== "selection" &&
         screen !== "reveal" &&
@@ -1276,7 +1276,7 @@ async function handleRefresh() {
         </button>
       )}
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden relative w-full" id="main-scroll-container">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain relative w-full" id="main-scroll-container">
         {showingPaymentReturn ? (
           <PaymentRecoveryNotice
             fullScreen
