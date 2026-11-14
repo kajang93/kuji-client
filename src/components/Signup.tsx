@@ -55,6 +55,7 @@ const Signup: FC<SignupProps> = ({ userType, onBack, onComplete }) => {
   const [businessNumberChecked, setBusinessNumberChecked] = useState(false);
   const [businessNumberValid, setBusinessNumberValid] = useState(false);
   const [phoneVerificationSent, setPhoneVerificationSent] = useState(false);
+  const [agreeAge, setAgreeAge] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [agreeMarketing, setAgreeMarketing] = useState(false);
@@ -290,8 +291,8 @@ const Signup: FC<SignupProps> = ({ userType, onBack, onComplete }) => {
       toast.error(message);
     };
 
-    if (!agreeTerms || !agreePrivacy) {
-      reject('필수 이용약관에 동의해주세요.');
+    if (!agreeAge || !agreeTerms || !agreePrivacy) {
+      reject('필수 항목(만 14세 이상, 이용약관, 개인정보 수집·이용)에 동의해주세요.');
       return;
     }
 
@@ -722,7 +723,8 @@ const Signup: FC<SignupProps> = ({ userType, onBack, onComplete }) => {
           {/* Agree All */}
           <div 
             onClick={() => {
-              const nextState = !(agreeTerms && agreePrivacy && agreeMarketing);
+              const nextState = !(agreeAge && agreeTerms && agreePrivacy && agreeMarketing);
+              setAgreeAge(nextState);
               setAgreeTerms(nextState);
               setAgreePrivacy(nextState);
               setAgreeMarketing(nextState);
@@ -730,9 +732,9 @@ const Signup: FC<SignupProps> = ({ userType, onBack, onComplete }) => {
             className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition-colors border border-white/10"
           >
             <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
-              agreeTerms && agreePrivacy && agreeMarketing ? 'bg-yellow-500 border-yellow-500' : 'border-white/30 bg-white/10'
+              agreeAge && agreeTerms && agreePrivacy && agreeMarketing ? 'bg-yellow-500 border-yellow-500' : 'border-white/30 bg-white/10'
             }`}>
-              {agreeTerms && agreePrivacy && agreeMarketing && <Check className="w-4 h-4 text-purple-900" />}
+              {agreeAge && agreeTerms && agreePrivacy && agreeMarketing && <Check className="w-4 h-4 text-purple-900" />}
             </div>
             <span className="text-white font-bold text-lg">전체 동의하기</span>
           </div>
@@ -740,6 +742,7 @@ const Signup: FC<SignupProps> = ({ userType, onBack, onComplete }) => {
           {/* Individual Terms */}
           <div className="space-y-3 px-2">
             {[
+              { id: 'age' as const, label: '만 14세 이상입니다', isRequired: true, state: agreeAge, setter: setAgreeAge },
               { id: 'terms' as const, label: '이용약관 동의', isRequired: true, state: agreeTerms, setter: setAgreeTerms },
               { id: 'privacy' as const, label: '개인정보 수집 및 이용 동의', isRequired: true, state: agreePrivacy, setter: setAgreePrivacy },
               { id: 'marketing' as const, label: '마케팅 정보 수신 동의', isRequired: false, state: agreeMarketing, setter: setAgreeMarketing }
@@ -758,13 +761,15 @@ const Signup: FC<SignupProps> = ({ userType, onBack, onComplete }) => {
                     {item.label} {item.isRequired && <span className="text-red-400">*</span>}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setOpenPolicy(item.id)}
-                  className="text-white/40 text-xs underline hover:text-white/60"
-                >
-                  전문 보기
-                </button>
+                {item.id !== 'age' && (
+                  <button
+                    type="button"
+                    onClick={() => setOpenPolicy(item.id)}
+                    className="text-white/40 text-xs underline hover:text-white/60"
+                  >
+                    전문 보기
+                  </button>
+                )}
               </div>
             ))}
           </div>
