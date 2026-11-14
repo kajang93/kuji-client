@@ -92,6 +92,8 @@ export type WinningItem = {
   prizeImage: string;
   deliveryStatus: "stored" | "preparing" | "shipped" | "delivered" | "SHIP_REQUESTED";
   trackingNumber?: string;
+  // 판매자 배송 관리용 받는 사람 정보
+  recipient?: { name: string; phone: string; address: string; detailAddress?: string; message?: string };
   needsOptionSelection?: boolean;
   selectedOption?: {
     id: string;

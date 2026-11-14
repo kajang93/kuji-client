@@ -167,6 +167,16 @@ export default function BusinessShippingManagement({
                   </div>
                 </div>
 
+                {/* 받는 사람: 판매자가 실제로 보낼 곳 */}
+                {winning.recipient && (
+                  <div className="mb-4 rounded-xl border border-white/15 bg-white/5 p-3 text-sm text-white/85">
+                    <div className="mb-1 text-xs font-semibold text-cyan-200">받는 사람</div>
+                    <div>{winning.recipient.name} · {winning.recipient.phone}</div>
+                    <div className="break-keep">{winning.recipient.address} {winning.recipient.detailAddress}</div>
+                    {winning.recipient.message && <div className="mt-1 text-white/60">요청사항: {winning.recipient.message}</div>}
+                  </div>
+                )}
+
                 {/* Shipping Management */}
                 {winning.deliveryStatus !== 'delivered' && (
                   <div className="space-y-3 border-t border-white/10 pt-3">
