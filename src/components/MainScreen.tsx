@@ -67,6 +67,9 @@ export default function MainScreen({ onStart, onExperience, banners }: MainScree
         </motion.div>
       </AnimatePresence>
 
+      {/* 하단 가장자리를 기본 배경색(#1d4391)으로 맞춰 아이폰 하단 툴바·홈 바와의 경계선을 없앤다 */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 z-[15] h-32 bg-gradient-to-t from-[#1d4391] via-[#1d4391]/70 to-transparent" />
+
       {/* Content Layer */}
       <div className="relative z-20 flex flex-1 flex-col items-center justify-center px-4 py-12 text-center">
         {/* Animated Title */}

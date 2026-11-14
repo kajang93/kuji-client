@@ -36,13 +36,14 @@
   }
 
   html {
-    background-color: #16357a;
+    /* 화면 하단 가장자리와 같은 색: 사파리 하단 툴바·홈 바 뒤로 보이는 영역과 경계가 생기지 않게 한다 */
+    background-color: #1d4391;
     /* 앱 전체의 iOS 고무줄(rubber-band) 오버스크롤 바운스 제거 */
     overscroll-behavior: none;
   }
 
   body {
-    background-color: #16357a;
+    background-color: #1d4391;
     display: flex;
     justify-content: center;
     margin: 0;
@@ -127,8 +128,8 @@
       #0000 16%
     ),
     radial-gradient(ellipse at 100% 0%, #3b82f6 0%, transparent 55%),
-    radial-gradient(ellipse at 0% 100%, #0ea5e9 0%, transparent 55%),
-    linear-gradient(160deg, #2152b8 0%, #1a3f92 100%);
+    radial-gradient(ellipse at 0% 72%, #0ea5e9 0%, transparent 50%),
+    linear-gradient(180deg, #2152b8 0%, #1f4aa6 70%, #1d4391 100%);
     background-size: 200% 200%;
     animation: aurora 15s ease infinite;
   }
