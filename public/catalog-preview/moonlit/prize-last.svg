@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1a44"/><stop offset="1" stop-color="#1d4ed8"/></linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset=".5" stop-color="#f59e0b"/><stop offset="1" stop-color="#fde68a"/></linearGradient></defs>
+  <rect width="400" height="400" fill="url(#bg)"/>
+  <circle cx="300" cy="90" r="48" fill="#fff7cc"/>
+  <path d="M60 300 C 90 200, 170 230, 180 160 C 190 100, 260 90, 290 140 C 310 175, 280 205, 250 190 C 270 170, 250 140, 225 160 C 205 178, 230 250, 150 270 C 110 280, 90 300, 60 300 Z" fill="#0f172a" stroke="url(#gold)" stroke-width="6"/>
+  <polygon points="250,110 268,82 276,118" fill="#0f172a" stroke="url(#gold)" stroke-width="4"/>
+  <circle cx="262" cy="132" r="6" fill="#facc15"/>
+  <path d="M150 200 L110 150 L140 160 L130 120 L170 175" fill="#1e3a8a" stroke="url(#gold)" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M290 150 Q330 150 330 125 M290 160 Q340 175 345 150" stroke="#f97316" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <rect x="0" y="340" width="400" height="60" fill="url(#gold)"/>
+  <text x="200" y="379" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="24" font-weight="900" fill="#0b1a44" letter-spacing="3">LAST ONE · BLACK DRAGON</text>
+</svg>

@@ -7,7 +7,12 @@ export type ExperienceRound = {
   lastAwarded: boolean;
 };
 
-export const EXPERIENCE_IMAGE = '/catalog-preview/moonlit-bookshop.webp';
+export const EXPERIENCE_IMAGE = '/catalog-preview/moonlit/banner.svg';
+const PRIZE_IMAGES: Record<string, string> = {
+  A: '/catalog-preview/moonlit/prize-a.svg',
+  B: '/catalog-preview/moonlit/prize-b.svg',
+  C: '/catalog-preview/moonlit/prize-c.svg',
+};
 
 export function createExperienceRound(): ExperienceRound {
   const grades = ['A', 'B', 'B', 'C', 'C', 'C'];
@@ -15,13 +20,13 @@ export function createExperienceRound(): ExperienceRound {
     const swap = Math.floor(Math.random() * (index + 1));
     [grades[index], grades[swap]] = [grades[swap], grades[index]];
   }
-  const names: Record<string, string> = { A: '달빛 서점 아트프린트', B: '작은 독서가 엽서', C: '달빛 고양이 스티커' };
+  const names: Record<string, string> = { A: '심야 격납고 메카 아트보드', B: '전설의 검 아크릴 스탠드', C: '히어로 메탈 배지' };
   return {
     tickets: grades.map((rank, id) => ({ id, opened: false, prize: {
-      id: `experience-${id}`, rank, name: names[rank], image: EXPERIENCE_IMAGE,
+      id: `experience-${id}`, rank, name: names[rank], image: PRIZE_IMAGES[rank],
       totalCount: 1, remainingCount: 1, opened: [false],
     } })),
-    lastPrize: { id: 'experience-last', rank: 'LAST', lastPrize: true, name: '달빛 서점 라스트 아트프린트', image: EXPERIENCE_IMAGE, totalCount: 1, remainingCount: 1, opened: [false] },
+    lastPrize: { id: 'experience-last', rank: 'LAST', lastPrize: true, name: '라스트원 흑룡 일러스트 보드', image: '/catalog-preview/moonlit/prize-last.svg', totalCount: 1, remainingCount: 1, opened: [false] },
     lastAwarded: false,
   };
 }

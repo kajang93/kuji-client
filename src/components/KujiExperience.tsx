@@ -76,9 +76,9 @@ const KujiExperience: FC<{ onBack: () => void }> = ({ onBack }) => {
           <button onClick={reset} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 px-5 py-4 text-sm text-slate-200"><RotateCcw className="h-4 w-4" />새 회차로 다시 체험</button>
         </> : <>
           <div className="relative mt-6 overflow-hidden rounded-3xl border border-white/10 bg-slate-900">
-            <ImageWithFallback src={EXPERIENCE_IMAGE} alt="무료 체험에 사용하는 달빛 서점 그림" fetchPriority="high" className="h-40 w-full object-cover object-center sm:h-48" />
+            <ImageWithFallback src={EXPERIENCE_IMAGE} alt="심야 만화·하비 숍 달빛 서점 그림" fetchPriority="high" className="h-40 w-full object-cover object-center sm:h-48" />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
-            <p className="absolute bottom-4 left-4 text-sm font-semibold text-white">달빛 서점 · 체험용 가상 굿즈</p>
+            <p className="absolute bottom-4 left-4 text-sm font-semibold text-white">달빛 서점 · 심야 만화·하비 코너 체험판</p>
           </div>
           <aside aria-label="라스트상 체험 규칙" className="mt-4 rounded-2xl border border-amber-200/20 bg-amber-200/[0.06] p-4">
             <p className="flex items-center gap-2 text-sm font-semibold text-amber-100"><Gift className="h-4 w-4" />마지막 한 장에는 라스트상까지</p>

@@ -18,6 +18,9 @@ type KujiRevealProps = {
 type RevealStage = 'ready' | 'tearing' | 'unsealed' | 'revealed';
 type OpeningBeat = 'sealed' | 'dimming' | 'tension' | 'split' | 'burst';
 const DRAG_THRESHOLD = 132;
+// 절취선 구멍 (흰 띠 위 파란 원)과 뜯긴 끝의 톱니 모양
+const PERF_HOLES = 'radial-gradient(circle at 4px 5px,#1d4ed8 1.6px,transparent 2px)';
+const TORN_EDGE = 'polygon(0 0,3px 30%,0 50%,3px 70%,0 100%,100% 100%,100% 0)';
 const RANK_TONES: Record<string, { color: string; soft: string; particles: number }> = {
   LAST: { color: '#ffe3a3', soft: '#c9862c', particles: 40 },
   S: { color: '#f5cf83', soft: '#bc842e', particles: 32 },
@@ -35,12 +38,21 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
   const [isAutoMode, setIsAutoMode] = useState(false);
   const [pullProgress, setPullProgress] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  // 절취선 전체 폭: 남은 띠와 뜯긴 띠가 같은 구멍 격자를 쓰도록 측정한다
+  const [stripWidth, setStripWidth] = useState(292);
+  const measureStrip = (el: HTMLDivElement | null) => {
+    if (el && el.offsetWidth > 0 && el.offsetWidth !== stripWidth) setStripWidth(el.offsetWidth);
+  };
   const reducedMotion = useReducedMotion() ?? false;
   const x = useMotionValue(0);
   const rotateY = useTransform(x, [0, DRAG_THRESHOLD, 250], [0, -64, -168]);
   const paperLift = useTransform(x, [0, DRAG_THRESHOLD, 250], [0, -8, -2]);
   const stripPeel = useTransform(x, [0, DRAG_THRESHOLD], ['0%', '100%']);
   const stripOpacity = useTransform(x, [0, 8, DRAG_THRESHOLD, 170], [0, 1, 1, 0]);
+  const stripLift = useTransform(x, [0, DRAG_THRESHOLD], [0, 9]);
+  const stripLiftUp = useTransform(x, [0, DRAG_THRESHOLD], [0, -9]);
+  const stripTilt = useTransform(x, [0, DRAG_THRESHOLD], [0, 3]);
+  const stripTiltUp = useTransform(x, [0, DRAG_THRESHOLD], [0, -3]);
   const tabRight = useTransform(x, [0, DRAG_THRESHOLD, 170], ['-14px', 'calc(100% - 40px)', 'calc(100% - 40px)']);
   const foldShade = useTransform(x, [0, 65, DRAG_THRESHOLD, 250], [0, 0.15, 0.32, 0.05]);
   const creaseWidth = useTransform(x, [0, DRAG_THRESHOLD, 250], ['2%', '12%', '2%']);
@@ -442,13 +454,13 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
                         <div className="text-center text-yellow-300" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}><span className="text-[10px] font-black tracking-[0.25em]">推しクジ</span><span className="mt-2 font-mono text-[10px] text-white/80">No.{String(currentIndex + 1).padStart(4, '0')}</span></div>
                       </div>
                       <div className="absolute inset-y-3 left-[17%] right-3 flex flex-col items-center justify-center rounded-[4px] border-2 border-dashed border-[#1d4ed8]/25">
-                        {(stage === 'unsealed' || openingBeat === 'burst') ? <motion.div initial={{ opacity: 0, scale: reducedMotion ? 1 : 1.6, rotate: reducedMotion ? 0 : -14 }} animate={{ opacity: 1, scale: 1, rotate: -6 }} transition={{ type: 'spring', stiffness: 420, damping: 16 }} className="flex flex-col items-center px-3 text-center">
+                        <motion.div key={'stamp-' + currentIndex} initial={false} animate={(stage === 'unsealed' || openingBeat === 'burst') && !reducedMotion ? { scale: [1, 1.18, 1], rotate: [-6, -10, -6] } : { scale: 1, rotate: -6 }} transition={{ duration: 0.45, ease: 'easeOut' }} className="flex flex-col items-center px-3 text-center">
                           <div className="flex h-[92px] w-[92px] items-center justify-center rounded-full border-[5px] shadow-[inset_0_0_0_3px_#fff]" style={{ borderColor: tone.soft, backgroundColor: tone.color }}>
                             <span className={(isLastBonus ? 'text-[26px]' : 'text-[54px]') + ' font-black leading-none text-[#1b1b1b]'}>{isLastBonus ? 'LAST' : currentPrize.rank}</span>
                           </div>
                           <span className="mt-1.5 text-lg font-black text-[#1b1b1b]">{isLastBonus ? '라스트원상' : currentPrize.rank + '상'}</span>
-                          <p className="mt-0.5 line-clamp-2 max-w-[200px] text-[11px] font-semibold leading-4 text-[#4a4a4a]">{currentPrize.name}</p>
-                        </motion.div> : <span className="text-5xl font-black text-[#1d4ed8]/10">?</span>}
+                          <motion.p initial={false} animate={{ opacity: stage === 'unsealed' || openingBeat === 'burst' ? 1 : 0 }} className="mt-0.5 line-clamp-2 max-w-[200px] text-[11px] font-semibold leading-4 text-[#4a4a4a]">{currentPrize.name}</motion.p>
+                        </motion.div>
                       </div>
                     </div>
 
@@ -469,11 +481,16 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
                         <motion.div className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#0b1a44]/40 via-white/30 to-transparent" style={{ width: creaseWidth }} />
                       </div>
 
-                      {/* 위·아래 절취선: 오른쪽부터 당긴 만큼 띠가 뜯겨 나간다 */}
+                      {/* 위·아래 절취선: 오른쪽부터 당긴 만큼 띠가 뜯겨 나간다.
+                          구멍 무늬는 표지 전체 폭 기준으로 고정해 남은 띠와 뜯긴 띠의 구멍이 어긋나지 않게 한다. */}
                       {[false, true].map(bottom => (
-                        <div key={String(bottom)} className={'absolute inset-x-0 h-[9px] ' + (bottom ? 'bottom-0' : 'top-0')} style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}>
-                          <motion.div className="absolute inset-y-0 left-0 bg-white" style={{ right: stripPeel, backgroundImage: 'radial-gradient(circle,#1d4ed8 1.4px,transparent 1.8px)', backgroundSize: '7px 9px', backgroundPosition: 'center' }} />
-                          <motion.div className="absolute inset-y-0 right-0 origin-left bg-white shadow-md" style={{ width: stripPeel, y: bottom ? 10 : -10, rotate: bottom ? 5 : -5, opacity: stripOpacity, backgroundImage: 'radial-gradient(circle,#1d4ed8 1.4px,transparent 1.8px)', backgroundSize: '7px 9px', backgroundPosition: 'center' }} />
+                        <div key={String(bottom)} ref={bottom ? undefined : measureStrip} className={'absolute inset-x-0 h-[10px] ' + (bottom ? 'bottom-0' : 'top-0')} style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}>
+                          <motion.div className="absolute inset-y-0 left-0 overflow-hidden" style={{ right: stripPeel }}>
+                            <div className="absolute inset-y-0 left-0 bg-white" style={{ width: stripWidth, backgroundImage: PERF_HOLES, backgroundSize: '8px 10px', backgroundRepeat: 'repeat-x' }} />
+                          </motion.div>
+                          <motion.div className="absolute inset-y-0 right-0 overflow-hidden" style={{ width: stripPeel, y: bottom ? stripLift : stripLiftUp, rotate: bottom ? stripTilt : stripTiltUp, opacity: stripOpacity, transformOrigin: '0% 50%', filter: 'drop-shadow(0 2px 2px #0b1a4466)' }}>
+                            <div className="absolute inset-y-0 right-0 bg-white" style={{ width: stripWidth, backgroundImage: PERF_HOLES, backgroundSize: '8px 10px', backgroundRepeat: 'repeat-x', clipPath: TORN_EDGE }} />
+                          </motion.div>
                         </div>
                       ))}
 

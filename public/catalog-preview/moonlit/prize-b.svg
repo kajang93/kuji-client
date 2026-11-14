@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs><radialGradient id="bg" cx=".5" cy=".45" r=".7"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#0b1a44"/></radialGradient></defs>
+  <rect width="400" height="400" fill="url(#bg)"/>
+  <g stroke="#7dd3fc" stroke-opacity=".35" stroke-width="3"><line x1="200" y1="190" x2="40" y2="40"/><line x1="200" y1="190" x2="360" y2="40"/><line x1="200" y1="190" x2="20" y2="200"/><line x1="200" y1="190" x2="380" y2="200"/></g>
+  <ellipse cx="200" cy="330" rx="110" ry="22" fill="#0b1a44" opacity=".6"/>
+  <rect x="110" y="312" width="180" height="22" rx="6" fill="#bfdbfe" opacity=".8" stroke="#fff" stroke-width="3"/>
+  <g transform="translate(200 40) rotate(0)">
+    <polygon points="-14,0 14,0 14,210 -14,210" fill="#f8fafc" stroke="#0b1a44" stroke-width="4"/>
+    <polygon points="-14,0 14,0 0,-26" fill="#f8fafc" stroke="#0b1a44" stroke-width="4"/>
+    <line x1="0" y1="-14" x2="0" y2="205" stroke="#94a3b8" stroke-width="3"/>
+    <rect x="-52" y="210" width="104" height="16" rx="5" fill="#facc15" stroke="#0b1a44" stroke-width="4"/>
+    <rect x="-10" y="226" width="20" height="44" fill="#1e3a8a" stroke="#0b1a44" stroke-width="4"/>
+    <circle cx="0" cy="276" r="11" fill="#dc2626" stroke="#0b1a44" stroke-width="4"/>
+  </g>
+  <rect x="0" y="352" width="400" height="48" fill="#facc15"/>
+  <text x="200" y="385" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="22" font-weight="900" fill="#0b1a44" letter-spacing="3">LEGEND SWORD STAND</text>
+</svg>
