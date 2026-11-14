@@ -165,6 +165,17 @@ export default function PrizeDetail({ anime, onBack, onPurchase, onExperience, u
             </h3>
 
           </div>
+          {(() => {
+            const normal = anime.prizes.filter(prize => !isLastPrize(prize.rank));
+            const left = normal.reduce((sum, prize) => sum + prize.remainingCount, 0);
+            const all = normal.reduce((sum, prize) => sum + prize.totalCount, 0);
+            return (
+              <div className="mb-4 rounded-xl border border-yellow-300/30 bg-yellow-300/10 p-3 text-xs leading-relaxed text-yellow-50">
+                <p className="font-bold text-yellow-200">확률 공개 · 꽝 없음</p>
+                <p className="mt-1">한 장을 뽑을 때 각 등급이 나올 확률 = 그 등급 남은 수량 ÷ 남은 일반 티켓 수({left.toLocaleString()}/{all.toLocaleString()}장). 구매가 일어날 때마다 실시간으로 바뀌며, 라스트상은 확률과 무관하게 마지막 일반 티켓 구매자에게 지급됩니다.</p>
+              </div>
+            );
+          })()}
           <label className="mb-4 flex items-center gap-2 text-sm text-cyan-100"><input type="checkbox" checked={remainingOnly} onChange={event => setRemainingOnly(event.target.checked)} />남은 상품만 보기</label>
           {remainingOnly && !anime.prizes.some(prize => !isLastPrize(prize.rank) && prize.remainingCount > 0) && <p className="mb-4 text-sm text-slate-400">일반 상품이 모두 소진되었어요.</p>}
           <div className="space-y-3">
@@ -172,6 +183,10 @@ export default function PrizeDetail({ anime, onBack, onPurchase, onExperience, u
               const rankPrizes = groupedPrizes[rank].filter(prize => !remainingOnly || rank === 'LAST' || prize.remainingCount > 0);
               const totalCount = groupedPrizes[rank].reduce((sum, prize) => sum + prize.totalCount, 0);
               const remainingCount = groupedPrizes[rank].reduce((sum, prize) => sum + prize.remainingCount, 0);
+              const normalPrizes = anime.prizes.filter(prize => !isLastPrize(prize.rank));
+              const normalLeft = normalPrizes.reduce((sum, prize) => sum + prize.remainingCount, 0);
+              const normalTotal = normalPrizes.reduce((sum, prize) => sum + prize.totalCount, 0);
+              const pct = (n: number, d: number) => (d > 0 ? `${((n / d) * 100).toFixed(n > 0 && n / d < 0.001 ? 2 : 1)}%` : '-');
 
               return (
                 <div key={rank} className="py-3 border-b border-white/5 last:border-0">
@@ -204,6 +219,12 @@ export default function PrizeDetail({ anime, onBack, onPurchase, onExperience, u
                         <div className="text-right flex-shrink-0">
                           <div className="text-cyan-200 text-sm font-bold">{rank === 'LAST' ? '마지막 구매자 혜택' : `${remainingCount}/${totalCount}`}</div>
                           <div className="text-white/40 text-[10px]">{rank === 'LAST' ? '일반 티켓과 별도' : '남은 수량'}</div>
+                          {rank !== 'LAST' && (
+                            <div className="mt-1 text-[11px] font-bold text-yellow-200" aria-label={`현재 확률 ${pct(remainingCount, normalLeft)}, 최초 확률 ${pct(totalCount, normalTotal)}`}>
+                              현재 {pct(remainingCount, normalLeft)}
+                              <span className="ml-1 font-normal text-white/50">(최초 {pct(totalCount, normalTotal)})</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
