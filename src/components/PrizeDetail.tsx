@@ -196,7 +196,7 @@ export default function PrizeDetail({ anime, onBack, onPurchase, onExperience, u
                        rank === 'A' ? 'from-yellow-400 to-orange-600' :
                        rank === 'B' ? 'from-blue-400 to-indigo-600' :
                        rank === 'C' ? 'from-orange-400 to-red-600' :
-                       rank === 'D' ? 'from-purple-400 to-purple-700' :
+                       rank === 'D' ? 'from-teal-300 to-teal-700' :
                        rank === 'E' ? 'from-green-400 to-emerald-700' :
                        rank === 'F' ? 'from-pink-400 to-rose-700' :
                        rank === 'LAST' ? 'from-yellow-300 to-amber-600' :

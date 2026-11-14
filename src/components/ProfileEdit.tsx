@@ -211,7 +211,7 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
               </div>
               <button
                 onClick={() => setShowImagePicker(true)}
-                className="absolute bottom-4 right-0 w-8 h-8 bg-rose-500 rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:bg-rose-600 transition-colors"
+                className="absolute bottom-4 right-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:bg-rose-600 transition-colors"
               >
                 <Camera className="w-4 h-4 text-white" />
               </button>

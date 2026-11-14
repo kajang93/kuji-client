@@ -34,11 +34,11 @@ export function KujiCard({ className = '', size = 'normal' }: { className?: stri
             <path d={createSerratedPath(dim.width, dim.height)} />
           </clipPath>
           <linearGradient id={`kuji-gradient-${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ec4899" />
-            <stop offset="25%" stopColor="#f472b6" />
-            <stop offset="50%" stopColor="#a855f7" />
-            <stop offset="75%" stopColor="#8b5cf6" />
-            <stop offset="100%" stopColor="#6366f1" />
+            <stop offset="0%" stopColor="#0ea5e9" />
+            <stop offset="25%" stopColor="#38bdf8" />
+            <stop offset="50%" stopColor="#3b82f6" />
+            <stop offset="75%" stopColor="#2563eb" />
+            <stop offset="100%" stopColor="#1d4ed8" />
           </linearGradient>
           <pattern id={`dots-${size}`} x="0" y="0" width={20 * scale} height={20 * scale} patternUnits="userSpaceOnUse">
             <circle cx={10 * scale} cy={10 * scale} r={2 * scale} fill="white" opacity="0.2" />

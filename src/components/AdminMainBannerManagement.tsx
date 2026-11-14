@@ -167,7 +167,7 @@ export default function AdminMainBannerManagement({ onBack, banners, setBanners 
           <div className="flex items-center gap-4">
             <button
               onClick={onBack}
-              className="p-2 bg-rose-500 rounded-full hover:bg-rose-600 transition-colors"
+              className="p-2 bg-blue-500 rounded-full hover:bg-blue-600 transition-colors"
             >
               <ChevronLeft className="w-6 h-6 text-white" />
             </button>

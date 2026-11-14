@@ -26,7 +26,7 @@ const RANK_TONES: Record<string, { color: string; soft: string; particles: numbe
   S: { color: '#f5cf83', soft: '#bc842e', particles: 32 },
   A: { color: '#f5cf83', soft: '#bc842e', particles: 28 },
   B: { color: '#9ac7ff', soft: '#477ace', particles: 20 },
-  C: { color: '#c4a9ff', soft: '#8060bb', particles: 16 },
+  C: { color: '#fdba74', soft: '#ea580c', particles: 16 },
   D: { color: '#8fddca', soft: '#368d81', particles: 14 },
   E: { color: '#f1abc9', soft: '#ae5c80', particles: 12 },
 };

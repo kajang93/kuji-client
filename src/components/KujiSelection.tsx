@@ -293,7 +293,7 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
                           <stop offset="25%" stopColor="#334155" />
                           <stop offset="50%" stopColor="#1e293b" />
                           <stop offset="75%" stopColor="#0f172a" />
-                          <stop offset="100%" stopColor="#312e81" />
+                          <stop offset="100%" stopColor="#1e3a8a" />
                         </>
                       )}
                     </linearGradient>
@@ -340,7 +340,7 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
                         >
                           KUJI
                         </text>
-                        <line x1="17" y1="44" x2="43" y2="44" stroke="#a855f7" strokeWidth="0.6" />
+                        <line x1="17" y1="44" x2="43" y2="44" stroke="#3b82f6" strokeWidth="0.6" />
                         <text
                           x="30"
                           y="52"

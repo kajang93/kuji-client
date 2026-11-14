@@ -1273,7 +1273,7 @@ async function handleRefresh() {
         <button
           aria-label="메뉴 열기"
           onClick={() => setIsSidebarOpen(true)}
-          className="fixed top-[calc(env(safe-area-inset-top)+3rem)] right-4 z-30 p-3 bg-rose-500 rounded-full shadow-lg hover:bg-rose-600 transition-colors"
+          className="fixed top-[calc(env(safe-area-inset-top)+3rem)] right-4 z-30 p-3 bg-blue-500 rounded-full shadow-lg hover:bg-blue-600 transition-colors"
         >
           <Menu className="w-6 h-6 text-white" />
         </button>
