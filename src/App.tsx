@@ -582,6 +582,7 @@ async function handleRefresh() {
                   s.status === 'DELIVERED' ? 'delivered' : 'preparing',
                 trackingNumber: s.trackingNumber,
                 courierName: s.courierName,
+                recipient: { name: s.recipientName, phone: s.phone, address: s.address, detailAddress: s.detailAddress, message: s.deliveryMessage },
                 needsOptionSelection: false,
                 isNew: false,
                 sellerName: user?.name || '내 상점'
@@ -611,7 +612,7 @@ async function handleRefresh() {
             h.status === 'SHIPPING_REQUESTED' ? 'preparing' :
             h.status === 'SHIPPING' ? 'shipped' :
             h.status === 'DELIVERED' ? 'delivered' : 'stored',
-          needsOptionSelection: !!(h.grade && /^[A-DG]/i.test(h.grade)),
+          needsOptionSelection: false, // 당첨 상품은 서버 추첨으로 이미 확정되며, 서버는 옵션 선택을 지원하지 않는다
           isNew: false,
           shippingId: h.shippingId,
           sellerName: h.sellerName || '알 수 없는 판매처'
@@ -955,7 +956,7 @@ async function handleRefresh() {
             h.status === 'SHIPPING_REQUESTED' ? 'preparing' :
             h.status === 'SHIPPING' ? 'shipped' :
             h.status === 'DELIVERED' ? 'delivered' : 'stored',
-          needsOptionSelection: !!(h.grade && /^[A-DG]/i.test(h.grade)),
+          needsOptionSelection: false, // 당첨 상품은 서버 추첨으로 이미 확정되며, 서버는 옵션 선택을 지원하지 않는다
           isNew: revealedIds.includes(h.id),
           shippingId: h.shippingId,
           sellerName: h.sellerName || '알 수 없는 판매처'
