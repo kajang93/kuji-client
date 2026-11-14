@@ -507,7 +507,9 @@ export default function PrizeDetail({ anime, onBack, onPurchase, onExperience, u
                 {/* Points to earn - Compact */}
                 <div className="bg-amber-500/20 rounded-lg p-2 border border-amber-400/30">
                   <div className="text-amber-200 text-xs text-center">
-                    ⭐ <span className="font-bold">{purchaseCount * (anime.rewardRate || 0)}P</span> 적립 예정
+                    {/* 포인트로 낸 금액에는 적립하지 않는다 (서버와 같은 계산) */}
+                    ⭐ <span className="font-bold">{pricePerKuji * purchaseCount > 0 ? Math.floor(purchaseCount * (anime.rewardRate || 0) * Math.max(0, pricePerKuji * purchaseCount - pointsToUse) / (pricePerKuji * purchaseCount)) : 0}P</span> 적립 예정
+                    {pointsToUse > 0 && <span className="block text-[10px] text-amber-200/70">포인트 사용분은 적립되지 않아요</span>}
                   </div>
                 </div>
               </div>

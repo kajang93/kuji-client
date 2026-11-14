@@ -11,6 +11,10 @@ type PointChargeProps = {
   onChargeComplete?: (newPoints: number) => void;
 };
 
+// 서버와 같은 충전 한도: 1회 100만원, 보유 포인트 200만P
+const MAX_CHARGE_PER_ORDER = 1_000_000;
+const MAX_POINT_BALANCE = 2_000_000;
+
 const PRESET_AMOUNTS = [
   { value: 10000, label: '1만원', bonus: 0 },
   { value: 30000, label: '3만원', bonus: 500 },
@@ -55,6 +59,14 @@ export default function PointCharge({ currentPoints, onBack }: PointChargeProps)
   const handleCharge = async () => {
     if (finalAmount < 1000) {
       alert('최소 충전 금액은 1,000원입니다.');
+      return;
+    }
+    if (finalAmount > MAX_CHARGE_PER_ORDER) {
+      alert('1회 충전 한도는 1,000,000원입니다.');
+      return;
+    }
+    if ((currentPoints || 0) + finalAmount > MAX_POINT_BALANCE) {
+      alert(`포인트는 최대 2,000,000P까지 보유할 수 있어요. 지금은 ${Math.max(0, MAX_POINT_BALANCE - (currentPoints || 0)).toLocaleString()}원까지 충전할 수 있어요.`);
       return;
     }
     if (isProcessing) return;
@@ -278,8 +290,9 @@ export default function PointCharge({ currentPoints, onBack }: PointChargeProps)
                           type="number"
                           value={customAmount}
                           onChange={(e) => setCustomAmount(e.target.value)}
-                          placeholder="1,000원 이상 입력"
+                          placeholder="1,000원 ~ 1,000,000원"
                           min={1000}
+                          max={MAX_CHARGE_PER_ORDER}
                           step={1000}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white text-lg placeholder:text-white/20 focus:outline-none focus:border-yellow-400 transition-colors"
                         />
@@ -288,6 +301,10 @@ export default function PointCharge({ currentPoints, onBack }: PointChargeProps)
                       {parseInt(customAmount) > 0 && parseInt(customAmount) < 1000 && (
                         <p className="text-red-400 text-xs mt-2 ml-1">최소 1,000원 이상 충전 가능합니다.</p>
                       )}
+                      {parseInt(customAmount) > MAX_CHARGE_PER_ORDER && (
+                        <p className="text-red-400 text-xs mt-2 ml-1">1회 충전 한도는 1,000,000원입니다.</p>
+                      )}
+                      <p className="text-white/40 text-xs mt-2 ml-1">1회 최대 100만원 · 보유 포인트는 최대 200만P까지</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
