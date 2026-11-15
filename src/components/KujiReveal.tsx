@@ -399,7 +399,7 @@ const KujiReveal: FC<KujiRevealProps> = ({ prizes, onComplete, experience = fals
               <Ticket className="h-[18px] w-[18px] -rotate-12 text-amber-200" />
             </div>
             <div>
-              <p className="text-[10px] font-semibold tracking-[0.25em] text-amber-100/75">KUJI SHOP</p>
+              <p className="text-[10px] font-semibold tracking-[0.25em] text-amber-100/75">OSHIKUJI · 오시쿠지</p>
               <p className="mt-0.5 text-[11px] text-slate-400">나의 행운을 여는 순간</p>
             </div>
           </div>
