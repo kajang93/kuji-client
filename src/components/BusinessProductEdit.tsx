@@ -119,7 +119,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
     if (file) {
       const compressedFile = await compressImageFile(file);
       
-      const errorMsg = validateImageFile(compressedFile, 10);
+      const errorMsg = validateImageFile(compressedFile, 5);
       if (errorMsg) {
         toast.error(errorMsg);
         return;
@@ -170,7 +170,7 @@ export default function BusinessProductEdit({ onBack, collection, onSave, user }
     if (file) {
       const compressedFile = await compressImageFile(file);
       
-      const errorMsg = validateImageFile(compressedFile, 10);
+      const errorMsg = validateImageFile(compressedFile, 5);
       if (errorMsg) {
         toast.error(errorMsg);
         return;

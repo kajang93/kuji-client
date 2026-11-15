@@ -161,7 +161,7 @@ export default function ProfileEdit({ user, onBack, onSave }: ProfileEditProps) 
     if (file) {
       const compressedFile = await compressImageFile(file);
       
-      const errorMsg = validateImageFile(compressedFile, 10);
+      const errorMsg = validateImageFile(compressedFile, 5);
       if (errorMsg) {
         alert(errorMsg);
         return;

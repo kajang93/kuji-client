@@ -87,19 +87,37 @@ export const updateKujiBoardTitle = async (boardId: number, title: string): Prom
 /**
  * Register multiple items for a kuji board with images.
  */
+// 한 번의 요청이 서버 업로드 한도(요청당 20MB)를 넘지 않도록 상품을 나눠 보낸다.
+const MAX_BATCH_BYTES = 15 * 1024 * 1024;
+const MAX_BATCH_ITEMS = 15;
+
 export const registerBoardItems = async (
   boardId: number,
   itemsData: any[],
   files: File[]
 ): Promise<void> => {
-  const formData = new FormData();
-  const jsonBlob = new Blob([JSON.stringify(itemsData)], { type: 'application/json' });
-  formData.append("items", jsonBlob);
-  files.forEach((file) => {
-    formData.append("files", file);
+  const batches: Array<{ items: any[]; files: File[] }> = [];
+  let current = { items: [] as any[], files: [] as File[], bytes: 0 };
+  itemsData.forEach((item, index) => {
+    const file = files[index];
+    const size = file?.size ?? 0;
+    if (current.items.length > 0 && (current.items.length >= MAX_BATCH_ITEMS || current.bytes + size > MAX_BATCH_BYTES)) {
+      batches.push({ items: current.items, files: current.files });
+      current = { items: [], files: [], bytes: 0 };
+    }
+    current.items.push(item);
+    current.files.push(file);
+    current.bytes += size;
   });
-  await axiosInstance.post(`${API_BASE_URL}/${boardId}/items`, formData);
-  // axios will throw on error
+  if (current.items.length) batches.push({ items: current.items, files: current.files });
+
+  // 서버는 같은 판에 상품을 이어서 추가하므로 순서대로 보낸다 (실패하면 호출한 쪽에서 판을 정리한다)
+  for (const batch of batches) {
+    const formData = new FormData();
+    formData.append("items", new Blob([JSON.stringify(batch.items)], { type: 'application/json' }));
+    batch.files.forEach((file) => formData.append("files", file));
+    await axiosInstance.post(`${API_BASE_URL}/${boardId}/items`, formData);
+  }
 };
 
 /**

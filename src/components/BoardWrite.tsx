@@ -77,7 +77,7 @@ export default function BoardWrite({ postId, user, onBack, onSuccess }: BoardWri
       // 1차 자동 압축 (1MB 이하로)
       const compressedFile = await compressImageFile(file);
       
-      const errorMsg = validateImageFile(compressedFile, 10);
+      const errorMsg = validateImageFile(compressedFile, 5);
       if (errorMsg) {
         toast.error(errorMsg);
       } else {

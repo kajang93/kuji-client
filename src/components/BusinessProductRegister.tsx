@@ -52,7 +52,7 @@ export default function BusinessProductRegister({ onBack, onComplete }: Business
     if (file) {
       const compressedFile = await compressImageFile(file);
       
-      const errorMsg = validateImageFile(compressedFile, 10);
+      const errorMsg = validateImageFile(compressedFile, 5);
       if (errorMsg) {
         alert(errorMsg);
         return;
@@ -71,7 +71,7 @@ export default function BusinessProductRegister({ onBack, onComplete }: Business
     if (file) {
       const compressedFile = await compressImageFile(file);
       
-      const errorMsg = validateImageFile(compressedFile, 10);
+      const errorMsg = validateImageFile(compressedFile, 5);
       if (errorMsg) {
         alert(errorMsg);
         return;
