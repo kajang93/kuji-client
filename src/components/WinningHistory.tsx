@@ -7,6 +7,7 @@ import DeliveryTracking from './DeliveryTracking';
 import AddressSearchModal from './AddressSearchModal';
 import { isLastPrize } from '../utils/kujiMappers';
 import { fetchMyProfile } from '../api/auth';
+import PolicyContent from './PolicyContent';
 
 // 마지막으로 사용한 배송지는 이 기기에만 저장해 다음 신청 때 다시 채운다
 const LAST_SHIPPING_KEY = 'kuji_last_shipping';
@@ -37,6 +38,9 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
   const [showShippingModal, setShowShippingModal] = useState(false);
   const [showAddressSearch, setShowAddressSearch] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // 판매자가 직접 발송하므로 배송 신청마다 판매자에게 배송정보를 넘기는 제3자 제공 동의를 따로 받는다.
+  const [thirdPartyAgreed, setThirdPartyAgreed] = useState(false);
+  const [showThirdPartyPolicy, setShowThirdPartyPolicy] = useState(false);
   const [confirmDeliveryId, setConfirmDeliveryId] = useState<string | null>(null);
   const [shippingForm, setShippingForm] = useState({
     recipientName: '',
@@ -113,6 +117,7 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
       return;
     }
 
+    setThirdPartyAgreed(false);
     setShowShippingModal(true);
     void prefillShippingForm();
   };
@@ -148,6 +153,10 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
   const confirmShipping = async () => {
     if (!shippingForm.recipientName || !shippingForm.phone || !shippingForm.address) {
       alert("필수 배송 정보를 모두 입력해주세요.");
+      return;
+    }
+    if (!thirdPartyAgreed) {
+      alert("판매자에게 배송 정보를 제공하는 데 동의해야 배송을 신청할 수 있어요.");
       return;
     }
 
@@ -697,7 +706,19 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                   </div>
                 </div>
               </div>
-              
+
+              <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-start gap-3">
+                  <button type="button" role="checkbox" aria-checked={thirdPartyAgreed} onClick={() => setThirdPartyAgreed(v => !v)} className="flex flex-1 items-start gap-3 text-left">
+                    <span className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border-2 ${thirdPartyAgreed ? 'border-blue-500 bg-blue-500 text-white' : 'border-white/30 text-transparent'}`}><Check className="h-3.5 w-3.5" /></span>
+                    <span className="text-sm text-white">개인정보 제3자 제공 동의 <span className="text-blue-300">*</span>
+                      <span className="mt-1 block text-xs leading-5 text-white/50">받는 분 이름·연락처·주소를 {Array.from(new Set(selectedItems.map(id => winningHistory.find(w => w.id === id)?.sellerName || '오시쿠지 공식'))).join(', ') || '판매자'}에게 배송 목적으로만 제공해요.</span>
+                    </span>
+                  </button>
+                  <button type="button" onClick={() => setShowThirdPartyPolicy(true)} className="flex-shrink-0 text-xs text-white/50 underline underline-offset-2 hover:text-white">내용보기</button>
+                </div>
+              </div>
+
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowShippingModal(false)}
@@ -708,9 +729,9 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                 </button>
                 <button
                   onClick={confirmShipping}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !thirdPartyAgreed}
                   className={`flex-2 px-8 py-4 bg-yellow-400 text-slate-900 rounded-2xl transition-all font-bold flex items-center justify-center gap-2 ${
-                    isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-yellow-300'
+                    isSubmitting || !thirdPartyAgreed ? 'opacity-50 cursor-not-allowed' : 'hover:bg-yellow-300'
                   }`}
                 >
                   {isSubmitting ? (
@@ -721,6 +742,19 @@ export default function WinningHistory({ onBack, onSelectPrizeOption, winningHis
                   {isSubmitting ? '신청 중...' : '신청 확정'}
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showThirdPartyPolicy && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-end bg-black/60" onClick={() => setShowThirdPartyPolicy(false)}>
+            <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="max-h-[85%] w-full overflow-y-auto rounded-t-3xl bg-slate-900 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 text-white" onClick={event => event.stopPropagation()}>
+              <div className="mb-3 flex justify-end"><button type="button" onClick={() => setShowThirdPartyPolicy(false)} aria-label="닫기" className="rounded-full p-2 hover:bg-white/10"><X className="h-5 w-5" /></button></div>
+              <PolicyContent kind="thirdParty" audience="customer" />
+              <button type="button" onClick={() => { setThirdPartyAgreed(true); setShowThirdPartyPolicy(false); }} className="mt-6 w-full rounded-2xl bg-blue-500 py-3 font-bold">동의하고 닫기</button>
             </motion.div>
           </motion.div>
         )}
