@@ -76,7 +76,7 @@ export default function AddressSearchModal({
               <DaumPostcode
                 onComplete={handleComplete}
                 style={{ height: 460, display: 'block' }}
-                scriptUrl="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
+                scriptUrl="https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
               />
             </div>
           </motion.div>
