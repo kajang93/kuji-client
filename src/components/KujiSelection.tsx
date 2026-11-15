@@ -121,7 +121,8 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
           return;
         }
 
-        alert("결제 준비 중 오류가 발생했습니다.");
+        // 판매 중지·재고 부족·사업자 미승인 등 서버가 알려준 이유를 그대로 보여준다.
+        alert(error?.response?.data?.message || "결제 준비 중 오류가 발생했습니다.");
         setIsProcessing(false);
       } finally {
         processingRef.current = false;
