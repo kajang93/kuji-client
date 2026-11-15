@@ -226,3 +226,11 @@ export const completeSocialSignup = async (
   const response = await axiosInstance.post(`${API_BASE_URL}/signup/social`, { signupTicket, ...agreements });
   return response.data;
 };
+
+/**
+ * 사업자등록번호 휴·폐업 확인 (국세청 상태조회)
+ */
+export const verifyBusinessNumber = async (businessNumber: string): Promise<{ status: string; canRegister: boolean; verifiedByNts: boolean; message: string }> => {
+  const { data } = await axiosInstance.post('/api/business/verify-number', { businessNumber });
+  return data;
+};

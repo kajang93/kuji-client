@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, type FC } from 'react';
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, Check, Upload, X } from './icons';
 import { toast } from 'sonner';
-import { signup, checkEmail, sendSms, verifySignupSms } from '../api/auth';
+import { signup, checkEmail, sendSms, verifySignupSms, verifyBusinessNumber } from '../api/auth';
 import { compressImageFile, validatePasswordRules } from '../api/client';
 import AddressSearchModal from './AddressSearchModal';
 import PolicyContent from './PolicyContent';
@@ -54,6 +54,8 @@ const Signup: FC<SignupProps> = ({ userType, onBack, onComplete }) => {
   const [emailAvailable, setEmailAvailable] = useState(false);
   const [businessNumberChecked, setBusinessNumberChecked] = useState(false);
   const [businessNumberValid, setBusinessNumberValid] = useState(false);
+  const [businessNumberMessage, setBusinessNumberMessage] = useState('');
+  const [isCheckingBusinessNumber, setIsCheckingBusinessNumber] = useState(false);
   const [phoneVerificationSent, setPhoneVerificationSent] = useState(false);
   const [agreeAge, setAgreeAge] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -187,16 +189,32 @@ const Signup: FC<SignupProps> = ({ userType, onBack, onComplete }) => {
     return checkDigit === parseInt(cleanNumber.charAt(9));
   };
 
-  const handleBusinessNumberCheck = () => {
-    if (formData.businessNumber.length === 10) {
-      const isValid = validateBusinessNumber(formData.businessNumber);
-      setBusinessNumberValid(isValid);
+  // 국세청 상태조회로 계속사업자인지 확인한다 (휴업·폐업·미등록 번호는 신청 불가)
+  const handleBusinessNumberCheck = async () => {
+    if (formData.businessNumber.length !== 10 || isCheckingBusinessNumber) return;
+    if (!validateBusinessNumber(formData.businessNumber)) {
+      setBusinessNumberValid(false);
       setBusinessNumberChecked(true);
-      if (isValid) {
-        toast.success('번호 형식 확인 완료 · 등록증 심사 예정');
-      } else {
-        toast.error('사업자번호 형식을 확인해 주세요.');
-      }
+      setBusinessNumberMessage('사업자등록번호를 다시 확인해 주세요.');
+      toast.error('사업자등록번호를 다시 확인해 주세요.');
+      return;
+    }
+    setIsCheckingBusinessNumber(true);
+    try {
+      const result = await verifyBusinessNumber(formData.businessNumber);
+      setBusinessNumberValid(result.canRegister);
+      setBusinessNumberChecked(true);
+      setBusinessNumberMessage(result.message);
+      if (result.canRegister) toast.success(result.verifiedByNts ? '등록할 수 있는 사업자등록번호입니다.' : result.message);
+      else toast.error(result.message);
+    } catch (error: any) {
+      setBusinessNumberValid(false);
+      setBusinessNumberChecked(true);
+      const message = error?.response?.data?.message || '사업자등록번호 확인에 실패했어요. 잠시 후 다시 시도해 주세요.';
+      setBusinessNumberMessage(message);
+      toast.error(message);
+    } finally {
+      setIsCheckingBusinessNumber(false);
     }
   };
 
@@ -447,20 +465,20 @@ const Signup: FC<SignupProps> = ({ userType, onBack, onComplete }) => {
                 />
                 <button
                   type="button"
-                  onClick={handleBusinessNumberCheck}
-                  disabled={formData.businessNumber.length !== 10}
+                  onClick={() => void handleBusinessNumberCheck()}
+                  disabled={formData.businessNumber.length !== 10 || isCheckingBusinessNumber}
                   className={`flex items-center justify-center px-6 py-3 rounded-xl whitespace-nowrap shrink-0 ${
                     formData.businessNumber.length === 10
                       ? 'bg-yellow-500 text-purple-900 hover:bg-yellow-400'
                       : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  확인
+                  {isCheckingBusinessNumber ? '조회 중' : '휴·폐업 확인'}
                 </button>
               </div>
               {businessNumberChecked && (
                 <p className={`mt-1 text-sm ${businessNumberValid ? 'text-green-400' : 'text-red-400'}`}>
-                  {businessNumberValid ? '✓ 번호 형식 확인 완료 · 등록증 심사 예정' : '✗ 사업자번호 형식을 확인해 주세요'}
+                  {businessNumberValid ? '✓ ' : '✗ '}{businessNumberMessage}
                 </p>
               )}
             </div>
