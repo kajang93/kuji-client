@@ -1,7 +1,7 @@
 // 간편 로그인으로 처음 가입할 때 대형 쇼핑몰처럼 필수·선택 약관을 항목별로 보여주고 동의를 받는다.
 import { useState, type FC } from 'react';
 import { motion, AnimatePresence } from './motion';
-import { Check, ChevronLeft, X } from './icons';
+import { Check, ChevronLeft, Info, X } from './icons';
 import PolicyContent from './PolicyContent';
 import type { PolicyKind } from '../constants/policies';
 
@@ -11,8 +11,8 @@ type Item = { key: keyof SocialAgreements; label: string; required: boolean; pol
 const ITEMS: Item[] = [
   { key: 'isAgeOver14', label: '만 14세 이상입니다', required: true },
   { key: 'isTermsAgreed', label: '오시쿠지 이용약관 동의', required: true, policy: 'terms' },
-  { key: 'isPrivacyAgreed', label: '개인정보 수집·이용 동의', required: true, policy: 'privacy' },
-  { key: 'isMarketingAgreed', label: '마케팅 정보 수신 동의 (이벤트·혜택 알림)', required: false, policy: 'marketing' },
+  { key: 'isPrivacyAgreed', label: '개인정보 수집 및 이용 동의', required: true, policy: 'privacy' },
+  { key: 'isMarketingAgreed', label: '마케팅 정보 수신 동의', required: false, policy: 'marketing' },
 ];
 
 const CheckCircle: FC<{ checked: boolean; large?: boolean }> = ({ checked, large }) => (
@@ -50,28 +50,32 @@ const SocialConsent: FC<{
         <p className="mt-2 text-2xl font-bold leading-snug">{providerName}로 처음 오셨네요!<br /><span className="text-blue-300">약관에 동의하고 시작해요</span></p>
         <p className="mt-2 text-sm text-white/60">서비스 이용을 위해 아래 약관에 동의해 주세요.</p>
 
-        <button type="button" onClick={toggleAll} className="mt-7 flex w-full items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-4 text-left">
-          <CheckCircle checked={allChecked} large />
-          <span>
-            <span className="block font-bold">전체 동의하기</span>
-            <span className="block text-xs text-white/50">선택 항목(마케팅 정보 수신)을 포함한 모든 약관에 동의합니다.</span>
-          </span>
-        </button>
+        <p className="mt-6 flex items-center gap-1.5 text-xs text-white/60"><Info className="h-4 w-4 text-blue-300" /><span className="text-blue-300">*</span> 표시는 필수 동의 항목입니다.</p>
 
-        <ul className="mt-3 divide-y divide-white/10">
-          {ITEMS.map(item => (
-            <li key={item.key} className="flex items-center gap-3 py-3.5">
-              <button type="button" role="checkbox" aria-checked={agreed[item.key]} onClick={() => setAgreed(prev => ({ ...prev, [item.key]: !prev[item.key] }))} className="flex flex-1 items-center gap-3 text-left">
-                <CheckCircle checked={agreed[item.key]} />
-                <span className="text-sm">
-                  <span className={item.required ? 'font-semibold text-blue-300' : 'text-white/50'}>[{item.required ? '필수' : '선택'}]</span> {item.label}
-                </span>
-              </button>
-              {item.policy && <button type="button" onClick={() => setViewing(item.policy!)} className="flex-shrink-0 px-1 text-xs text-white/50 underline underline-offset-2 hover:text-white">보기</button>}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-3 text-xs leading-5 text-white/40">마케팅 정보 수신에 동의하지 않아도 서비스를 이용할 수 있으며, 설정에서 언제든 바꿀 수 있어요.</p>
+        <div className="mt-3 rounded-2xl border border-white/15 bg-white/5 px-4">
+          <button type="button" onClick={toggleAll} className="flex w-full items-center gap-3 border-b border-white/10 py-4 text-left">
+            <CheckCircle checked={allChecked} large />
+            <span>
+              <span className="block font-bold">모두 동의합니다.</span>
+              <span className="block text-xs text-white/50">선택 항목(마케팅 정보 수신)을 포함한 모든 약관에 동의합니다.</span>
+            </span>
+          </button>
+
+          <ul className="py-1">
+            {ITEMS.map(item => (
+              <li key={item.key} className="flex items-center gap-3 py-3">
+                <button type="button" role="checkbox" aria-checked={agreed[item.key]} onClick={() => setAgreed(prev => ({ ...prev, [item.key]: !prev[item.key] }))} className="flex flex-1 items-center gap-3 text-left">
+                  <CheckCircle checked={agreed[item.key]} />
+                  <span className="text-sm font-semibold">
+                    {item.label}{item.required ? <span className="ml-1 text-blue-300">*</span> : <span className="ml-1 text-xs font-normal text-white/40">(선택)</span>}
+                  </span>
+                </button>
+                {item.policy && <button type="button" onClick={() => setViewing(item.policy!)} className="flex-shrink-0 px-1 text-xs text-white/50 underline underline-offset-2 hover:text-white">내용보기</button>}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p className="mt-3 text-xs leading-5 text-white/40">마케팅 정보 수신에 동의하지 않아도 서비스를 이용할 수 있으며, 설정에서 언제든 바꿀 수 있어요. 개인정보 제3자 제공(판매자 배송정보 전달)은 배송을 신청할 때 따로 동의를 받아요.</p>
       </main>
 
       <footer className="sticky bottom-0 bg-slate-900 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3">
