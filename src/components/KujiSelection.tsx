@@ -3,7 +3,7 @@ import { motion } from './motion';
 import { ChevronLeft, Sparkles } from './icons';
 
 import { prepareKujiPayment } from '../api/kuji';
-import { loadTossPayments } from '@tosspayments/payment-sdk';
+import { getNiceClientId, requestNicePayment } from '../utils/nicePay';
 import { readPaymentRecovery } from '../utils/paymentRecovery';
 import { playDrawHaptic } from '../utils/drawHaptics';
 import { useReducedMotion } from 'framer-motion';
@@ -78,8 +78,7 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
     }
 
     if (finalPrice > 0) {
-      const clientKey = import.meta.env.VITE_TOSS_CLIENT_KEY;
-      if (!clientKey) {
+      if (!getNiceClientId()) {
         alert("결제 서비스가 설정되지 않았습니다. 고객센터에 문의해 주세요.");
         return;
       }
@@ -100,21 +99,17 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
           amount: prepareRes.amount
         }));
 
-        // 3. Load Toss SDK & Request Payment
-        const tossPayments = await loadTossPayments(clientKey);
-
-        await tossPayments.requestPayment("카드", {
-          amount: prepareRes.amount,
+        // 3. 나이스페이먼츠 결제창 호출 (인증 후 서버를 거쳐 /payment/return 으로 돌아온다)
+        await requestNicePayment({
+          kind: "kuji",
           orderId: prepareRes.orderId,
-          orderName: prepareRes.boardTitle || "쿠지 뽑기",
-          customerName: "쿠지 유저",
-          successUrl: `${window.location.origin}/payment/return?payment=success`,
-          failUrl: `${window.location.origin}/payment/return?payment=fail`
+          amount: prepareRes.amount,
+          goodsName: prepareRes.boardTitle || "쿠지 뽑기",
         });
       } catch (error: any) {
         console.warn("Payment process aborted/error:", error);
         
-        // Toss Payments throws an error when the user cancels the payment window
+        // 사용자가 결제창을 닫으면 오류 안내 없이 돌아간다
         if (error?.code === 'USER_CANCEL' || error?.message?.includes('취소')) {
           // It's just a user cancellation, we don't need to show a scary error
           setIsProcessing(false);

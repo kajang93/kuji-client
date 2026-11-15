@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, CreditCard, Check, Sparkles } from './icons';
 import { useState, useEffect } from 'react';
-import { loadTossPayments } from '@tosspayments/payment-sdk';
+import { getNiceClientId, requestNicePayment } from '../utils/nicePay';
 import { preparePointCharge, fetchPointHistory, type PointHistory } from '../api/points';
 import { readPaymentRecovery } from '../utils/paymentRecovery';
 
@@ -74,8 +74,7 @@ export default function PointCharge({ currentPoints, onBack }: PointChargeProps)
       alert('이전 결제 결과를 먼저 확인해 주세요.');
       return;
     }
-    const clientKey = import.meta.env.VITE_TOSS_CLIENT_KEY;
-    if (!clientKey) {
+    if (!getNiceClientId()) {
       alert('결제 서비스가 설정되지 않았습니다. 고객센터에 문의해 주세요.');
       return;
     }
@@ -93,24 +92,15 @@ export default function PointCharge({ currentPoints, onBack }: PointChargeProps)
         bonusPoints: prepareRes.bonusPoints,
       }));
 
-      // 3. 토스페이먼츠 결제창 호출
-      const tossPayments = await loadTossPayments(clientKey);
-
+      // 3. 나이스페이먼츠 결제창 호출 (인증 후 서버를 거쳐 /?pointCharge= 로 돌아온다)
       const orderName = prepareRes.bonusPoints > 0
-        ? `쿠지 포인트 ${prepareRes.amount.toLocaleString()}P 충전 (+${prepareRes.bonusPoints.toLocaleString()}P 보너스)`
-        : `쿠지 포인트 ${prepareRes.amount.toLocaleString()}P 충전`;
+        ? `포인트 ${prepareRes.amount.toLocaleString()}P 충전 (+${prepareRes.bonusPoints.toLocaleString()}P)`
+        : `포인트 ${prepareRes.amount.toLocaleString()}P 충전`;
 
-      await tossPayments.requestPayment('카드', {
-        amount: prepareRes.amount,
-        orderId: prepareRes.orderId,
-        orderName,
-        customerName: '쿠지 유저',
-        successUrl: `${window.location.origin}/?pointCharge=success`,
-        failUrl: `${window.location.origin}/?pointCharge=fail`,
-      });
-    } catch (error) {
+      await requestNicePayment({ kind: 'points', orderId: prepareRes.orderId, amount: prepareRes.amount, goodsName: orderName });
+    } catch (error: any) {
       console.error('충전 결제 오류:', error);
-      alert('충전 결제 준비 중 오류가 발생했습니다.');
+      if (error?.code !== 'USER_CANCEL') alert(error?.response?.data?.message || error?.message || '충전 결제 준비 중 오류가 발생했습니다.');
       setIsProcessing(false);
     }
   };

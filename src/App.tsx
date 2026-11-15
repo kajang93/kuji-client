@@ -257,7 +257,7 @@ async function handleRefresh() {
     const token = getToken();
     const urlParams = new URLSearchParams(window.location.search);
     
-    // Toss Payment Redirect Handling
+    // 나이스 결제창 → 서버(/api/payments/nice/return) → 이 화면으로 돌아온 결제 결과 처리
     const payment = urlParams.get("payment");
     const pointCharge = urlParams.get("pointCharge");
     const paymentKey = urlParams.get("paymentKey");
