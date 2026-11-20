@@ -35,7 +35,7 @@ import NaverCallback from "./components/NaverCallback";
 import GoogleCallback from "./components/GoogleCallback";
 import PointCharge from "./components/PointCharge";
 import PaymentRecoveryNotice from "./components/PaymentRecoveryNotice";
-import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory, fetchSellerKujiBoards } from "./api/kuji";
+import { fetchKujiBoards, fetchKujiBoardDetail, drawKuji, fetchMyDrawHistory, fetchSellerKujiBoards, updateKujiBoardStatus } from "./api/kuji";
 import BoardList from "./components/BoardList";
 import BoardDetail from "./components/BoardDetail";
 import BoardWrite from "./components/BoardWrite";
@@ -1330,6 +1330,17 @@ async function handleRefresh() {
             onBack={() => setScreen("list")}
             onPurchase={handlePurchase}
             onExperience={() => { setExperienceSource(selectedAnime); setScreen("experience"); }}
+            onAdminActivate={user?.type === "admin" ? async () => {
+              const boardId = Number(selectedAnime.id);
+              try {
+                await updateKujiBoardStatus(boardId, "ACTIVE");
+                toast.success("판매를 시작했어요. 이제 이 화면에서 구매할 수 있어요.");
+                await Promise.all([restoreProductContext({ boardId, count: 1 }, false), handleFetchBoards()]);
+              } catch (error: any) {
+                // 사업자 미승인·라스트상 구성 오류 등 서버가 알려준 이유를 그대로 보여준다.
+                toast.error(error?.message || "판매를 시작하지 못했습니다.");
+              }
+            } : undefined}
             user={user ? { ...user, points: user.points || 0 } : null}
           />
         )}

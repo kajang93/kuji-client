@@ -11,6 +11,8 @@ type PrizeDetailProps = {
   onBack: () => void;
   onPurchase: (count: number, pointsUsed?: number) => void;
   onExperience?: () => void;
+  // 관리자가 상품 상세에서 바로 판매를 시작할 때 사용한다. 판매 조건(사업자 승인·라스트상 구성)은 서버가 검사한다.
+  onAdminActivate?: () => Promise<void>;
   initialPurchaseCount?: number;
   user?: { name: string; email: string; points: number; type: 'social' | 'customer' | 'business' | 'admin' } | null;
 };
@@ -22,7 +24,8 @@ const normalizeRank = (rank: string) => {
 };
 const clampCount = (count: number, remaining: number) => Math.max(1, Math.min(Number.isSafeInteger(count) ? count : 1, remaining || 1));
 
-export default function PrizeDetail({ anime, onBack, onPurchase, onExperience, user, initialPurchaseCount = 1 }: PrizeDetailProps) {
+export default function PrizeDetail({ anime, onBack, onPurchase, onExperience, onAdminActivate, user, initialPurchaseCount = 1 }: PrizeDetailProps) {
+  const [activating, setActivating] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [purchaseCount, setPurchaseCount] = useState(() => clampCount(initialPurchaseCount, anime.remainingKuji));
   const [remainingOnly, setRemainingOnly] = useState(false);
@@ -297,6 +300,13 @@ export default function PrizeDetail({ anime, onBack, onPurchase, onExperience, u
           <p className="mb-3 text-sm text-slate-300">{anime.previewOnly ? '화면 확인용 미리보기 · 실제 결제 불가' : '판매가 잠시 중지된 상품이에요 · 판매가 재개되면 바로 구매할 수 있어요'}</p>
           {/* 무료 체험은 미리보기 샘플에서만 연다. 실제 상품은 판매 재개 후 정상 구매 흐름(티켓 선택→결제→개봉→보관함→배송)을 탄다. */}
           {anime.previewOnly && onExperience && <button onClick={onExperience} className="w-full rounded-2xl bg-gradient-to-r from-amber-100 to-amber-300 px-5 py-4 font-semibold text-slate-950">무료 개봉 체험하기</button>}
+          {!anime.previewOnly && user?.type === 'admin' && onAdminActivate && (
+            <button type="button" disabled={activating}
+              onClick={async () => { setActivating(true); try { await onAdminActivate(); } finally { setActivating(false); } }}
+              className="w-full rounded-2xl bg-blue-500 px-5 py-4 font-bold text-white hover:bg-blue-600 disabled:opacity-60">
+              {activating ? '판매 시작하는 중…' : '관리자 · 이 상품 판매 시작하기'}
+            </button>
+          )}
         </div> : <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-3">
           {/* Quantity Selector */}
           <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-3 border border-white/20">
