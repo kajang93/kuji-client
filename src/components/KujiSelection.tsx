@@ -3,7 +3,7 @@ import { motion } from './motion';
 import { ChevronLeft, Sparkles } from './icons';
 
 import { prepareKujiPayment } from '../api/kuji';
-import { getNiceClientId, requestNicePayment } from '../utils/nicePay';
+import { isPaymentConfigured, requestPortOnePayment } from '../utils/portonePay';
 import { readPaymentRecovery } from '../utils/paymentRecovery';
 import { playDrawHaptic } from '../utils/drawHaptics';
 import { useReducedMotion } from 'framer-motion';
@@ -78,7 +78,7 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
     }
 
     if (finalPrice > 0) {
-      if (!getNiceClientId()) {
+      if (!isPaymentConfigured()) {
         alert("결제 서비스가 설정되지 않았습니다. 고객센터에 문의해 주세요.");
         return;
       }
@@ -99,8 +99,8 @@ export default function KujiSelection({ boardId, purchaseCount, pointsToUse, pri
           amount: prepareRes.amount
         }));
 
-        // 3. 나이스페이먼츠 결제창 호출 (인증 후 서버를 거쳐 /payment/return 으로 돌아온다)
-        await requestNicePayment({
+        // 3. 포트원 결제창 호출 (결제 후 /payment/return 으로 돌아와 서버가 결제를 확인한다)
+        await requestPortOnePayment({
           kind: "kuji",
           orderId: prepareRes.orderId,
           amount: prepareRes.amount,

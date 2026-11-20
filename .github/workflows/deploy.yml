@@ -33,7 +33,7 @@ jobs:
       - name: Create .env file
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
-          VITE_NICE_CLIENT_ID: ${{ secrets.VITE_NICE_CLIENT_ID }}
+          VITE_PORTONE_CHANNEL_KEY: ${{ secrets.VITE_PORTONE_CHANNEL_KEY }}
           VITE_KAKAO_REST_API_KEY: ${{ secrets.VITE_KAKAO_REST_API_KEY }}
         run: |
           python3 - <<'PYTHON'
@@ -45,7 +45,7 @@ jobs:
 
           lines = os.environ.get("ENV_FILE", "").splitlines()
           lines = [line for line in lines if not re.match(r"\s*(?:export\s+)?VITE_KAKAO_CLIENT_SECRET\s*=", line)]
-          for name in ("VITE_NICE_CLIENT_ID", "VITE_KAKAO_REST_API_KEY"):
+          for name in ("VITE_PORTONE_CHANNEL_KEY", "VITE_KAKAO_REST_API_KEY"):
               value = os.environ.get(name, "").strip()
               if value:
                   if "\n" in value or "\r" in value:
@@ -54,7 +54,7 @@ jobs:
                   lines.append(f"{name}={json.dumps(value)}")
           values = {}
           for line in lines:
-              match = re.match(r"\s*(?:export\s+)?(VITE_NICE_CLIENT_ID|VITE_KAKAO_REST_API_KEY)\s*=\s*(.*?)\s*$", line)
+              match = re.match(r"\s*(?:export\s+)?(VITE_PORTONE_CHANNEL_KEY|VITE_KAKAO_REST_API_KEY)\s*=\s*(.*?)\s*$", line)
               if match:
                   try:
                       parts = shlex.split(match[2], comments=True)
@@ -63,8 +63,10 @@ jobs:
                   if len(parts) > 1:
                       raise SystemExit(f"{match[1]} must be a single value")
                   values[match[1]] = parts[0] if parts else ""
-          if not re.fullmatch(r"[A-Za-z0-9_]{10,64}", values.get("VITE_NICE_CLIENT_ID", "")):
-              raise SystemExit("Set VITE_NICE_CLIENT_ID to the NICEPAY client key (server approval model, R2_ for live or S2_ for sandbox)")
+          # 채널 키는 비워 두면 코드의 테스트 채널을 쓴다. 넣는다면 포트원 채널 키 형식이어야 한다.
+          channel_key = values.get("VITE_PORTONE_CHANNEL_KEY", "")
+          if channel_key and not re.fullmatch(r"channel-key-[0-9a-f-]{36}", channel_key):
+              raise SystemExit("VITE_PORTONE_CHANNEL_KEY must look like channel-key-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
           if not values.get("VITE_KAKAO_REST_API_KEY"):
               raise SystemExit("Set VITE_KAKAO_REST_API_KEY")
           Path(".env").write_text("\n".join(lines) + "\n", encoding="utf-8")

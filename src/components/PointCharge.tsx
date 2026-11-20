@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from './motion';
 import { ChevronLeft, CreditCard, Check, Sparkles } from './icons';
 import { useState, useEffect } from 'react';
-import { getNiceClientId, requestNicePayment } from '../utils/nicePay';
+import { isPaymentConfigured, requestPortOnePayment } from '../utils/portonePay';
 import { preparePointCharge, fetchPointHistory, type PointHistory } from '../api/points';
 import { readPaymentRecovery } from '../utils/paymentRecovery';
 
@@ -74,7 +74,7 @@ export default function PointCharge({ currentPoints, onBack }: PointChargeProps)
       alert('이전 결제 결과를 먼저 확인해 주세요.');
       return;
     }
-    if (!getNiceClientId()) {
+    if (!isPaymentConfigured()) {
       alert('결제 서비스가 설정되지 않았습니다. 고객센터에 문의해 주세요.');
       return;
     }
@@ -92,12 +92,12 @@ export default function PointCharge({ currentPoints, onBack }: PointChargeProps)
         bonusPoints: prepareRes.bonusPoints,
       }));
 
-      // 3. 나이스페이먼츠 결제창 호출 (인증 후 서버를 거쳐 /?pointCharge= 로 돌아온다)
+      // 3. 포트원 결제창 호출 (결제 후 /?pointCharge= 로 돌아와 서버가 결제를 확인한다)
       const orderName = prepareRes.bonusPoints > 0
         ? `포인트 ${prepareRes.amount.toLocaleString()}P 충전 (+${prepareRes.bonusPoints.toLocaleString()}P)`
         : `포인트 ${prepareRes.amount.toLocaleString()}P 충전`;
 
-      await requestNicePayment({ kind: 'points', orderId: prepareRes.orderId, amount: prepareRes.amount, goodsName: orderName });
+      await requestPortOnePayment({ kind: 'points', orderId: prepareRes.orderId, amount: prepareRes.amount, goodsName: orderName });
     } catch (error: any) {
       console.error('충전 결제 오류:', error);
       if (error?.code !== 'USER_CANCEL') alert(error?.response?.data?.message || error?.message || '충전 결제 준비 중 오류가 발생했습니다.');

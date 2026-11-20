@@ -257,7 +257,7 @@ async function handleRefresh() {
     const token = getToken();
     const urlParams = new URLSearchParams(window.location.search);
     
-    // 나이스 결제창 → 서버(/api/payments/nice/return) → 이 화면으로 돌아온 결제 결과 처리
+    // 포트원 결제창 → 이 화면으로 돌아온 결제 결과 처리 (확인은 서버가 포트원에 직접 조회)
     const payment = urlParams.get("payment");
     const pointCharge = urlParams.get("pointCharge");
     const paymentKey = urlParams.get("paymentKey");
@@ -266,10 +266,12 @@ async function handleRefresh() {
     const sharedPostId = Number(urlParams.get("postId"));
     const sharedBoardId = parseBoardId(urlParams.get("boardId"));
 
+    // 포트원은 결제가 실패하거나 취소되면 복귀 주소에 code·message 를 붙인다.
+    const paymentFailed = urlParams.get("code") !== null;
     if (payment !== null) {
-      handlePaymentReturn("kuji", orderId, payment === "success" && paymentKey && amount ? { paymentKey, amount } : undefined);
+      handlePaymentReturn("kuji", orderId, payment === "success" && !paymentFailed && paymentKey && amount ? { paymentKey, amount } : undefined);
     } else if (pointCharge !== null) {
-      handlePaymentReturn("points", orderId, pointCharge === "success" && paymentKey && amount ? { paymentKey, amount } : undefined);
+      handlePaymentReturn("points", orderId, pointCharge === "success" && !paymentFailed && paymentKey && amount ? { paymentKey, amount } : undefined);
     } else if (Number.isInteger(sharedPostId) && sharedPostId > 0) {
       setSelectedPostId(sharedPostId);
       setScreen("communityDetail");
